@@ -1288,7 +1288,7 @@
 
 <div id="authOverlay">
   <div class="auth-panel">
-    <h1>🔮 확률의 신</h1>
+    <h1>🔮 힐링 타이쿤</h1>
     <div class="auth-sub">로그인하면 진행 상황이 자동으로 저장됩니다.</div>
     <button type="button" class="btn-auth-google" id="authGoogleBtn">구글 계정으로 로그인</button>
     <div class="auth-divider">또는 이메일로 계속하기</div>
@@ -1354,6 +1354,7 @@
         <input type="text" id="nameInput" maxlength="10" placeholder="닉네임 입력 (최대 10자)">
         <button class="btn-settings-mini" id="nameSaveBtn">저장</button>
       </div>
+      <div class="settings-note" id="nameLockNote">※ 닉네임은 한 번 설정하면 다시 바꿀 수 없습니다. 설정하지 않으면 랜덤한 이름이 자동으로 부여됩니다.</div>
     </div>
 
     <div class="settings-section">
@@ -1667,9 +1668,9 @@
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.2/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.2/firebase-auth-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.2/firebase-database-compat.min.js"></script>
 <script>
 (function(){
   // 로그인/저장 상태 변수는 파일 여러 곳(설정 화면, 타이틀 화면 등)에서 이르게 참조될 수 있으므로,
@@ -5589,6 +5590,12 @@
   attackBtn.addEventListener('pointerdown', e=>{ e.preventDefault(); manualAttack(); });
 
   // ============ 업데이트 ============
+  // 로딩 화면/타이틀 화면 등 "아직 실제 게임이 시작되지 않은" 동안에는 update()가 절대 호출되지 않도록
+  // 막아주는 플래그. startGameAfterAuth()에서 실제로 게임 루프(requestAnimationFrame(loop))를 처음
+  // 돌리기 직전에 true로 바뀐다. 이 플래그가 false인 동안에는 배경 틱(backgroundTick)도 동작하지 않고,
+  // 효과음 합성 엔진(sfxTone/sfxNoise)도 무조건 무음 처리된다 - 즉 로딩/타이틀 화면에서는
+  // 어떤 경로로도 효과음이나 배경음이 새어나갈 수 없다.
+  let gameLoopRunning = false;
   let lastTime = performance.now();
   function loop(now){
     const dt = Math.min(32, now-lastTime); lastTime = now;
@@ -5611,6 +5618,7 @@
   const BG_MAX_CATCHUP_MS = 20000; // 한 번의 틱에서 몰아서 처리할 최대 시간(오래 자리를 비웠다 와도 과부하 방지)
   let bgTickerId = null, bgLastTime = 0;
   function backgroundTick(){
+    if(!gameLoopRunning) return; // 아직 게임이 시작되지 않았다면(로딩/타이틀 화면) 절대 update()를 호출하지 않는다
     const now = performance.now();
     let elapsed = Math.min(now-bgLastTime, BG_MAX_CATCHUP_MS);
     bgLastTime = now;
@@ -5622,6 +5630,7 @@
   }
   function startBackgroundTicker(){
     if(bgTickerId) return;
+    if(!gameLoopRunning) return; // 게임 시작 전(로딩/타이틀 화면)에는 백그라운드 틱 자체를 켜지 않는다
     bgLastTime = performance.now();
     bgTickerId = setInterval(backgroundTick, BG_TICK_MS);
   }
@@ -9308,7 +9317,7 @@
 
   // ============ 설정 모달 ============
   const settingsBtnEl=$('settingsBtn'), settingsModalEl=$('settingsModal'), settingsCloseBtnEl=$('settingsCloseBtn');
-  const nameInputEl=$('nameInput'), nameSaveBtnEl=$('nameSaveBtn');
+  const nameInputEl=$('nameInput'), nameSaveBtnEl=$('nameSaveBtn'), nameLockNoteEl=$('nameLockNote');
   const sfxVolumeEl=$('sfxVolume'), sfxVolumeLabelEl=$('sfxVolumeLabel');
   const bgmVolumeEl=$('bgmVolume'), bgmVolumeLabelEl=$('bgmVolumeLabel');
   const bgmHeaderEl=$('bgmHeader'), bgmCollapseEl=$('bgmCollapse');
@@ -9393,6 +9402,12 @@
 
   function openSettings(){
     nameInputEl.value = settings.playerName;
+    const nameLocked = !!settings.playerName;
+    nameInputEl.disabled = nameLocked;
+    nameSaveBtnEl.disabled = nameLocked;
+    nameLockNoteEl.textContent = nameLocked
+      ? `※ 닉네임은 "${settings.playerName}"(으)로 설정되어 있으며, 이후에는 변경할 수 없습니다.`
+      : '※ 닉네임은 한 번 설정하면 다시 바꿀 수 없습니다. 설정하지 않으면 랜덤한 이름이 자동으로 부여됩니다.';
     sfxVolumeEl.value = settings.sfxVolume;
     sfxVolumeLabelEl.textContent = settings.sfxVolume + '%';
     bgmVolumeEl.value = settings.bgmVolume;
@@ -9704,13 +9719,19 @@
   }
 
 
-  // 닉네임
+  // 닉네임 - 한 번 설정하면 다시 바꿀 수 없다. 이미 설정되어 있으면 클릭을 무시한다(버튼도 openSettings에서 비활성화됨).
   nameSaveBtnEl.addEventListener('click', ()=>{
+    if(settings.playerName) return;
     const v = nameInputEl.value.trim().slice(0,10);
+    if(!v) return; // 빈 값 저장은 "설정 안 함" 상태이므로 무시 - 이후 랜덤 이름이 자동으로 부여된다
     settings.playerName = v;
-    toast(v ? `닉네임이 "${v}"(으)로 설정되었습니다.` : '닉네임이 초기화되었습니다.', 'success', true);
+    nameInputEl.disabled = true;
+    nameSaveBtnEl.disabled = true;
+    nameLockNoteEl.textContent = `※ 닉네임은 "${v}"(으)로 설정되어 있으며, 이후에는 변경할 수 없습니다.`;
+    toast(`닉네임이 "${v}"(으)로 설정되었습니다.`, 'success', true);
     updateHudText();
     updateRanking();
+    saveGame();
   });
 
   // 알림 토글
@@ -9776,6 +9797,7 @@
 
   // 단순 톤(오실레이터) 재생: freq→freqEnd로 피치가 변하는 짧은 소리
   function sfxTone({freq=440, freqEnd=null, type='sine', dur=0.15, startGain=0.25, delay=0, always=false}={}){
+    if(!gameLoopRunning) return; // 로딩/타이틀 화면 등 게임이 아직 시작되지 않은 동안에는 효과음을 절대 재생하지 않는다
     if(settings.sfxVolume<=0) return;
     if(gachaSfxOnlyMode && !always) return;
     const ctx = ensureSfxCtx(); if(!ctx) return;
@@ -9791,6 +9813,7 @@
   }
   // 노이즈(백색소음) 재생: 타격/충격/바람 소리 등에 사용
   function sfxNoise({dur=0.15, startGain=0.25, filterFreq=1500, filterType='lowpass', delay=0, always=false}={}){
+    if(!gameLoopRunning) return; // 로딩/타이틀 화면 등 게임이 아직 시작되지 않은 동안에는 효과음을 절대 재생하지 않는다
     if(settings.sfxVolume<=0) return;
     if(gachaSfxOnlyMode && !always) return;
     const ctx = ensureSfxCtx(); if(!ctx) return;
@@ -10467,7 +10490,23 @@
     }
   }
 
+  // 닉네임을 한 번도 설정한 적 없는 유저를 위한 랜덤 이름 생성기.
+  // "설정" 메뉴에서 직접 이름을 넣지 않고 게임을 시작하면 여기서 자동으로 하나 배정되고, 이후로는 잠긴다.
+  const RANDOM_NAME_WORDS = ['나그네','방랑자','순례자','모험가','여행자','탐험가','뜨내기','떠돌이','일꾼','수집가'];
+  function generateRandomPlayerName(){
+    const word = RANDOM_NAME_WORDS[Math.floor(Math.random()*RANDOM_NAME_WORDS.length)];
+    const num = Math.floor(1000 + Math.random()*9000);
+    return (word + num).slice(0,10);
+  }
+  function ensurePlayerName(){
+    if(settings.playerName) return;
+    settings.playerName = generateRandomPlayerName();
+  }
+
   function startGameAfterAuth(){
+    const hadNoName = !settings.playerName;
+    ensurePlayerName(); // 여기까지 오는 동안(로그인~직업선택) 직접 닉네임을 설정하지 않았다면 랜덤 이름을 배정한다
+    if(hadNoName) saveGame(); // 랜덤 배정된 이름을 즉시 저장해둔다(다음 접속 시에도 유지되도록)
     // 불러온 레벨 값으로 파생 스탯(공격력/방어력/최대체력)을 다시 계산해 정합성을 맞춘다
     recalcGear(); // 장착 중인 뽑기 아이템의 능력치를 먼저 계산해야 아래 스탯들이 정확해진다
     state.atk = 3 + state.lvAtk*GROWTH_ATK_PER_LV;
@@ -10483,6 +10522,7 @@
     updateHudText();
     renderGachaView();
     updateRanking(); // 접속 직후에도 최신 전투력/레벨/스테이지가 랭킹에 즉시 반영되도록
+    gameLoopRunning = true; // 이 시점부터 실제 게임 루프/효과음이 허용된다 (로딩·타이틀 화면에서는 계속 false였음)
     requestAnimationFrame(loop);
 
     if(saveTimer) clearInterval(saveTimer);
