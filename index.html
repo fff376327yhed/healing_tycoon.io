@@ -55,6 +55,10 @@
     padding:5px 10px; font-size:12px; font-weight:700; color:var(--gold);
     display:flex; align-items:center; gap:4px; white-space:nowrap;
   }
+  /* 전역 button{width:100%} 규칙이 HUD의 버튼형 chip(스테이지/랭킹/마을지도/설정)에도 적용되어,
+     flex-wrap 시 버튼 하나가 줄 전체 너비를 차지해 세로로 쭉 늘어서 보이는 문제가 있었다.
+     HUD 칩은 내용 크기만큼만 차지해야 하므로 명시적으로 width를 되돌린다. */
+  button.hud-chip{ width:auto; flex:0 0 auto; }
   .hud-stage{
     flex:1 1 160px; font-size:12px; color:var(--gold); font-weight:700; min-width:120px;
   }
@@ -382,6 +386,11 @@
   .job-card .jc-stat{ font-size:10.5px; color:var(--arcane); font-weight:700; }
   .job-card .jc-desc{ font-size:11px; color:var(--text-dim); line-height:1.4; margin-top:2px; }
   .job-card .jc-current-tag{ font-size:10px; color:var(--gold); font-weight:800; margin-top:4px; }
+  .job-card .jc-level{
+    font-size:11.5px; font-weight:800; color:var(--gold); margin-top:6px;
+    background:var(--bg-panel-2); border:1px solid var(--line); border-radius:8px; padding:3px 8px;
+  }
+  .job-card .jc-level.jc-not-started{ color:var(--text-dim); font-weight:700; }
   .job-change-note{ font-size:11px; color:var(--text-dim); margin-bottom:4px; }
 
   /* ===== 로그인 화면 ===== */
@@ -462,6 +471,49 @@
   @keyframes loadingBarSlide{ 0%{ transform:translateX(-100%); } 100%{ transform:translateX(250%); } }
   .loading-tip{ font-size:12px; color:var(--text-dim); line-height:1.5; }
 
+  /* ===== 타이틀 화면 (로그인보다도 먼저 보이는 첫 화면) =====
+     네 직업 캐릭터가 옹기종기 모여있는 아기자기한 시작 화면. "게임 시작"을 눌러야 로그인 화면으로 넘어간다.
+     여기서는 사운드가 나지 않고, 캐릭터들은 살짝 위아래로 둥실거리는 정도의 장식용 모션만 가진다(제자리 대기 모션). */
+  #titleScreenOverlay{
+    position:fixed; inset:0; z-index:600; display:flex; align-items:center; justify-content:center;
+    padding:20px; padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));
+    background:
+      radial-gradient(circle at 20% -10%, rgba(124,92,255,0.2), transparent 45%),
+      radial-gradient(circle at 85% 8%, rgba(212,175,55,0.12), transparent 45%),
+      radial-gradient(circle at 50% 100%, rgba(62,201,167,0.1), transparent 50%),
+      var(--bg-void);
+  }
+  #titleScreenOverlay.hide{ display:none; }
+  .title-panel{ width:100%; max-width:400px; text-align:center; }
+  .title-logo{ font-family:Georgia,'Nanum Myeongjo',serif; font-size:22px; color:var(--gold); letter-spacing:0.5px; }
+  .title-sub{ font-size:12.5px; color:var(--text-dim); margin-top:6px; margin-bottom:28px; }
+  .title-char-group{ display:flex; justify-content:center; align-items:flex-end; gap:12px; margin-bottom:34px; }
+  .title-char{
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    animation:titleCharFloat 2.6s ease-in-out infinite;
+  }
+  .title-char:nth-child(1){ animation-delay:0s; }
+  .title-char:nth-child(2){ animation-delay:0.4s; }
+  .title-char:nth-child(3){ animation-delay:0.8s; }
+  .title-char:nth-child(4){ animation-delay:1.2s; }
+  @keyframes titleCharFloat{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-6px); } }
+  .tc-emoji{
+    display:flex; align-items:center; justify-content:center;
+    width:58px; height:58px; border-radius:50%; font-size:26px;
+    background:var(--bg-panel); border:1.5px solid var(--line);
+    box-shadow:0 6px 14px rgba(0,0,0,0.35);
+  }
+  .tc-warrior .tc-emoji{ border-color:#c0392b; box-shadow:0 6px 14px rgba(192,57,43,0.3); }
+  .tc-mage .tc-emoji{ border-color:var(--arcane); box-shadow:0 6px 14px rgba(124,92,255,0.35); }
+  .tc-archer .tc-emoji{ border-color:var(--success); box-shadow:0 6px 14px rgba(62,201,167,0.3); }
+  .tc-rogue .tc-emoji{ border-color:var(--gold); box-shadow:0 6px 14px rgba(212,175,55,0.3); }
+  .tc-label{ font-size:11px; color:var(--text-dim); font-weight:700; }
+  .btn-title-start{
+    background:linear-gradient(135deg,var(--arcane),#5a3fd6); color:#fff; font-size:15px;
+    padding:15px 16px; box-shadow:0 6px 16px rgba(124,92,255,0.35); max-width:280px; margin:0 auto;
+  }
+  .btn-title-start:hover:not(:disabled){ filter:brightness(1.1); }
+
   /* ===== 스테이지 선택 모달 ===== */
   #stageSelectBtn{ width:auto; padding:5px 10px; font-size:14px; }
   #villageMapBtn{ width:auto; padding:5px 10px; font-size:14px; }
@@ -482,6 +534,25 @@
     white-space:nowrap;
   }
   .chapter-tab.active{ background:var(--arcane); border-color:var(--arcane); color:#fff; }
+
+  /* ===== 랭킹(명예의 전당) ===== */
+  .ranking-list{ display:flex; flex-direction:column; gap:8px; min-height:60px; }
+  .ranking-row{
+    display:flex; align-items:center; gap:12px;
+    background:var(--bg-panel-2); border:1px solid var(--line); border-radius:12px; padding:10px 14px;
+  }
+  .ranking-row.rank-1{ border-color:var(--gold); background:linear-gradient(90deg, rgba(212,175,55,0.14), var(--bg-panel-2)); }
+  .ranking-row.rank-2{ border-color:#c7c7d6; }
+  .ranking-row.rank-3{ border-color:#c98a2e; }
+  .ranking-medal{ font-size:20px; width:26px; text-align:center; flex-shrink:0; }
+  .ranking-info{ flex:1; min-width:0; }
+  .ranking-name{ font-size:13.5px; font-weight:800; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ranking-meta{ font-size:11px; color:var(--text-dim); margin-top:2px; }
+  .ranking-power{ text-align:right; flex-shrink:0; }
+  .ranking-power .rp-val{ font-size:15px; font-weight:800; color:var(--gold); }
+  .ranking-power .rp-label{ font-size:10px; color:var(--text-dim); }
+  .ranking-empty{ font-size:12.5px; color:var(--text-dim); text-align:center; padding:22px 0; }
+
   .stage-grid{ display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
   .stage-cell{
     position:relative; width:auto; aspect-ratio:1; padding:0; border-radius:10px;
@@ -1058,6 +1129,20 @@
 </style>
 </head>
 <body>
+<div id="titleScreenOverlay">
+  <div class="title-panel">
+    <div class="title-logo">🌿 지나가던 힐링게임 🌿</div>
+    <div class="title-sub">작은 마을, 네 명의 모험가, 그리고 느긋한 하루</div>
+    <div class="title-char-group">
+      <div class="title-char tc-warrior"><span class="tc-emoji">⚔</span><span class="tc-label">검사</span></div>
+      <div class="title-char tc-mage"><span class="tc-emoji">🪄</span><span class="tc-label">마법사</span></div>
+      <div class="title-char tc-archer"><span class="tc-emoji">🏹</span><span class="tc-label">궁수</span></div>
+      <div class="title-char tc-rogue"><span class="tc-emoji">🗡</span><span class="tc-label">도적</span></div>
+    </div>
+    <button type="button" class="btn-title-start" id="titleStartBtn">▶ 게임 시작</button>
+  </div>
+</div>
+
 <div id="app">
 
   <div id="hud">
@@ -1071,6 +1156,7 @@
       <span id="playerHpText">24/24</span>
     </div>
     <button class="hud-chip" id="stageSelectBtn" style="cursor:pointer;">🗺 스테이지</button>
+    <button class="hud-chip" id="rankingBtn" style="cursor:pointer;">🏆 랭킹</button>
     <button class="hud-chip" id="villageMapBtn" style="cursor:pointer;">🏘 마을지도</button>
     <button class="hud-chip" id="settingsBtn" style="cursor:pointer;">⚙</button>
   </div>
@@ -1324,6 +1410,18 @@
     </div>
 
     <div class="settings-section">
+      <h3>🚀 시작</h3>
+      <div class="settings-toggle-row">
+        <span>로딩시 직업선택 화면 건너뛰기 (마지막으로 저장된 직업으로 바로 시작)</span>
+        <label class="switch"><input type="checkbox" id="skipJobSelectToggle"><span class="slider"></span></label>
+      </div>
+      <div class="settings-toggle-row">
+        <span>게임시작 화면 건너뛰기 (접속 시 타이틀 화면 없이 바로 진입)</span>
+        <label class="switch"><input type="checkbox" id="skipTitleScreenToggle"><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div class="settings-section">
       <h3>⚔ 전투</h3>
       <div class="settings-toggle-row">
         <span>몬스터 자동 추격 (내 캐릭터가 몬스터/보스를 자동으로 쫓아가기)</span>
@@ -1512,6 +1610,28 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="rankingModal">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h2>🏆 명예의 전당</h2>
+      <button class="modal-close" id="rankingCloseBtn">✕</button>
+    </div>
+    <div class="gacha-cat-tabs" id="rankingMetricTabs" style="margin-bottom:8px;">
+      <button type="button" class="gachaSubBtn rankingMetricBtn active" data-metric="power">⚔ 전투력</button>
+      <button type="button" class="gachaSubBtn rankingMetricBtn" data-metric="stage">🚩 스테이지</button>
+      <button type="button" class="gachaSubBtn rankingMetricBtn" data-metric="level">🌟 레벨</button>
+    </div>
+    <div class="gacha-cat-tabs" id="rankingJobTabs">
+      <button type="button" class="gachaSubBtn rankingJobBtn active" data-job="warrior">⚔ 검사</button>
+      <button type="button" class="gachaSubBtn rankingJobBtn" data-job="mage">🪄 마법사</button>
+      <button type="button" class="gachaSubBtn rankingJobBtn" data-job="archer">🏹 궁수</button>
+      <button type="button" class="gachaSubBtn rankingJobBtn" data-job="rogue">🗡 도적</button>
+    </div>
+    <div class="settings-note" style="margin-bottom:10px;" id="rankingSubNote">직업별 전투력 TOP 3 · 실시간 갱신</div>
+    <div id="rankingList" class="ranking-list"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="blacksmithModal">
   <div class="modal-panel gacha-detail-panel">
     <div class="modal-header">
@@ -1552,6 +1672,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 (function(){
+  // 로그인/저장 상태 변수는 파일 여러 곳(설정 화면, 타이틀 화면 등)에서 이르게 참조될 수 있으므로,
+  // "선언 전 접근(TDZ)" 에러를 원천 차단하기 위해 IIFE 최상단에서 가장 먼저 선언한다.
+  let currentUser = null, dataLoaded = false, gameStarted = false, saveTimer = null;
   // ============ 팔레트 & 픽셀아트 ============
   const PAL = {
     'k':'#1a1a1a','S':'#f2c9a0','H':'#5b3a21','B':'#3a5fcc','b':'#2a4499',
@@ -1972,8 +2095,8 @@
     { type:'well',       cx:-30,  cy:70,   halfW:20, halfH:20 }, // 우물 (마을 중앙 광장)
     { type:'signpost',   cx:40,   cy:150,  halfW:14, halfH:12 }, // 마을 표지판 (광장 입구)
     { type:'lamppost',   cx:70,   cy:80,   halfW:8,  halfH:8,  collide:false }, // 가로등 (광장)
-    { type:'farm',       cx:-480, cy:-560, halfW:110,halfH:70 }, // 농부의 집 옆 밭
-    { type:'pen',        cx:-460, cy:-420, halfW:90, halfH:60 }, // 밭 아래 동물 우리 (농가 구역)
+    { type:'farm',       cx:-480, cy:-560, halfW:110,halfH:70, collide:false }, // 농부의 집 옆 밭 (농부 데릭이 안에서 순찰하므로 걸어 들어갈 수 있어야 함)
+    { type:'pen',        cx:-460, cy:-420, halfW:90, halfH:60,  collide:false }, // 밭 아래 동물 우리 (목동 이슬이 안에 서있으므로 걸어 들어갈 수 있어야 함)
     { type:'scarecrow',  cx:-460, cy:-610, halfW:14, halfH:14, collide:false }, // 허수아비 (밭 안)
     { type:'haystack',   cx:-640, cy:-500, halfW:26, halfH:20 }, // 밭 옆 건초더미
     { type:'haystack',   cx:-300, cy:-330, halfW:26, halfH:20 }, // 우리 옆 건초더미
@@ -3282,6 +3405,11 @@
   // 이동속도: 타일(28px) 하나를 건너는 데 약 1.3~1.5초가 걸리도록 조정 (걷는 속도감)
   const PLAYER_SPEED=0.0026, MOB_WANDER_SPEED=0.00075, MOB_CHASE_SPEED=0.00120;
   const BOSS_CHASE_SPEED=0.0010, BOSS_DASH_SPEED=0.0056;
+  // 모든 보스(10·20·30 및 그 사이의 일반보스 포함)는 예외 없이 "플레이어의 현재 이동속도의 50%"를 기본 추격 속도로 갖는다.
+  const BOSS_SPEED_PLAYER_MULT=0.5;
+  // 모든 보스(및 분신)의 잡몹 소환 스킬은 예외 없이 15마리를 소환하며, 소환된 잡몹은 이동속도가 일반 잡몹의 60%로 고정된다.
+  const BOSS_SUMMON_COUNT=15;
+  const SUMMONED_MOB_SPEED=MOB_CHASE_SPEED*0.6;
   const ATTACK_RANGE=40, ATTACK_COOLDOWN=380;
   const ATTACK_ARC = Math.PI*0.62; // 공격 판정 부채꼴 각도(전체). 플레이어가 바라보는 방향 기준 좌우 절반씩
   const TILE = 28; // 필드 1칸의 픽셀 크기
@@ -3349,11 +3477,74 @@
   const BOSS_TELE_ARROWRAIN=700, BOSS_ARROW_COUNT=12, BOSS_ARROW_STAGGER_MS=110;
   const BOSS_ARROW_FLIGHT_MS=480, BOSS_ARROW_SPAWN_DIST=560, BOSS_ARROW_HIT_R=15, BOSS_ARROW_DAMAGE=5;
   const BOSS_ARROW_LAND_SPREAD=170; // 화살이 떨어지는 범위(플레이어 주변 반경)
-  const BOSS_ARROW_ENRAGE_HP_RATIO=0.3; // 체력 30% 이하부터는 화살비가 끊이지 않고 연속으로 쏟아짐
+  const BOSS_ARROW_ENRAGE_HP_RATIO=0.3; // (구) 체력 30% 이하부터는 화살비가 끊이지 않고 연속으로 쏟아짐 - 아래 "화살비 오버레이" 시스템으로 대체됨
   const BOSS_ARROW_CHAIN_WAVES=3; // 체력과 무관하게 화살비가 최소 이 횟수만큼 연속으로 몰아침
+
+  // ============ 화살비 오버레이 시스템 (10스테이지 늑대왕 및 patternSet에 'arrowrain'이 있는 보스 전용) ============
+  // 기존 화살비는 보스의 일반 패턴 순환(state='telegraph'→'arrowfiring') 안에서만 발동되어, 그 동안 보스가 멈추고
+  // 다른 스킬을 함께 쓸 수 없었다. 새 오버레이 시스템은 보스의 현재 상태(추격/텔레그래프/돌진 등)와 완전히 무관하게
+  // 매 프레임 별도로 갱신되므로, 보스가 계속 움직이면서 동시에 다른 스킬(돌진/광역기 등)도 함께 사용할 수 있다.
+  const BOSS_ARROW_OVERLAY_HP50=0.5, BOSS_ARROW_OVERLAY_HP30=0.3, BOSS_ARROW_OVERLAY_HP10=0.1;
+  const BOSS_ARROW_OVERLAY_INTERVAL_BASE=3000; // 체력 50% 이하: 3초마다
+  const BOSS_ARROW_OVERLAY_INTERVAL_ENRAGE=2000; // 체력 10% 이하: 2초마다
+  const BOSS_ARROW_OVERLAY_COUNT=9;
+  const BOSS_ARROW_OVERLAY_SPREAD_50=140, BOSS_ARROW_OVERLAY_SPREAD_30=195, BOSS_ARROW_OVERLAY_SPREAD_10=255; // 화살이 떨어지는 범위(반경)
+  const BOSS_ARROW_OVERLAY_HITR_BASE=BOSS_ARROW_HIT_R, BOSS_ARROW_OVERLAY_HITR_10=BOSS_ARROW_HIT_R*1.25;
+  const BOSS_ARROW_OVERLAY_DMG_BASE=BOSS_ARROW_DAMAGE, BOSS_ARROW_OVERLAY_DMG_10=Math.round(BOSS_ARROW_DAMAGE*1.6); // 10% 이하: 공격력 강화
+  const BOSS_ARROW_OVERLAY_FLIGHT_BASE=480; // 기준 이동속도에서의 낙하 소요시간(ms)
+  const BOSS_ARROW_OVERLAY_FLIGHT_MIN=180, BOSS_ARROW_OVERLAY_FLIGHT_MAX=650;
   // 결계 아레나 패턴 (강철 고블린 파괴자 시그니처): 원형 결계를 펼치고 그 안에서 부하를 소환하며 싸움
   const BOSS_TELE_ARENA=900, BOSS_ARENA_DURATION=7000, BOSS_ARENA_RADIUS=210, BOSS_ARENA_SPAWN_INTERVAL=1900;
-  const BOSS_ARENA_AOE_INTERVAL=2500, BOSS_ARENA_AOE_TELEGRAPH=700; // 결계 안에서 주기적으로 사용하는 범위 공격
+  const BOSS_ARENA_AOE_INTERVAL=2500, BOSS_ARENA_AOE_TELEGRAPH=700; // 결계 안에서 주기적으로 사용하는 범위 공격(보스 자신 위치)
+
+  // ============ 결계 내 랜덤 범위공격 (20스테이지 강철 고블린 파괴자 전용) ============
+  // 위의 BOSS_ARENA_AOE_* 는 "보스 자신의 위치"에서 터지는 기존 범위공격이고, 아래는 그와는 별개로
+  // "결계 안 아무 랜덤한 지점"에서도 동시에 범위공격이 함께 터지는 추가 시스템이다(체력 구간별로 강화됨).
+  const BOSS_ARENA_RAND_TELEGRAPH=700;
+  const BOSS_ARENA_RAND_RADIUS=BOSS_BURST_RADIUS, BOSS_ARENA_RAND_RADIUS_BIG=Math.round(BOSS_BURST_RADIUS*1.35);
+  const BOSS_ARENA_RAND_DMG=BOSS_BURST_DAMAGE;
+  // 체력 구간별 설정: 지점 수(points) / 반경(big) / 이 사이클 안에서 반복 시전 횟수(repeats) / 반복을 모두 마치는 총 소요시간(windowMs)
+  const BOSS_ARENA_RAND_PHASES = {
+    70: { points:2, big:false, repeats:1, windowMs:0 },
+    60: { points:3, big:false, repeats:2, windowMs:3000 },
+    40: { points:4, big:true,  repeats:1, windowMs:0 },
+    20: { points:5, big:true,  repeats:3, windowMs:4000 },
+  };
+  const BOSS_ARENA_RAND_CYCLE_MS=2500; // 다음 랜덤 범위공격 사이클까지의 간격(기존 자기 위치 범위공격과 비슷한 주기)
+  // 강화된 쫄몹(40% 이하에서 1회 소환): 보스의 "현재" 공격력/체력의 65%를 가지며, 보스 스킬(돌진·슬램·범위 등)을 사용할 수 있고,
+  // 살아있는 동안 10초마다 보스의 "현재" 체력의 65%만큼 보스를 회복시킨다.
+  const BOSS_ELITE_MINION_STAT_RATIO=0.65;
+  const BOSS_ELITE_MINION_HEAL_INTERVAL=10000, BOSS_ELITE_MINION_HEAL_RATIO=0.65;
+  const BOSS_ARENA_RANGE_BOOST_20=1.25; // 체력 20% 이하: 보스 공격 범위(반경) 확대 배수
+  // 20스테이지급 보스 전용 추가 광역기: novaburst(보스 중심의 초광역 폭발), groundquake(두 지점에서 동시에 터지는 지진파)
+  const BOSS_TELE_NOVA=1050, BOSS_NOVA_RADIUS=115, BOSS_NOVA_DAMAGE=8;
+  const BOSS_TELE_QUAKE=1150, BOSS_QUAKE_RADIUS=80, BOSS_QUAKE_DAMAGE=7;
+
+  // ============ 보스 "정중앙 겹침" 즉사급 피해 (모든 보스 공통 기본 패턴) ============
+  // 플레이어가 보스와 거의 완전히 같은 위치(정중앙)에 있으면, 2초마다 플레이어 최대체력의 30%만큼 피해를 계속 받는다.
+  // boss.state/kind와 무관하게 항상 적용되며, 다른 스킬들과도 자유롭게 중첩된다.
+  const BOSS_CORE_OVERLAP_DIST=6;        // 이 거리(px) 이내면 "정중앙에 겹쳐있다"고 판정
+  const BOSS_CORE_OVERLAP_INTERVAL_MS=2000; // 2초마다
+  const BOSS_CORE_OVERLAP_DMG_PCT=0.30;  // 플레이어 최대체력의 30%
+
+  // ============ 30스테이지 최종보스 전용 패턴 (태초의 오크 군주 시그니처: 독 공격 + 체력 구간별 강화) ============
+  // 독 공격: 최종보스(kind==='final')의 공격/스킬이 플레이어에게 적중하면, 그 "적중한 피해량"의 일정 비율만큼을
+  // 5초 동안 1초 간격으로(총 5틱) 추가로 누적 피해를 입힌다. 방어력/회피와 무관하게 순수 도트 피해로 적용된다.
+  const BOSS_POISON_TICK_MS=1000, BOSS_POISON_TICKS=5;
+  const BOSS_POISON_PCT_BASE=0.05;      // 기본: 적중 피해량의 5%
+  const BOSS_POISON_HP35=0.35, BOSS_POISON_PCT_ENRAGED=0.40; // 체력 35% 이하부터: 적중 피해량의 40%
+  // 체력 80% 이하: 보스 자신에게 "현재 방어력의 70%"만큼을 추가로 부여(방어력 1.7배)
+  const BOSS_ARMOR_HP80=0.8, BOSS_ARMOR_BUFF_RATIO=0.70;
+  // 체력 70% 이하: 보스 이동속도 10% 증가 (bossChaseSpeed에 곱해짐)
+  const BOSS_SPEEDUP_HP70=0.7, BOSS_SPEEDUP_MULT=1.10;
+  // 체력 50% 이하: 보스전 시간을 줄이는 쫄몹 소환 가능 상태가 됨.
+  // - 50% 최초 도달 시 무조건 1마리 소환.
+  // - 이후에는 플레이어가 (보스에게) 피해를 받을 때마다 20% 확률로 추가 소환(이미 1마리가 살아있으면 소환하지 않음).
+  // - 이 쫄몹이 살아있는 동안 20초마다 보스전 제한시간을 20초 단축시키며, 처치하면 더 이상 시간이 줄지 않는다.
+  const BOSS_TIMECUT_HP50=0.5, BOSS_TIMECUT_CHANCE=0.20;
+  const BOSS_TIMECUT_INTERVAL_MS=20000, BOSS_TIMECUT_AMOUNT_MS=20000;
+  // 체력 20% 이하: 플레이어에게 "방어력 감소 100%" 디버프를 1회 부여(보스전이 끝날 때까지 플레이어 방어력이 0으로 취급됨)
+  const BOSS_DEFSHRED_HP20=0.2;
   const MAX_CONCURRENT_MOBS=32; // 화면 안에 항상 다수(30+)가 있도록 유지
   const MOB_CHASE_TRIGGER=220; // (더 이상 사용하지 않음 - 몬스터는 항상 추적)
   const AUTO_HUNT_SEARCH_RADIUS=2000; // 조작이 없을 때 사냥할 대상을 찾는 범위
@@ -3380,11 +3571,15 @@
         name:'고대 늑대왕', type:'rat', tint:'#c46bff',
         scaleMult:1.35, hpMult:2.3, dmgMult:1.25, radiusMult:1.1, cooldownMult:0.85,
         patternSet:['slam','dash','burst','arrowrain'], timeBonus:10000,
+        matchPlayerSpeed:true, // 10스테이지 보스는 이동속도가 플레이어의 현재 이동속도와 동일하다
       },
       20: {
         name:'강철 고블린 파괴자', type:'goblin', tint:'#4fd1ff',
-        scaleMult:1.55, hpMult:3.1, dmgMult:1.4, radiusMult:1.2, cooldownMult:0.72,
-        patternSet:['slam','dash','burst','arena'], timeBonus:14000,
+        scaleMult:1.55, hpMult:3.1, dmgMult:1.4, radiusMult:1.45, cooldownMult:0.6,
+        // 20스테이지 보스는 광역기(burst/arena/novaburst/groundquake)를 더 넓은 범위로, 더 자주 사용한다.
+        // 화살비(arrowrain)와 이동속도 특성(matchPlayerSpeed)은 여기에 적지 않아도 eliteSpecialFor()가
+        // 10스테이지 보스(고대 늑대왕)의 스킬을 자동으로 가져와 중첩시켜준다.
+        patternSet:['slam','dash','burst','arena','novaburst','groundquake'], timeBonus:14000,
       },
       30: {
         name:'태초의 오크 군주', type:'orc', tint:'#ff3b6b',
@@ -3394,22 +3589,68 @@
       },
     },
   };
-  // 아직 디자인되지 않은 챕터(2 이후)의 정예/최종보스는 기본 패턴을 유지하되 스탯만 소폭 상향
+  // 아직 디자인되지 않은 챕터(2 이후)의 정예보스는 기본 패턴을 유지하되 스탯만 소폭 상향.
+  // 10스테이지 보스는 이동속도를 플레이어와 동일하게 맞추고, 20스테이지 보스는 광역기 범위/빈도를 늘리고
+  // 광역기 스킬(novaburst·groundquake)을 추가로 사용한다.
   const FALLBACK_SPECIAL = {
-    elite: { hpMult:1.8, dmgMult:1.15, radiusMult:1.05, scaleMult:1.2, cooldownMult:0.9, patternSet:['slam','dash','burst'], timeBonus:6000, name:null, type:null },
+    elite10: { hpMult:1.8, dmgMult:1.15, radiusMult:1.05, scaleMult:1.2, cooldownMult:0.9, patternSet:['slam','dash','burst'], timeBonus:6000, name:null, type:null, matchPlayerSpeed:true },
+    elite20: { hpMult:1.8, dmgMult:1.15, radiusMult:1.35, scaleMult:1.2, cooldownMult:0.68, patternSet:['slam','dash','burst','novaburst','groundquake'], timeBonus:6000, name:null, type:null },
     final: { hpMult:2.5, dmgMult:1.3, radiusMult:1.1, scaleMult:1.35, cooldownMult:0.8, patternSet:['slam','dash','burst'], timeBonus:10000, name:null, type:null },
   };
+  // 패턴(스킬)만 빌려 쓰는 보스용 - 그 외 스탯/외형/보상은 원래의 일반보스 그대로 유지한다
+  function patternOnlySpecial(patternSet){
+    return { hpMult:1, dmgMult:1, radiusMult:1, scaleMult:1, cooldownMult:1, patternSet, timeBonus:0, name:null, type:null };
+  }
+  // 챕터별로 디자인된 10·20스테이지 정예보스 설정(없으면 기본값)을 반환 - 다른 일반보스들이 패턴을 빌려 쓸 때 기준이 된다.
+  // 20스테이지 보스는 10스테이지 보스의 스킬(화살비 등)과 이동속도 특성(matchPlayerSpeed)을 그대로 이어받아
+  // 자신의 고유 스킬(결계/광역기 등)과 중첩해서 함께 사용한다 - "이전 보스 스킬을 전부 가져와서 쓰는" 요구사항.
+  function eliteSpecialFor(chapter, stageInChapter){
+    const byChapter = SPECIAL_BOSS_BY_CHAPTER[chapter];
+    const base = (byChapter && byChapter[stageInChapter]) ? byChapter[stageInChapter]
+      : (stageInChapter===20 ? FALLBACK_SPECIAL.elite20 : FALLBACK_SPECIAL.elite10);
+    if(stageInChapter===20){
+      const elite10 = eliteSpecialFor(chapter, 10); // 10스테이지 보스의 스킬셋을 가져와 20스테이지 보스 스킬과 합친다
+      const merged = Array.from(new Set([...(elite10.patternSet||[]), ...(base.patternSet||[])]));
+      return Object.assign({}, base, { patternSet: merged, matchPlayerSpeed:true });
+    }
+    return base;
+  }
   function specialBossFor(chapter, stageInChapter, kind){
     const byChapter = SPECIAL_BOSS_BY_CHAPTER[chapter];
-    if(byChapter && byChapter[stageInChapter]) return byChapter[stageInChapter];
-    if(kind==='elite') return FALLBACK_SPECIAL.elite;
-    if(kind==='final') return FALLBACK_SPECIAL.final;
+    const designed = byChapter && byChapter[stageInChapter];
+    if(kind==='elite'){
+      return eliteSpecialFor(chapter, stageInChapter);
+    }
+    if(kind==='final'){
+      const base = designed || FALLBACK_SPECIAL.final;
+      // 10, 20, 30 보스는 10·20 정예보스의 스킬을 무조건 함께 사용한다 (최종보스 고유 패턴에 합쳐서 사용)
+      const elite10 = eliteSpecialFor(chapter, 10);
+      const elite20 = eliteSpecialFor(chapter, 20);
+      const merged = Array.from(new Set([...(base.patternSet||[]), ...(elite10.patternSet||[]), ...(elite20.patternSet||[])]));
+      return Object.assign({}, base, { patternSet: merged });
+    }
+    // 일반보스(정예/최종이 아닌 스테이지): 10을 지난 11~19 구간은 10보스와, 21~29 구간은 20보스와 동일한 스킬(패턴)을 사용한다.
+    // 단, 패턴만 빌려 쓸 뿐 체력/공격력/크기 등 다른 스탯은 원래의 일반보스 값 그대로 유지된다.
+    if(stageInChapter>10 && stageInChapter<20){
+      return patternOnlySpecial(eliteSpecialFor(chapter, 10).patternSet);
+    }
+    if(stageInChapter>20 && stageInChapter<CHAPTER_STAGE_COUNT){
+      return patternOnlySpecial(eliteSpecialFor(chapter, 20).patternSet);
+    }
     return null;
   }
   function bossDmgMult(b){ return (b && b.special) ? b.special.dmgMult : 1; }
   function bossRadiusMult(b){ return (b && b.special) ? b.special.radiusMult : 1; }
   function bDmg(base){ return Math.round(base*stageDmgMult()*bossDmgMult(boss)); }
-  function bRad(base){ return base*bossRadiusMult(boss); }
+  // 결계 내 범위공격이 20% 이하 구간에서 "보스 공격 범위가 넓어짐" 효과를 받을 때 boss.dynamicRadiusBoost(기본 1)가 곱해진다
+  function bRad(base){ return base*bossRadiusMult(boss)*((boss&&boss.dynamicRadiusBoost)||1); }
+  // 보스의 실제 추격 속도. 모든 보스는 예외 없이 매 순간의 플레이어 이동속도의 50%로 통일해서 추격한다.
+  // (단, 최종보스는 체력 70% 이하가 되면 boss.speedBuffMult가 1.1로 붙어 그 시점부터는 그 50%에서 다시 10% 빨라진다.)
+  function bossChaseSpeed(b){
+    const base = effectivePlayerSpeed()*BOSS_SPEED_PLAYER_MULT;
+    return base*((b&&b.speedBuffMult)||1);
+  }
+
 
   // ============ 상태 ============
   let state = {
@@ -3467,7 +3708,7 @@
 
 
   // ===== 설정 =====
-  let settings = { sfxVolume:70, bgmVolume:50, bgmTrack:'1', notify:true, killMsg:true, playerName:'', monsterChase:true, noAutoEnterHouse:false, weaponFx:true, screenFlash:true, skillSound:true, hitboxDebug:false };
+  let settings = { sfxVolume:70, bgmVolume:50, bgmTrack:'1', notify:true, killMsg:true, playerName:'', monsterChase:true, noAutoEnterHouse:false, weaponFx:true, screenFlash:true, skillSound:true, hitboxDebug:false, skipJobSelect:false, skipTitleScreen:false };
   let adminUnlocked = false;
   let adminSkipMobRequirement = false; // 관리자: 모든 스테이지에서 잡몹 처치 없이 즉시 보스 소환 허용
   let adminAllStagesCleared = false; // 관리자: 비밀번호 입력 시 모든 스테이지를 클리어한 것으로 판정
@@ -4260,7 +4501,10 @@
   }
   // 방어력은 고정 수치가 아닌 "받는 피해 감소율(%)"로 작동. 성장으로는 최대 30%, 장비의 "방어력 증가"를 더해 최대 TOTAL_DEF_CAP%까지 오를 수 있다
   const TOTAL_DEF_CAP = 70;
-  function effectiveDefPct(){ return Math.min(TOTAL_DEF_CAP, state.lvDef*GROWTH_DEF_PCT_PER_LV + (gearTotals.defInc||0)); }
+  function effectiveDefPct(){
+    if(player.defShredActive) return 0; // 최종보스 체력 20% 이하: 방어력 감소 100% 디버프로 방어력이 0으로 취급됨
+    return Math.min(TOTAL_DEF_CAP, state.lvDef*GROWTH_DEF_PCT_PER_LV + (gearTotals.defInc||0));
+  }
   function applyHpGrowth(){
     player.maxHp = effectiveMaxHp();
     player.hp = player.maxHp; // 체력 성장 시 즉시 완전 회복
@@ -4272,6 +4516,7 @@
     SFX.levelUp();
     toast(`공격력이 상승했습니다! (공격력 ${state.atk})`, 'success');
     updateHudText();
+    updateRanking();
   }
   function buyGrowHp(){
     const cost = growCostHp();
@@ -4280,6 +4525,7 @@
     SFX.levelUp();
     toast(`최대 체력이 상승했습니다! (최대체력 ${player.maxHp})`, 'success');
     updateHudText();
+    updateRanking();
   }
   function buyGrowDef(){
     if(state.lvDef>=GROWTH_DEF_MAX_LV) return;
@@ -4289,6 +4535,7 @@
     SFX.levelUp();
     toast(`방어력이 상승했습니다! (피해 감소 ${state.def.toFixed(1)}%, ${state.lvDef}/${GROWTH_DEF_MAX_LV})`, 'success');
     updateHudText();
+    updateRanking();
   }
   function buyGrowSpd(){
     if(state.lvSpd>=GROWTH_SPEED_MAX_LV) return;
@@ -4305,6 +4552,8 @@
     facing:{x:1,y:0}, moving:false, bob:0,
     attackCooldown:0, attackAnimT:0, invuln:0, hitFlashT:0,
     slowT:0, // 상대 보스 패턴에 걸린 "둔화" 디버프 남은 시간(ms). 저항(res) 스탯으로 지속시간이 줄어듦.
+    poisons:[], // 30스테이지 최종보스의 독 공격 도트 스택들: [{ticksLeft, tickTimer, dmgPerTick}, ...]
+    defShredActive:false, // 최종보스 체력 20% 이하에서 부여되는 "방어력 감소 100%" 디버프(보스전 종료까지 유지)
   };
   const keys = {up:false,down:false,left:false,right:false};
   let mobs = [];
@@ -4498,6 +4747,8 @@
     const baseTimeLimit = bossTimeLimit() + (special ? special.timeBonus : 0);
     boss = {
       type, kind, special,
+      stageInChapter, // 이동속도 등에서 "정확히 몇 스테이지 보스인지" 구분할 때 사용
+      isEliteStage20: (kind==='elite' && stageInChapter===20), // 20스테이지 정예보스 전용 추가 감속 대상 여부
       displayName: special && special.name ? special.name : null,
       wx:player.wx+Math.cos(ang)*dist, wy:player.wy+Math.sin(ang)*dist,
       hp, maxHp:hp, r: Math.round(26*scaleMult), scale: 4.2*scaleMult,
@@ -4508,8 +4759,15 @@
       teleTimer:0, teleType:null, teleX:0, teleY:0,
       dashDirX:0, dashDirY:0, dashTimer:0, dashChain:0,
       spreadPoints:[], arrows:[], arrowChainLeft:0,
+      overlayArrows:[], arrowOverlayTimer:0, arrowOverlayPhase:0, // 화살비 오버레이(체력 구간별 자동 발동, 다른 스킬과 중첩 가능) 상태
       arenaCenter:null, arenaRadius:0, arenaSpawnTimer:0, arenaAoeTimer:0, arenaAoeTelegraphT:0, arenaAoeX:0, arenaAoeY:0,
+      // 결계 내 랜덤 범위공격(체력 구간별 강화) + 강화 쫄몹 관련 상태
+      arenaRandCycleTimer:0, arenaRandPhase:0, arenaRandTelegraphT:0, arenaRandPoints:[], arenaRandRepeatsLeft:0, arenaRandRepeatGapT:0,
+      eliteMinionSpawned:false, dynamicRadiusBoost:1,
       cloneSpawned:false,
+      coreOverlapTimer: BOSS_CORE_OVERLAP_INTERVAL_MS, // 보스와 정중앙 겹침 판정용 타이머(모든 보스 공통)
+      // ---- 30스테이지 최종보스 전용 상태 (독 공격은 kind==='final'이면 항상 기본 적용되며, 아래는 체력 구간별 1회성 강화 플래그 ----
+      speedBuffMult:1, armorBuffApplied:false, timecutFirstSpawned:false, poisonEnrageNotified:false, defShredApplied:false,
       forcedFirstPattern: (special && special.patternSet && special.patternSet.includes('arena')) ? 'arena' : null,
       hitFlash:0, dying:0,
       timeLeft: baseTimeLimit, timeLimit: baseTimeLimit,
@@ -4550,6 +4808,7 @@
     bossIncoming = false;
     spawnTimer = 0;
     player.hp = player.maxHp;
+    player.poisons = []; player.defShredActive = false; // 최종보스(30) 전용 독/방어력감소 디버프는 보스전이 끝나면 모두 해제된다
     // 보스전에 실패하면(30스테이지 최종보스 포함) 분신은 필드까지 따라오지 않고 항상 함께 사라진다
     if(liveClone && liveClone.dying===0){
       liveClone.dying = 0.001;
@@ -4569,6 +4828,7 @@
     const saved = state.stageProgress[state.stage];
     state.mobsKilled = saved!=null ? saved : 0; // 이전에 이 스테이지에서 처치한 잡몹 수가 있으면 그대로 복원
     mobs = []; boss=null; bossActive=false; bossIncoming=false; spawnTimer=0;
+    player.poisons = []; player.defShredActive = false; // 최종보스(30) 전용 독/방어력감소 디버프 초기화
     resetHuntTarget();
     updateHudText();
   }
@@ -4600,7 +4860,7 @@
       state.level += 1;
       leveledUp = true;
     }
-    if(leveledUp) toast(`⭐ 레벨업! Lv.${state.level}`, 'great', true);
+    if(leveledUp){ toast(`⭐ 레벨업! Lv.${state.level}`, 'great', true); updateRanking(); }
     updateHudText();
   }
 
@@ -4654,7 +4914,6 @@
         if(clone.hp<=0 && clone.dying===0){
           clone.dying = 0.001;
           spawnDeathParticles(clone.wx, clone.wy-8, '#ff3b6b');
-          toast('분신이 쓰러졌습니다!', 'success', true);
         }
       }
     }
@@ -4684,6 +4943,7 @@
     player.hp = player.maxHp; // 보스전 종료 시 체력 완전 회복
     state.maxClearedStage = Math.max(state.maxClearedStage, state.stage); // 방금 깬 스테이지를 클리어 기록에 반영
     state.stage += 1;
+    updateRanking();
     setTimeout(()=>{ startStage(); }, 700);
   }
 
@@ -5400,6 +5660,90 @@
     boss.arrows = arrows;
   }
 
+  // 화살비 오버레이 전용 낙하시간 계산: 보스의 "현재" 이동속도(=플레이어 현재 이동속도-10%, 30보스 가속 버프 포함)가
+  // 빠를수록 화살이 더 빨리 떨어진다. 기준값은 성장하지 않은 플레이어 기본 속도의 90%.
+  function arrowOverlayFlightMs(){
+    const spd = bossChaseSpeed(boss) || BOSS_CHASE_SPEED;
+    const ref = PLAYER_SPEED*BOSS_SPEED_PLAYER_MULT;
+    const ratio = ref/Math.max(0.0001, spd);
+    return Math.max(BOSS_ARROW_OVERLAY_FLIGHT_MIN, Math.min(BOSS_ARROW_OVERLAY_FLIGHT_MAX, Math.round(BOSS_ARROW_OVERLAY_FLIGHT_BASE*ratio)));
+  }
+
+  // 화살비 오버레이 발동: 플레이어 주변 랜덤한 위치에 화살이 떨어진다. boss.overlayArrows에 계속 누적되며,
+  // 보스의 현재 state(chase/telegraph/dash/arena 등)와 무관하게 updateArrowRainOverlay()에서 매 프레임 갱신되므로
+  // 다른 스킬(돌진/광역기/소환 등)과 자유롭게 중첩되고, 보스도 계속 움직일 수 있다.
+  function spawnArrowOverlayWave(spread, dmgVal, hitR){
+    const cx=player.wx, cy=player.wy;
+    const flightMs = arrowOverlayFlightMs();
+    const arrows=[];
+    for(let i=0;i<BOSS_ARROW_OVERLAY_COUNT;i++){
+      const landDist = 10+Math.random()*spread;
+      const landAngle = Math.random()*Math.PI*2;
+      const landX = cx+Math.cos(landAngle)*landDist;
+      const landY = cy+Math.sin(landAngle)*landDist;
+      const fromAngle = Math.random()*Math.PI*2;
+      arrows.push({
+        spawnX: landX+Math.cos(fromAngle)*BOSS_ARROW_SPAWN_DIST,
+        spawnY: landY+Math.sin(fromAngle)*BOSS_ARROW_SPAWN_DIST,
+        landX, landY, x:0, y:0,
+        delay: i*(BOSS_ARROW_STAGGER_MS*0.75) + Math.random()*60,
+        elapsed:0, landed:false, flightMs, dmg:dmgVal, hitR,
+      });
+    }
+    boss.overlayArrows = (boss.overlayArrows||[]).concat(arrows);
+  }
+
+  // 화살비 오버레이 갱신: 체력 50%/30%/10% 구간에 따라 주기·범위·공격력이 달라지며, 보스의 다른 행동과 완전히
+  // 독립적으로(중첩되어) 동작한다. updateBoss()에서 boss.state와 상관없이 매 프레임 호출된다.
+  function updateArrowRainOverlay(dt){
+    if(!boss) return;
+    if(!boss.special || !boss.special.patternSet || !boss.special.patternSet.includes('arrowrain')){
+      if(boss.overlayArrows && boss.overlayArrows.length) boss.overlayArrows.length = 0;
+      return;
+    }
+    const ratio = boss.hp/boss.maxHp;
+    if(ratio<=BOSS_ARROW_OVERLAY_HP50){
+      const phase = ratio<=BOSS_ARROW_OVERLAY_HP10 ? 10 : (ratio<=BOSS_ARROW_OVERLAY_HP30 ? 30 : 50);
+      if(phase!==boss.arrowOverlayPhase){
+        // 새로운 체력 구간에 처음 진입한 순간 한 번 안내하고, 곧바로 다음 화살비를 당겨서 시전한다
+        boss.arrowOverlayPhase = phase;
+        boss.arrowOverlayTimer = Math.min(boss.arrowOverlayTimer, 400);
+      }
+      boss.arrowOverlayTimer -= dt;
+      if(boss.arrowOverlayTimer<=0){
+        let spread=BOSS_ARROW_OVERLAY_SPREAD_50, dmg=BOSS_ARROW_OVERLAY_DMG_BASE, hitR=BOSS_ARROW_OVERLAY_HITR_BASE, interval=BOSS_ARROW_OVERLAY_INTERVAL_BASE;
+        if(phase===30){ spread=BOSS_ARROW_OVERLAY_SPREAD_30; }
+        else if(phase===10){ spread=BOSS_ARROW_OVERLAY_SPREAD_10; dmg=BOSS_ARROW_OVERLAY_DMG_10; hitR=BOSS_ARROW_OVERLAY_HITR_10; interval=BOSS_ARROW_OVERLAY_INTERVAL_ENRAGE; }
+        spawnArrowOverlayWave(spread, bDmg(dmg), hitR);
+        boss.arrowOverlayTimer = interval;
+      }
+    } else {
+      boss.arrowOverlayPhase = 0;
+      boss.arrowOverlayTimer = 0;
+    }
+    // 날아가는 중인 오버레이 화살들을 갱신(착탄 시 피해 판정 후 배열에서 제거)
+    // playerTakeDamage()가 플레이어를 사망시키면 boss가 null이 될 수 있으므로, 배열 자체는 로컬 참조(arr)로
+    // 들고 있다가 boss가 null이 된 뒤에도 arr.splice()까지는 안전하게 마무리한다(boss 필드 접근만 피하면 됨).
+    const arr = boss.overlayArrows;
+    if(arr && arr.length){
+      for(let i=arr.length-1; i>=0; i--){
+        const a = arr[i];
+        if(a.delay>0){ a.delay-=dt; continue; }
+        a.elapsed += dt;
+        const t = Math.min(1, a.elapsed/a.flightMs);
+        a.x = a.spawnX + (a.landX-a.spawnX)*t;
+        a.y = a.spawnY + (a.landY-a.spawnY)*t;
+        if(t>=1){
+          SFX.arrowImpact();
+          spawnDeathParticles(a.landX, a.landY, '#c46bff');
+          const d = Math.hypot(player.wx-a.landX, player.wy-a.landY);
+          if(d < bRad(a.hitR)+player.r){ bossHitPlayer(a.dmg); }
+          arr.splice(i,1);
+        }
+      }
+    }
+  }
+
   // 분신 소환 (태초의 오크 군주 시그니처): 체력 50% 이하가 되면 강한 분신을 하나 더 소환해 2체와 동시에 싸우게 함
   // 분신은 보스와 동일한 스킬 세트를 그대로 사용하며(분신을 또 만드는 스킬은 애초에 없으므로 제외 걱정 없음),
   // 보스가 받는 피해의 70%를 대신 흡수한다 (damageBoss()에서 처리)
@@ -5415,13 +5759,208 @@
       specialState:'idle', specialTimer:1600+Math.random()*900,
       teleType:null, teleX:0, teleY:0, dashDirX:0, dashDirY:0, dashTimer:0, dashChain:0, spreadPoints:[],
     });
-    toast('🔥 오크 군주가 분신을 소환했습니다! 분신도 보스와 같은 스킬을 사용합니다!', 'danger', true);
   }
 
   // 분신이 사용할 수 있는 패턴: 보스의 patternSet에서 분신에게 어울리지 않는 광역/필드형 스킬만 제외
   function bossClonePatternList(){
     if(!boss || !boss.special) return [];
-    return boss.special.patternSet.filter(p=> p!=='arrowrain' && p!=='arena');
+    return boss.special.patternSet.filter(p=> p!=='arrowrain' && p!=='arena' && p!=='novaburst' && p!=='groundquake');
+  }
+
+  // ============ 결계 내 랜덤 범위공격 + 강화 쫄몹 (20스테이지 강철 고블린 파괴자) ============
+  // 강화된 쫄몹: 보스의 "현재" 공격력/체력의 65%를 갖고, isBossClone 플래그로 기존 분신 AI(updateBossClonePatterns)를
+  // 그대로 재사용해 보스 스킬(슬램/돌진/범위 등)을 사용하며, 살아있는 동안 10초마다 보스의 "현재" 체력의 65%를 회복시킨다.
+  function spawnEliteArenaMinion(){
+    if(!boss) return;
+    const cx = boss.arenaCenter ? boss.arenaCenter.x : boss.wx;
+    const cy = boss.arenaCenter ? boss.arenaCenter.y : boss.wy;
+    const ang = Math.random()*Math.PI*2, dist = Math.min((boss.arenaRadius||140)*0.55, 100);
+    const hp = Math.max(1, Math.floor(boss.hp*BOSS_ELITE_MINION_STAT_RATIO));
+    mobs.push({
+      type:boss.type, wx:cx+Math.cos(ang)*dist, wy:cy+Math.sin(ang)*dist,
+      hp, maxHp:hp, r:20, scale:3.4, tint:(boss.special&&boss.special.tint)||'#4fd1ff',
+      contactDamage: Math.round(bDmg(BOSS_TOUCH_DAMAGE)*BOSS_ELITE_MINION_STAT_RATIO), isBossClone:true, isEliteArenaMinion:true,
+      wanderT:0, wanderTX:0, wanderTY:0, contactCd:0, hitFlash:0, dying:0, dead:false,
+      specialState:'idle', specialTimer:1100+Math.random()*700,
+      teleType:null, teleX:0, teleY:0, dashDirX:0, dashDirY:0, dashTimer:0, dashChain:0, spreadPoints:[],
+      healsBoss:true, healTimer:BOSS_ELITE_MINION_HEAL_INTERVAL,
+    });
+  }
+
+  // 강화 쫄몹의 보스 회복 틱: boss.state와 무관하게 매 프레임 갱신(보스 회복은 결계 상태가 아니어도 계속 적용)
+  function updateEliteMinionHeals(dt){
+    if(!boss) return;
+    mobs.forEach(m=>{
+      if(!m.healsBoss || m.dying>0 || m.dead) return;
+      m.healTimer -= dt;
+      if(m.healTimer<=0){
+        m.healTimer += BOSS_ELITE_MINION_HEAL_INTERVAL;
+        if(boss){
+          const heal = Math.round(boss.hp*BOSS_ELITE_MINION_HEAL_RATIO);
+          boss.hp = Math.min(boss.maxHp, boss.hp+heal);
+        }
+      }
+    });
+  }
+
+  // ============ 30스테이지 최종보스 전용: 독 공격 ============
+  // 최종보스(kind==='final')의 공격/스킬이 플레이어에게 적중할 때마다 호출된다. 적중한 피해량(hitDmg)의 일정
+  // 비율(체력 35% 이하부터는 40%, 그 전에는 5%)만큼을 5초 동안 1초 간격(총 5틱)으로 추가 도트 피해를 입힌다.
+  function applyBossPoisonOnHit(hitDmg){
+    if(!boss || boss.kind!=='final' || !hitDmg || hitDmg<=0) return;
+    const ratio = boss.hp/boss.maxHp;
+    const pct = ratio<=BOSS_POISON_HP35 ? BOSS_POISON_PCT_ENRAGED : BOSS_POISON_PCT_BASE;
+    const perTick = Math.max(1, Math.round(hitDmg*pct));
+    player.poisons.push({ ticksLeft: BOSS_POISON_TICKS, tickTimer: BOSS_POISON_TICK_MS, dmgPerTick: perTick });
+  }
+  // 보스(본체)의 공격/스킬이 플레이어에게 적중할 때 이 함수를 통해 데미지를 주면, 최종보스일 경우 자동으로 독이 함께 묻는다.
+  // (분신/강화 쫄몹 등 boss 본체가 아닌 개체의 공격은 이 함수를 거치지 않으므로 독이 묻지 않는다.)
+  function bossHitPlayer(dmg){
+    const wasFinal = boss && boss.kind==='final';
+    playerTakeDamage(dmg);
+    if(wasFinal && boss){
+      applyBossPoisonOnHit(dmg);
+      // 체력 50% 이하부터: 플레이어가 피해를 받을 때마다 20% 확률로 시간단축 쫄몹을 추가 소환(동시에 1마리까지만)
+      if(boss.timecutFirstSpawned && boss.hp/boss.maxHp<=BOSS_TIMECUT_HP50 && Math.random()<BOSS_TIMECUT_CHANCE){
+        spawnTimeCutMinion();
+      }
+    }
+  }
+  // 플레이어의 독 도트 피해를 매 프레임 갱신한다. 방어력/회피와 무관하게 순수 도트로 적용되며, 보스전 상태와 무관하게
+  // (보스가 처치되어도) 이미 걸린 독은 끝까지 진행된다.
+  function updatePlayerPoison(dt){
+    if(!player.poisons || !player.poisons.length) return;
+    for(let i=player.poisons.length-1; i>=0; i--){
+      const p = player.poisons[i];
+      p.tickTimer -= dt;
+      if(p.tickTimer<=0){
+        p.tickTimer += BOSS_POISON_TICK_MS;
+        p.ticksLeft -= 1;
+        player.hp = Math.max(0, player.hp - p.dmgPerTick);
+        updateHudText();
+        if(p.ticksLeft<=0) player.poisons.splice(i,1);
+        if(player.hp<=0){
+          const wasBossFight = bossActive;
+          player.hp = player.maxHp; player.wx = 0; player.wy = 0; player.invuln = 1500;
+          player.poisons = [];
+          if(wasBossFight){
+            state.gold = Math.floor(state.gold*0.8);
+            endBossAttempt('☠ 독에 중독되어 쓰러졌습니다! 골드 20%를 잃고 필드로 돌아갑니다.', 'danger');
+          } else {
+          }
+          updateHudText();
+          return;
+        }
+      }
+    }
+  }
+
+  // ============ 30스테이지 최종보스 전용: 보스전 시간을 줄이는 쫄몹 ============
+  // 살아있는 동안 20초마다 보스전 제한시간을 20초 단축시킨다. 일반 잡몹과 동일하게 플레이어의 공격으로 처치할 수 있고,
+  // 처치하면 더 이상 시간을 줄이지 않는다. 최대 1마리까지만 동시에 존재한다.
+  function hasLiveTimeCutMinion(){
+    return mobs.some(m=> m.isTimeCutMinion && !m.dead && m.dying===0);
+  }
+  function spawnTimeCutMinion(){
+    if(!boss || hasLiveTimeCutMinion()) return;
+    const idx = tierIndexForStage(state.stage);
+    const hp = Math.floor((8 + idx*5 + state.stage*1.6) * stageHpMult() * 0.8);
+    const ang = Math.random()*Math.PI*2, dist = 90+Math.random()*70;
+    mobs.push({
+      type: boss.type, wx: boss.wx+Math.cos(ang)*dist, wy: boss.wy+Math.sin(ang)*dist,
+      hp, maxHp:hp, r:10, tint:'#7cff5b',
+      wanderT:0, wanderTX:0, wanderTY:0, contactCd:0, hitFlash:0, dying:0, dead:false,
+      defPct:0, evaPct:10, bleed:null,
+      isTimeCutMinion:true, timeCutTimer: BOSS_TIMECUT_INTERVAL_MS,
+    });
+  }
+  function updateTimeCutMinions(dt){
+    if(!boss) return;
+    mobs.forEach(m=>{
+      if(!m.isTimeCutMinion || m.dying>0 || m.dead) return;
+      m.timeCutTimer -= dt;
+      if(m.timeCutTimer<=0){
+        m.timeCutTimer += BOSS_TIMECUT_INTERVAL_MS;
+        if(boss){
+          boss.timeLeft = Math.max(1000, boss.timeLeft - BOSS_TIMECUT_AMOUNT_MS);
+        }
+      }
+    });
+  }
+
+  // 체력 비율에 따른 결계 랜덤 범위공격 강화 단계(가장 낮은 체력 구간이 우선)
+  function bossArenaHpPhase(ratio){
+    if(ratio<=0.2) return 20;
+    if(ratio<=0.4) return 40;
+    if(ratio<=0.6) return 60;
+    if(ratio<=0.7) return 70;
+    return 0;
+  }
+
+  function randomArenaPoint(){
+    const ang = Math.random()*Math.PI*2;
+    const maxDist = Math.max(20, boss.arenaRadius-30);
+    const dist = Math.random()*maxDist;
+    return { x: boss.arenaCenter.x+Math.cos(ang)*dist, y: boss.arenaCenter.y+Math.sin(ang)*dist };
+  }
+
+  // 현재 단계(boss.arenaRandPhase) 설정에 맞춰 랜덤 지점들을 뽑고 텔레그래프를 시작한다
+  function fireArenaRandomWave(){
+    const cfg = BOSS_ARENA_RAND_PHASES[boss.arenaRandPhase];
+    boss.arenaRandPoints = [];
+    for(let i=0;i<cfg.points;i++) boss.arenaRandPoints.push(randomArenaPoint());
+    boss.arenaRandTelegraphT = BOSS_ARENA_RAND_TELEGRAPH;
+    SFX.bossTelegraph('burst');
+  }
+
+  // 결계 내 랜덤 범위공격 갱신: 보스 자신 위치의 기존 범위공격(BOSS_ARENA_AOE_*)과는 완전히 독립적으로 동작하며
+  // 체력이 70/60/40/20% 아래로 떨어질 때마다 지점 수·반복 횟수·범위가 계단식으로 강화된다.
+  function updateArenaRandomAoe(dt){
+    if(!boss || boss.state!=='arena' || !boss.arenaCenter) return;
+    const ratio = boss.hp/boss.maxHp;
+    boss.dynamicRadiusBoost = ratio<=0.2 ? BOSS_ARENA_RANGE_BOOST_20 : 1; // 20% 이하: 보스 공격 범위 전반이 넓어짐
+    if(ratio<=0.4 && !boss.eliteMinionSpawned){
+      boss.eliteMinionSpawned = true;
+      spawnEliteArenaMinion();
+    }
+    if(boss.arenaRandTelegraphT>0){
+      boss.arenaRandTelegraphT -= dt;
+      if(boss.arenaRandTelegraphT<=0){
+        const cfg = BOSS_ARENA_RAND_PHASES[boss.arenaRandPhase];
+        const rad = bRad(cfg.big ? BOSS_ARENA_RAND_RADIUS_BIG : BOSS_ARENA_RAND_RADIUS);
+        let hit=false;
+        boss.arenaRandPoints.forEach(pt=>{
+          const d=Math.hypot(player.wx-pt.x, player.wy-pt.y);
+          if(d<rad+player.r) hit=true;
+          spawnDeathParticles(pt.x, pt.y, '#4fd1ff');
+        });
+        SFX.bossActivate('burst');
+        boss.arenaRandPoints = [];
+        if(hit){ bossHitPlayer(bDmg(BOSS_ARENA_RAND_DMG)); if(!boss) return; }
+        if(boss.arenaRandRepeatsLeft>0){
+          boss.arenaRandRepeatsLeft -= 1;
+          boss.arenaRandGapT = boss.arenaRandRepeatGapMs;
+        } else {
+          boss.arenaRandCycleTimer = BOSS_ARENA_RAND_CYCLE_MS;
+        }
+      }
+      return;
+    }
+    if(boss.arenaRandGapT>0){
+      boss.arenaRandGapT -= dt;
+      if(boss.arenaRandGapT<=0) fireArenaRandomWave();
+      return;
+    }
+    boss.arenaRandCycleTimer -= dt;
+    if(boss.arenaRandCycleTimer<=0){
+      const phase = bossArenaHpPhase(ratio);
+      boss.arenaRandPhase = phase;
+      if(phase===0){ boss.arenaRandCycleTimer = BOSS_ARENA_RAND_CYCLE_MS; return; }
+      const cfg = BOSS_ARENA_RAND_PHASES[phase];
+      boss.arenaRandRepeatsLeft = cfg.repeats-1;
+      boss.arenaRandRepeatGapMs = cfg.repeats>1 ? cfg.windowMs/(cfg.repeats-1) : 0;
+      fireArenaRandomWave();
+    }
   }
 
   // 보스 분신 전용 AI: 텔레그래프 → 실행 → 쿨다운을 반복하며 보스와 동일한 스킬을 구사한다 (분신 생성 스킬 제외)
@@ -5485,11 +6024,13 @@
             SFX.bossActivate('summon');
             const idx=tierIndexForStage(state.stage);
             const mtype=MONSTER_ORDER[idx];
-            const ang=Math.random()*Math.PI*2, dist=50+Math.random()*30;
-            const hp=Math.floor((8+idx*5+state.stage*1.6)*stageHpMult()*0.7);
-            mobs.push({type:mtype, wx:clone.wx+Math.cos(ang)*dist, wy:clone.wy+Math.sin(ang)*dist, hp, maxHp:hp,
-              r: mtype==='goblin'||mtype==='skeleton'?11:9, wanderT:0, wanderTX:0, wanderTY:0, contactCd:0, hitFlash:0, dying:0, dead:false});
-            toast('⚠ 분신이 부하를 소환했습니다!', 'danger', true);
+            for(let i=0;i<BOSS_SUMMON_COUNT;i++){
+              const ang=Math.random()*Math.PI*2, dist=50+Math.random()*40;
+              const hp=Math.floor((8+idx*5+state.stage*1.6)*stageHpMult()*0.7);
+              mobs.push({type:mtype, wx:clone.wx+Math.cos(ang)*dist, wy:clone.wy+Math.sin(ang)*dist, hp, maxHp:hp,
+                r: mtype==='goblin'||mtype==='skeleton'?11:9, wanderT:0, wanderTX:0, wanderTY:0, contactCd:0, hitFlash:0, dying:0, dead:false,
+                spd: SUMMONED_MOB_SPEED});
+            }
             clone.specialState='cooldown'; clone.specialTimer=bossCooldownMs()*0.7;
           } else {
             SFX.bossActivate(clone.teleType);
@@ -5499,6 +6040,12 @@
       } else if(clone.specialState==='dash'){
         clone.wx += clone.dashDirX*BOSS_DASH_SPEED*0.85*dt*10;
         clone.wy += clone.dashDirY*BOSS_DASH_SPEED*0.85*dt*10;
+        // 돌진 중에도 결계가 펼쳐져 있다면 그 즉시 경계 안으로 되돌려 결계 밖으로 뚫고 나가지 못하게 한다
+        if(boss && boss.arenaCenter){
+          const acx=clone.wx-boss.arenaCenter.x, acy=clone.wy-boss.arenaCenter.y, ad=Math.hypot(acx,acy)||1;
+          const maxR = boss.arenaRadius-clone.r;
+          if(ad>maxR){ const cs=maxR/ad; clone.wx=boss.arenaCenter.x+acx*cs; clone.wy=boss.arenaCenter.y+acy*cs; }
+        }
         const d=Math.hypot(player.wx-clone.wx, player.wy-clone.wy);
         if(d < clone.r+player.r+4) playerTakeDamage(bDmg(Math.round(BOSS_DASH_DAMAGE*0.7)));
         clone.dashTimer -= dt;
@@ -5522,6 +6069,22 @@
         }
       }
     });
+  }
+
+  // 보스와 정중앙 겹침 판정: 모든 보스 공통 기본 패턴. state/kind와 무관하게 매 프레임 갱신된다.
+  function updateBossCoreOverlap(dt){
+    if(!boss) return;
+    const d = Math.hypot(player.wx-boss.wx, player.wy-boss.wy);
+    if(d<=BOSS_CORE_OVERLAP_DIST){
+      boss.coreOverlapTimer -= dt;
+      if(boss.coreOverlapTimer<=0){
+        boss.coreOverlapTimer = BOSS_CORE_OVERLAP_INTERVAL_MS;
+        const dmg = Math.max(1, Math.round(player.maxHp*BOSS_CORE_OVERLAP_DMG_PCT));
+        playerTakeDamage(dmg);
+      }
+    } else {
+      boss.coreOverlapTimer = BOSS_CORE_OVERLAP_INTERVAL_MS; // 벗어나면 타이머 리셋(다시 2초를 채워야 다음 틱)
+    }
   }
 
   function updateBoss(dt){
@@ -5554,31 +6117,78 @@
       boss.cloneSpawned = true;
       spawnBossClone();
     }
+    // ============ 30스테이지 최종보스 전용 체력 구간별 강화(독 공격은 applyBossPoisonOnHit에서 항상 기본 적용됨) ============
+    if(boss.kind==='final'){
+      const finalRatio = boss.hp/boss.maxHp;
+      // 체력 80% 이하: 자신에게 "현재 방어력의 70%"를 추가로 부여(1회)
+      if(finalRatio<=BOSS_ARMOR_HP80 && !boss.armorBuffApplied){
+        boss.armorBuffApplied = true;
+        boss.defPct = (boss.defPct||0) + (boss.defPct||0)*BOSS_ARMOR_BUFF_RATIO;
+      }
+      // 체력 70% 이하: 이동속도 10% 증가(1회)
+      if(finalRatio<=BOSS_SPEEDUP_HP70 && boss.speedBuffMult===1){
+        boss.speedBuffMult = BOSS_SPEEDUP_MULT;
+      }
+      // 체력 50% 이하: 시간단축 쫄몹을 최초 1회 무조건 소환(이후로는 피격 시 20% 확률로 추가 소환 - bossHitPlayer에서 처리)
+      if(finalRatio<=BOSS_TIMECUT_HP50 && !boss.timecutFirstSpawned){
+        boss.timecutFirstSpawned = true;
+        spawnTimeCutMinion();
+      }
+      // 체력 35% 이하: 독 공격이 크게 강화됨(적중 피해량의 5% → 40%, 실제 판정은 applyBossPoisonOnHit에서 처리)
+      if(finalRatio<=BOSS_POISON_HP35 && !boss.poisonEnrageNotified){
+        boss.poisonEnrageNotified = true;
+      }
+      // 체력 20% 이하: 플레이어에게 "방어력 감소 100%" 디버프 부여(보스전이 끝날 때까지 유지, 1회)
+      if(finalRatio<=BOSS_DEFSHRED_HP20 && !boss.defShredApplied){
+        boss.defShredApplied = true;
+        player.defShredActive = true;
+      }
+    }
+    updateTimeCutMinions(dt);
+    if(!boss) return;
+    // 보스와 정중앙 겹침 즉사급 피해: 모든 보스 공통, boss.state와 무관하게 항상 갱신
+    updateBossCoreOverlap(dt);
+    if(!boss) return;
+    // 화살비 오버레이는 boss.state(추격/텔레그래프/돌진/결계 등)와 완전히 무관하게 매 프레임 갱신되어,
+    // 보스가 다른 스킬을 쓰는 도중에도, 계속 움직이는 도중에도 함께 중첩되어 발동한다.
+    updateArrowRainOverlay(dt);
+    if(!boss) return;
+    // 강화 쫄몹의 보스 회복 틱도 state와 무관하게 계속 진행된다
+    updateEliteMinionHeals(dt);
+    if(!boss) return;
     if(boss.state==='chase'){
+      const chaseSpeed = bossChaseSpeed(boss);
       const dx=player.wx-boss.wx, dy=player.wy-boss.wy, d=Math.hypot(dx,dy);
-      if(d>4){ boss.wx+=dx/d*BOSS_CHASE_SPEED*dt*10; boss.wy+=dy/d*BOSS_CHASE_SPEED*dt*10; }
-      if(d < boss.r+player.r+6){ playerTakeDamage(bDmg(BOSS_TOUCH_DAMAGE)); if(!boss) return; }
+      if(d>4){ boss.wx+=dx/d*chaseSpeed*dt*10; boss.wy+=dy/d*chaseSpeed*dt*10; }
+      if(d < boss.r+player.r+6){ bossHitPlayer(bDmg(BOSS_TOUCH_DAMAGE)); if(!boss) return; }
       boss.patternTimer -= dt;
       if(boss.patternTimer<=0){
-        const patterns = boss.special ? boss.special.patternSet : ['slam','dash','burst'];
-        // 화살비 보유 보스는 체력이 30% 이하로 떨어지면 다른 패턴 없이 화살비만 끊임없이 반복한다
-        const arrowEnraged = patterns.includes('arrowrain') && boss.hp/boss.maxHp<=BOSS_ARROW_ENRAGE_HP_RATIO;
+        // 'arrowrain'은 더 이상 이 순환 선택에 끼지 않는다 — updateArrowRainOverlay()가 체력 구간에 따라
+        // 별도로, 그리고 아래에서 뽑히는 다른 스킬과 중첩되어 자동으로 발동시킨다.
+        const rawPatterns = boss.special ? boss.special.patternSet : ['slam','dash','burst'];
+        const patterns = rawPatterns.filter(p=>p!=='arrowrain');
         let pattern;
         if(boss.forcedFirstPattern){
           pattern = boss.forcedFirstPattern; // 결계 등 즉시 사용해야 하는 패턴을 최우선으로 사용
           boss.forcedFirstPattern = null;
+        } else if(patterns.length===0){
+          pattern = null; // 화살비 하나뿐인 보스라면 순환 스킬 없이 오버레이 화살비만 사용
         } else {
-          pattern = arrowEnraged ? 'arrowrain' : patterns[Math.floor(Math.random()*patterns.length)];
+          pattern = patterns[Math.floor(Math.random()*patterns.length)];
         }
+        if(pattern===null){
+          boss.patternTimer = 900; // 다음 순환까지 짧게 대기(화살비 오버레이는 이 동안에도 계속 동작)
+        } else {
         boss.teleType = pattern;
         boss.teleX = player.wx; boss.teleY = player.wy;
         boss.state='telegraph';
         SFX.bossTelegraph(pattern);
         if(pattern==='slam') boss.teleTimer = BOSS_TELE_SLAM;
         else if(pattern==='burst') boss.teleTimer = BOSS_TELE_BURST;
+        else if(pattern==='novaburst') boss.teleTimer = BOSS_TELE_NOVA;
+        else if(pattern==='groundquake') boss.teleTimer = BOSS_TELE_QUAKE;
         else if(pattern==='spread') boss.teleTimer = BOSS_TELE_SLAM*0.9;
         else if(pattern==='summon') boss.teleTimer = 650;
-        else if(pattern==='arrowrain') boss.teleTimer = arrowEnraged ? BOSS_TELE_ARROWRAIN*0.55 : BOSS_TELE_ARROWRAIN;
         else if(pattern==='arena') boss.teleTimer = BOSS_TELE_ARENA;
         else boss.teleTimer = BOSS_TELE_DASH; // dash, tripledash
         if(pattern==='dash' || pattern==='tripledash'){
@@ -5591,6 +6201,14 @@
             const ang = baseAngle + i*(Math.PI/2);
             return {x: boss.wx+Math.cos(ang)*bRad(75), y: boss.wy+Math.sin(ang)*bRad(75)};
           });
+        } else if(pattern==='groundquake'){
+          // 보스를 중심으로 정반대 두 지점에서 동시에 넓은 범위의 지진파가 터진다
+          const baseAngle = Math.random()*Math.PI*2;
+          boss.spreadPoints = [0,1].map(i=>{
+            const ang = baseAngle + i*Math.PI;
+            return {x: boss.wx+Math.cos(ang)*bRad(90), y: boss.wy+Math.sin(ang)*bRad(90)};
+          });
+        }
         }
       }
     } else if(boss.state==='telegraph'){
@@ -5600,7 +6218,7 @@
           SFX.bossActivate('slam');
           const d = Math.hypot(player.wx-boss.teleX, player.wy-boss.teleY);
           const tx=boss.teleX, ty=boss.teleY;
-          if(d < bRad(BOSS_SLAM_RADIUS)+player.r) playerTakeDamage(bDmg(BOSS_SLAM_DAMAGE));
+          if(d < bRad(BOSS_SLAM_RADIUS)+player.r) bossHitPlayer(bDmg(BOSS_SLAM_DAMAGE));
           if(!boss) return;
           spawnDeathParticles(tx, ty, '#ff3b3b');
           boss.state='cooldown'; boss.teleTimer=bossCooldownMs();
@@ -5608,9 +6226,30 @@
           SFX.bossActivate('burst');
           const d = Math.hypot(player.wx-boss.wx, player.wy-boss.wy);
           const bx=boss.wx, by=boss.wy;
-          if(d < bRad(BOSS_BURST_RADIUS)+player.r) playerTakeDamage(bDmg(BOSS_BURST_DAMAGE));
+          if(d < bRad(BOSS_BURST_RADIUS)+player.r) bossHitPlayer(bDmg(BOSS_BURST_DAMAGE));
           if(!boss) return;
           spawnDeathParticles(bx, by, '#ff8c42');
+          boss.state='cooldown'; boss.teleTimer=bossCooldownMs();
+        } else if(boss.teleType==='novaburst'){
+          // 20스테이지급 보스 전용: 훨씬 더 넓은 범위를 뒤덮는 초광역 폭발
+          SFX.bossActivate('novaburst');
+          const d = Math.hypot(player.wx-boss.wx, player.wy-boss.wy);
+          const bx=boss.wx, by=boss.wy;
+          if(d < bRad(BOSS_NOVA_RADIUS)+player.r) bossHitPlayer(bDmg(BOSS_NOVA_DAMAGE));
+          if(!boss) return;
+          spawnDeathParticles(bx, by, '#ffd23f');
+          boss.state='cooldown'; boss.teleTimer=bossCooldownMs();
+        } else if(boss.teleType==='groundquake'){
+          // 20스테이지급 보스 전용: 정반대 두 지점에서 동시에 넓은 지진파가 터진다
+          SFX.bossActivate('groundquake');
+          let hit=false;
+          boss.spreadPoints.forEach(pt=>{
+            const d = Math.hypot(player.wx-pt.x, player.wy-pt.y);
+            if(d < bRad(BOSS_QUAKE_RADIUS)+player.r) hit=true;
+            spawnDeathParticles(pt.x, pt.y, '#ff8c42');
+          });
+          if(hit) bossHitPlayer(bDmg(BOSS_QUAKE_DAMAGE));
+          if(!boss) return;
           boss.state='cooldown'; boss.teleTimer=bossCooldownMs();
         } else if(boss.teleType==='spread'){
           SFX.bossActivate('spread');
@@ -5620,28 +6259,27 @@
             if(d < bRad(30)+player.r) hit=true;
             spawnDeathParticles(pt.x, pt.y, '#c46bff');
           });
-          if(hit) playerTakeDamage(bDmg(BOSS_BURST_DAMAGE));
+          if(hit) bossHitPlayer(bDmg(BOSS_BURST_DAMAGE));
           if(!boss) return;
           boss.state='cooldown'; boss.teleTimer=bossCooldownMs();
         } else if(boss.teleType==='summon'){
           SFX.bossActivate('summon');
-          const n = boss.kind==='final' ? 3 : 2;
+          const n = BOSS_SUMMON_COUNT;
           const idx = tierIndexForStage(state.stage);
           const mtype = MONSTER_ORDER[idx];
           for(let i=0;i<n;i++){
-            const ang = Math.random()*Math.PI*2, dist = 60+Math.random()*30;
+            const ang = Math.random()*Math.PI*2, dist = 60+Math.random()*40;
             const hp = Math.floor((8+idx*5+state.stage*1.6)*stageHpMult()*0.8);
             mobs.push({type:mtype, wx:boss.wx+Math.cos(ang)*dist, wy:boss.wy+Math.sin(ang)*dist, hp, maxHp:hp,
-              r: mtype==='goblin'||mtype==='skeleton'?11:9, wanderT:0, wanderTX:0, wanderTY:0, contactCd:0, hitFlash:0, dying:0, dead:false});
+              r: mtype==='goblin'||mtype==='skeleton'?11:9, wanderT:0, wanderTX:0, wanderTY:0, contactCd:0, hitFlash:0, dying:0, dead:false,
+              spd: SUMMONED_MOB_SPEED});
           }
-          toast('⚠ 보스가 부하를 소환했습니다!', 'danger', true);
           boss.state='cooldown'; boss.teleTimer=bossCooldownMs()*0.7;
         } else if(boss.teleType==='arrowrain'){
           SFX.bossActivate('arrowrain');
           spawnArrowWave();
           // 체력과 무관하게 화살비는 최소 BOSS_ARROW_CHAIN_WAVES번 연속으로 몰아친다 (연속공격)
           boss.arrowChainLeft = BOSS_ARROW_CHAIN_WAVES-1;
-          toast('🏹 늑대왕의 화살비가 연속으로 쏟아집니다! 계속 움직이세요!', 'danger', true);
           boss.state='arrowfiring';
           boss.teleTimer = BOSS_ARROW_COUNT*BOSS_ARROW_STAGGER_MS + BOSS_ARROW_FLIGHT_MS + 300;
         } else if(boss.teleType==='arena'){
@@ -5651,7 +6289,6 @@
           boss.arenaSpawnTimer = BOSS_ARENA_SPAWN_INTERVAL;
           boss.arenaAoeTimer = BOSS_ARENA_AOE_INTERVAL;
           boss.arenaAoeTelegraphT = 0;
-          toast('🛡 강철 결계가 펼쳐집니다! 결계 밖으로 나갈 수 없습니다!', 'danger', true);
           boss.state='arena';
           boss.teleTimer = BOSS_ARENA_DURATION;
         } else {
@@ -5675,7 +6312,7 @@
           spawnDeathParticles(a.landX, a.landY, '#c46bff');
           const d = Math.hypot(player.wx-a.landX, player.wy-a.landY);
           if(d < bRad(BOSS_ARROW_HIT_R)+player.r){
-            playerTakeDamage(bDmg(BOSS_ARROW_DAMAGE));
+            bossHitPlayer(bDmg(BOSS_ARROW_DAMAGE));
             if(!boss) return;
           }
         }
@@ -5698,14 +6335,14 @@
       }
     } else if(boss.state==='arena'){
       const dx=player.wx-boss.wx, dy=player.wy-boss.wy, d=Math.hypot(dx,dy);
-      if(d>4){ boss.wx+=dx/d*BOSS_CHASE_SPEED*dt*10; boss.wy+=dy/d*BOSS_CHASE_SPEED*dt*10; }
+      if(d>4){ const cs=bossChaseSpeed(boss); boss.wx+=dx/d*cs*dt*10; boss.wy+=dy/d*cs*dt*10; }
       // 보스도 결계 밖으로는 나가지 못하게 고정
       const cdx=boss.wx-boss.arenaCenter.x, cdy=boss.wy-boss.arenaCenter.y, cd=Math.hypot(cdx,cdy)||1;
       if(cd>boss.arenaRadius-boss.r){
         const cs=(boss.arenaRadius-boss.r)/cd;
         boss.wx=boss.arenaCenter.x+cdx*cs; boss.wy=boss.arenaCenter.y+cdy*cs;
       }
-      if(d < boss.r+player.r+6){ playerTakeDamage(bDmg(BOSS_TOUCH_DAMAGE)); if(!boss) return; }
+      if(d < boss.r+player.r+6){ bossHitPlayer(bDmg(BOSS_TOUCH_DAMAGE)); if(!boss) return; }
       boss.arenaSpawnTimer -= dt;
       if(boss.arenaSpawnTimer<=0){
         boss.arenaSpawnTimer = BOSS_ARENA_SPAWN_INTERVAL;
@@ -5715,7 +6352,6 @@
         const hp = Math.floor((8+idx*5+state.stage*1.6)*stageHpMult()*0.7);
         mobs.push({type:mtype, wx:boss.arenaCenter.x+Math.cos(ang)*dist, wy:boss.arenaCenter.y+Math.sin(ang)*dist, hp, maxHp:hp,
           r: mtype==='goblin'||mtype==='skeleton'?11:9, wanderT:0, wanderTX:0, wanderTY:0, contactCd:0, hitFlash:0, dying:0, dead:false});
-        toast('⚠ 결계 안에 부하가 소환되었습니다!', 'danger', true);
       }
       // 결계 안에서는 부하 소환과 별개로 주기적으로 범위 공격을 사용한다
       if(boss.arenaAoeTelegraphT>0){
@@ -5723,7 +6359,7 @@
         if(boss.arenaAoeTelegraphT<=0){
           SFX.bossActivate('burst');
           const ad = Math.hypot(player.wx-boss.arenaAoeX, player.wy-boss.arenaAoeY);
-          if(ad < bRad(BOSS_BURST_RADIUS)+player.r){ playerTakeDamage(bDmg(BOSS_BURST_DAMAGE)); if(!boss) return; }
+          if(ad < bRad(BOSS_BURST_RADIUS)+player.r){ bossHitPlayer(bDmg(BOSS_BURST_DAMAGE)); if(!boss) return; }
           spawnDeathParticles(boss.arenaAoeX, boss.arenaAoeY, '#4fd1ff');
         }
       } else {
@@ -5733,16 +6369,18 @@
           boss.arenaAoeTelegraphT = BOSS_ARENA_AOE_TELEGRAPH;
           boss.arenaAoeX = boss.wx; boss.arenaAoeY = boss.wy;
           SFX.bossTelegraph('burst');
-          toast('⚠ 결계 안에서 범위 공격이 몰아칩니다!', 'danger', true);
         }
       }
       // 20스테이지 결계는 보스를 처치할 때까지 계속 유지되어야 하므로 시간이 지나도 스스로 사라지지 않는다
       // (더 이상 boss.teleTimer를 소모해 종료시키지 않음 - 부하 소환 주기만 계속 반복)
+      // 결계 안 랜덤 지점 범위공격(체력 구간별 강화) - 위의 "자기 위치" 범위공격과 완전히 별개로 함께 진행된다
+      updateArenaRandomAoe(dt);
+      if(!boss) return;
     } else if(boss.state==='dash'){
       boss.wx += boss.dashDirX*BOSS_DASH_SPEED*dt*10;
       boss.wy += boss.dashDirY*BOSS_DASH_SPEED*dt*10;
       const d = Math.hypot(player.wx-boss.wx, player.wy-boss.wy);
-      if(d < boss.r+player.r+4){ playerTakeDamage(bDmg(BOSS_DASH_DAMAGE)); if(!boss) return; }
+      if(d < boss.r+player.r+4){ bossHitPlayer(bDmg(BOSS_DASH_DAMAGE)); if(!boss) return; }
       boss.dashTimer -= dt;
       if(boss.dashTimer<=0){
         if(boss.dashChain && boss.dashChain>1){
@@ -5761,15 +6399,11 @@
       boss.teleTimer -= dt;
       if(boss.teleTimer<=0){
         boss.state='chase';
-        const arrowEnraged = boss.special && boss.special.patternSet.includes('arrowrain') && boss.hp/boss.maxHp<=BOSS_ARROW_ENRAGE_HP_RATIO;
-        if(arrowEnraged){
-          boss.patternTimer = 150; // 체력 30% 이하: 거의 쉬지 않고 화살비를 반복
-        } else {
-          let next = 2200+Math.random()*1200;
-          if(boss.special) next *= boss.special.cooldownMult;
-          if(bossIsEnraged()) next *= 0.65; // 최종보스 체력 50% 이하부터 패턴 주기 단축
-          boss.patternTimer = next;
-        }
+        // (구) 화살비 광폭화로 인한 패턴 주기 단축은 화살비 오버레이 시스템으로 대체되어 더 이상 필요 없다.
+        let next = 2200+Math.random()*1200;
+        if(boss.special) next *= boss.special.cooldownMult;
+        if(bossIsEnraged()) next *= 0.65; // 최종보스 체력 50% 이하부터 패턴 주기 단축
+        boss.patternTimer = next;
       }
     }
   }
@@ -5781,6 +6415,7 @@
       if(state.gems < ADMIN_GOD_GEMS) state.gems = ADMIN_GOD_GEMS;
     }
     if(inHouse){ updateHouseInterior(dt); return; }
+    updatePlayerPoison(dt); // 30스테이지 최종보스의 독 도트 피해는 보스 상태와 무관하게 항상 갱신된다
     // 플레이어 이동 (조이스틱 우선, 없으면 키보드)
     let vx=0, vy=0, analog=false;
     if(joy.active){ vx=joy.vx; vy=joy.vy; analog=true; }
@@ -5893,13 +6528,20 @@
           if(mob.bleed.ticksLeft<=0) mob.bleed=null;
         }
       }
+      // 보스 분신은 보스 본체와 마찬가지로 결계(30스테이지)가 펼쳐져 있는 동안 결계 밖으로 나갈 수 없다.
+      // (일반 추적/돌진 등 어떤 상태에서 위치가 바뀌든 매 프레임 여기서 한 번 더 경계 안으로 되돌린다)
+      if(mob.isBossClone && boss && boss.arenaCenter){
+        const acx=mob.wx-boss.arenaCenter.x, acy=mob.wy-boss.arenaCenter.y, ad=Math.hypot(acx,acy)||1;
+        const maxR = boss.arenaRadius-mob.r;
+        if(ad>maxR){ const cs=maxR/ad; mob.wx=boss.arenaCenter.x+acx*cs; mob.wy=boss.arenaCenter.y+acy*cs; }
+      }
       // 보스 분신이 자신의 고유 스킬(예고/돌진)을 사용하는 동안에는 일반 잡몹 추적/접촉 로직을 건너뛰어
       // updateBossClonePatterns()가 이동과 판정을 전담하게 한다
       if(mob.isBossClone && (mob.specialState==='telegraph' || mob.specialState==='dash')) return;
       const distToPlayer = Math.hypot(player.wx-mob.wx, player.wy-mob.wy);
       // 잡몹은 항상 플레이어를 자동으로 추적한다. 필드에서는 나무/건물을 미리 감지해
       // 우회하는 방향으로 스티어링하고, 보스전 아레나(장애물 없음)에서는 그냥 직선으로 쫓는다.
-      const tx=player.wx, ty=player.wy, speed=MOB_CHASE_SPEED;
+      const tx=player.wx, ty=player.wy, speed=mob.spd||MOB_CHASE_SPEED;
       if(!bossActive && !bossIncoming){
         const dir = steerAroundObstacles(mob.wx, mob.wy, mob.r, tx, ty, 70);
         if(distToPlayer>3){ mob.wx += dir.x*speed*dt*10; mob.wy += dir.y*speed*dt*10; }
@@ -5990,6 +6632,30 @@
         ctx.fillStyle='rgba(255,140,66,0.10)';
         ctx.beginPath(); ctx.arc(sx(boss.wx), sy(boss.wy), rad, 0, Math.PI*2); ctx.fill();
         ctx.restore();
+      } else if(boss.teleType==='novaburst'){
+        // 20스테이지급 보스 전용 초광역 폭발 예고: burst보다 훨씬 넓고 오래 차오른다
+        const prog = 1-(boss.teleTimer/BOSS_TELE_NOVA);
+        const rad = bRad(BOSS_NOVA_RADIUS);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,210,63,'+(0.55+0.35*Math.sin(now_ms()/45))+')';
+        ctx.lineWidth=4;
+        ctx.beginPath(); ctx.arc(sx(boss.wx), sy(boss.wy), rad*Math.min(1,prog+0.15), 0, Math.PI*2); ctx.stroke();
+        ctx.fillStyle='rgba(255,210,63,0.12)';
+        ctx.beginPath(); ctx.arc(sx(boss.wx), sy(boss.wy), rad, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+      } else if(boss.teleType==='groundquake'){
+        // 20스테이지급 보스 전용: 정반대 두 지점에서 동시에 터지는 넓은 지진파 예고
+        const prog = 1-(boss.teleTimer/BOSS_TELE_QUAKE);
+        const rad = bRad(BOSS_QUAKE_RADIUS);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,90,30,'+(0.5+0.4*Math.sin(now_ms()/45))+')';
+        ctx.fillStyle = 'rgba(255,90,30,0.12)';
+        ctx.lineWidth=3;
+        boss.spreadPoints.forEach(pt=>{
+          ctx.beginPath(); ctx.arc(sx(pt.x), sy(pt.y), rad*Math.min(1,prog+0.2), 0, Math.PI*2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(sx(pt.x), sy(pt.y), rad, 0, Math.PI*2); ctx.fill();
+        });
+        ctx.restore();
       } else if(boss.teleType==='spread'){
         ctx.save();
         ctx.strokeStyle = 'rgba(196,107,255,'+(0.5+0.4*Math.sin(now_ms()/55))+')';
@@ -6078,6 +6744,43 @@
       }
     }
 
+    // 화살비 오버레이 렌더링: boss.state와 완전히 무관하게(다른 스킬 예고/시전 중이어도 함께) 항상 그려준다
+    if(boss && boss.overlayArrows && boss.overlayArrows.length){
+      ctx.save();
+      boss.overlayArrows.forEach(a=>{
+        const warnAlpha = 0.3+0.3*Math.sin(now_ms()/45);
+        ctx.strokeStyle = `rgba(196,107,255,${warnAlpha})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(sx(a.landX), sy(a.landY), bRad(a.hitR)+player.r, 0, Math.PI*2); ctx.stroke();
+        if(a.delay<=0){
+          const ang = Math.atan2(a.landY-a.spawnY, a.landX-a.spawnX);
+          ctx.save();
+          ctx.translate(sx(a.x), sy(a.y)); ctx.rotate(ang);
+          ctx.fillStyle='#e8d9ff';
+          ctx.fillRect(-11,-1.5,17,3);
+          ctx.beginPath(); ctx.moveTo(8,-4.5); ctx.lineTo(15,0); ctx.lineTo(8,4.5); ctx.closePath(); ctx.fill();
+          ctx.restore();
+        }
+      });
+      ctx.restore();
+    }
+
+    // 결계 내 랜덤 범위공격 예고: boss.state와 무관하게(다른 텔레그래프/자기위치 범위공격과 동시에도) 그려준다
+    if(boss && boss.arenaRandTelegraphT>0 && boss.arenaRandPoints && boss.arenaRandPoints.length){
+      const cfg = BOSS_ARENA_RAND_PHASES[boss.arenaRandPhase];
+      const rad = bRad(cfg && cfg.big ? BOSS_ARENA_RAND_RADIUS_BIG : BOSS_ARENA_RAND_RADIUS);
+      const prog = 1-(boss.arenaRandTelegraphT/BOSS_ARENA_RAND_TELEGRAPH);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(79,209,255,'+(0.5+0.4*Math.sin(now_ms()/50))+')';
+      ctx.fillStyle = 'rgba(79,209,255,0.12)';
+      ctx.lineWidth=3;
+      boss.arenaRandPoints.forEach(pt=>{
+        ctx.beginPath(); ctx.arc(sx(pt.x), sy(pt.y), rad*Math.min(1,prog+0.2), 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(sx(pt.x), sy(pt.y), rad, 0, Math.PI*2); ctx.fill();
+      });
+      ctx.restore();
+    }
+
     // 보스 분신의 스킬 예고 표시 (분신도 보스와 같은 스킬을 쓰므로 동일하게 미리 경고해준다)
     mobs.forEach(clone=>{
       if(!clone.isBossClone || clone.dying>0) return;
@@ -6148,7 +6851,9 @@
     const lungeAmt = lungeWp ? (swingStyle==='heavy'?10: lungeWp.type==='ranged'?2: swingStyle==='thrust'?9: swingStyle==='spin'?2: swingStyle==='cross'?5:6) : 0;
     const lungeX = player.attackAnimT>0? player.facing.x*lungeAmt*Math.sin(player.attackAnimT*Math.PI):0;
     const lungeY = player.attackAnimT>0? player.facing.y*lungeAmt*Math.sin(player.attackAnimT*Math.PI):0;
-    const ptint = player.hitFlashT>0 ? '#ff6b5b' : null;
+    // 독에 중독된 동안에는 (숫자/이펙트 없이) 캐릭터 전체가 보라색으로 물들어 "중독됐다"는 느낌만 준다.
+    // 피격 시 빨간 히트플래시가 우선하고, 그 사이에는 독 보라색이 유지된다.
+    const ptint = player.hitFlashT>0 ? '#ff6b5b' : ((player.poisons && player.poisons.length>0) ? '#a855f7' : null);
     // 등급 높은 무기를 스윙하는 동안 발밑에 은은한 회전 룬 서클을 띄운다 (낮은 등급은 tier 0이라 아예 안 보인다)
     // 단, 검(cross 스타일=검사 기본 공격)은 실제 칼날 슬래시 궤적만으로 충분히 화려하므로, 발밑 룬 문양이
     // 검을 휘두르는 느낌을 가리지 않도록 표시하지 않는다.
@@ -6552,14 +7257,14 @@
       if(boss.dying>0){ alpha=1-boss.dying; scale=boss.scale*(1+boss.dying*0.4); }
       ctx.globalAlpha=alpha;
       ctx.beginPath();
-      ctx.fillStyle = boss.special ? hexToRgba(boss.special.tint,0.22) : 'rgba(255,59,59,0.18)';
+      ctx.fillStyle = (boss.special && boss.special.tint) ? hexToRgba(boss.special.tint,0.22) : 'rgba(255,59,59,0.18)';
       ctx.ellipse(bx, by-scale*6, scale*11, scale*11, 0,0,Math.PI*2);
       ctx.fill();
       const art = MONSTER_ART[boss.type];
       let bSx=1, bSy=1;
       if(boss.squashT>0){ const s=boss.squashT; bSy *= 1-0.26*s; bSx *= 1+0.18*s; }
       ctx.translate(bx,by); ctx.scale(bSx,bSy); ctx.translate(-bx,-by);
-      drawPixelArt(ctx, art, bx, by, scale, boss.hitFlash>0?'#ffffff':(boss.special?boss.special.tint:null));
+      drawPixelArt(ctx, art, bx, by, scale, boss.hitFlash>0?'#ffffff':((boss.special&&boss.special.tint)?boss.special.tint:null));
       ctx.fillStyle=PAL.Y;
       const topY = by-art.length*scale-4;
       ctx.fillRect(bx-6, topY,4,4); ctx.fillRect(bx-1, topY-3,4,4); ctx.fillRect(bx+4, topY,4,4);
@@ -6787,10 +7492,10 @@
     // 보스 상단 체력바
     if(boss){
       const bw=CW-60, bx0=30, by0=8;
-      const barColor = boss.special ? boss.special.tint : '#ff3b3b';
+      const barColor = (boss.special && boss.special.tint) ? boss.special.tint : '#ff3b3b';
       ctx.fillStyle='#100c1c'; ctx.fillRect(bx0,by0,bw,10);
       ctx.fillStyle=barColor; ctx.fillRect(bx0,by0,bw*Math.max(0,boss.hp/boss.maxHp),10);
-      ctx.strokeStyle = boss.special ? boss.special.tint : '#ff8c42'; ctx.strokeRect(bx0,by0,bw,10);
+      ctx.strokeStyle = (boss.special && boss.special.tint) ? boss.special.tint : '#ff8c42'; ctx.strokeRect(bx0,by0,bw,10);
       ctx.fillStyle='#fff'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center';
       const bossLabel = boss.displayName || (MONSTER_NAMES[boss.type]+' 우두머리');
       const kindMark = boss.kind==='final' ? '🔥 ' : boss.kind==='elite' ? '⚡ ' : '';
@@ -7387,6 +8092,21 @@
   bindHoldRepeat(growDefBtnEl, buyGrowDef);
   bindHoldRepeat(growSpdBtnEl, buyGrowSpd);
 
+  // 큰 숫자(골드 등) 단위 표기: 억(10^8)부터 소문자 a, 이후 4자리(만 단위)씩 올라갈 때마다 b, c ... z,
+  // z(10^108)를 넘으면 대문자 A, B ... Z(10^212)까지 이어서 사용한다.
+  const BIG_NUM_UNIT_LETTERS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  function formatBigNum(n){
+    n = Math.floor(n||0);
+    if(n < 100000000) return n.toLocaleString(); // 1억 미만은 기존처럼 천단위 콤마만 표기
+    let tier = Math.min(BIG_NUM_UNIT_LETTERS.length-1, Math.floor((Math.log10(n)-8)/4));
+    let divisor = Math.pow(10, 8+tier*4);
+    let val = Math.round((n/divisor)*100)/100;
+    // 부동소수점 오차로 반올림 시 10000 이상이 되면 한 단위 위로 올려 재계산
+    if(val>=10000 && tier<BIG_NUM_UNIT_LETTERS.length-1){ tier+=1; divisor=Math.pow(10,8+tier*4); val=Math.round((n/divisor)*100)/100; }
+    const str = val.toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
+    return str+BIG_NUM_UNIT_LETTERS[tier];
+  }
+
   function toast(msg, cls, force){
     if(!settings.notify && !force) return;
     const div=document.createElement('div');
@@ -7397,8 +8117,8 @@
   }
 
   function updateHudText(){
-    goldEl.textContent=state.gold;
-    gemsHudEl.textContent=state.gems;
+    goldEl.textContent=formatBigNum(state.gold);
+    gemsHudEl.textContent=formatBigNum(state.gems);
     levelHudEl.textContent = state.level;
     const needExp = expForLevel(state.level);
     expBarFillEl.style.width = Math.min(100, (state.exp/needExp*100))+'%';
@@ -7416,20 +8136,20 @@
     giveUpBossBtnEl.classList.toggle('show', bossActive);
 
     // 성장 탭
-    goldGrowViewEl.textContent = state.gold;
+    goldGrowViewEl.textContent = formatBigNum(state.gold);
     hpGrowViewEl.textContent = player.maxHp;
     growAtkValEl.textContent = state.atk;
-    growAtkCostEl.textContent = growCostAtk();
+    growAtkCostEl.textContent = formatBigNum(growCostAtk());
     growAtkBtnEl.disabled = state.gold<growCostAtk();
     growHpValEl.textContent = player.maxHp;
-    growHpCostEl.textContent = growCostHp();
+    growHpCostEl.textContent = formatBigNum(growCostHp());
     growHpBtnEl.disabled = state.gold<growCostHp();
     growDefValEl.textContent = effectiveDefPct().toFixed(1)+'% ('+state.lvDef+'/'+GROWTH_DEF_MAX_LV+')';
     if(state.lvDef>=GROWTH_DEF_MAX_LV){
       growDefCostEl.textContent='MAX';
       growDefBtnEl.disabled=true;
     } else {
-      growDefCostEl.textContent = growCostDef();
+      growDefCostEl.textContent = formatBigNum(growCostDef());
       growDefBtnEl.disabled = state.gold<growCostDef();
     }
     growSpdValEl.textContent = state.lvSpd+'/'+GROWTH_SPEED_MAX_LV;
@@ -7437,7 +8157,7 @@
       growSpdCostEl.textContent='MAX';
       growSpdBtnEl.disabled=true;
     } else {
-      growSpdCostEl.textContent = growCostSpd();
+      growSpdCostEl.textContent = formatBigNum(growCostSpd());
       growSpdBtnEl.disabled = state.gold<growCostSpd();
     }
   }
@@ -8303,9 +9023,13 @@
   gachaInvCloseBtnEl.addEventListener('click', ()=> gachaInvModalEl.classList.remove('show'));
   gachaInvModalEl.addEventListener('click', e=>{ if(e.target===gachaInvModalEl) gachaInvModalEl.classList.remove('show'); });
 
-  document.querySelectorAll('.gachaSubBtn').forEach(btn=>{
+  // 주의: .gachaSubBtn 클래스는 랭킹 직업탭/대장간 카테고리탭도 스타일 재사용을 위해 같이 쓰므로,
+  // 반드시 가챠 전용 컨테이너(#gachaSubtabs) 안에서만 찾아야 한다. document 전체에서 찾으면
+  // 랭킹탭(data-job)이나 대장간탭 클릭 시에도 이 리스너가 같이 발동해 gachaCurCat이 undefined가 되어
+  // featuredItemOf에서 크래시가 난다.
+  document.querySelectorAll('#gachaSubtabs .gachaSubBtn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      document.querySelectorAll('.gachaSubBtn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('#gachaSubtabs .gachaSubBtn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       gachaCurCat = btn.dataset.cat;
       renderGachaView();
@@ -8591,6 +9315,8 @@
   const notifyToggleEl=$('notifyToggle'), killMsgToggleEl=$('killMsgToggle'), monsterChaseToggleEl=$('monsterChaseToggle');
   const noAutoEnterHouseToggleEl=$('noAutoEnterHouseToggle');
   const weaponFxToggleEl=$('weaponFxToggle'), screenFlashToggleEl=$('screenFlashToggle'), skillSoundToggleEl=$('skillSoundToggle'), hitboxToggleEl=$('hitboxToggle');
+  const skipJobSelectToggleEl=$('skipJobSelectToggle');
+  const skipTitleScreenToggleEl=$('skipTitleScreenToggle');
   const couponInputEl=$('couponInput'), couponBtnEl=$('couponBtn');
   const adminLoginRowEl=$('adminLoginRow'), adminPanelEl=$('adminPanel'), adminPwInputEl=$('adminPwInput'), adminPwBtnEl=$('adminPwBtn');
   const adminGoldInputEl=$('adminGoldInput'), adminGemsInputEl=$('adminGemsInput');
@@ -8604,11 +9330,16 @@
   function jobCardHTML(jk){
     const j = JOB_DEFS[jk];
     const isCurrent = state.job===jk;
+    const js = state.jobStats && state.jobStats[jk];
+    const levelHTML = js
+      ? `<div class="jc-level">Lv.${js.level}</div>`
+      : `<div class="jc-level jc-not-started">미시작</div>`;
     return `<button type="button" class="job-card${isCurrent?' current':''}" data-job="${jk}">
       <div class="jc-icon">${j.icon}</div>
       <div class="jc-name">${j.label}</div>
       <div class="jc-stat">${j.statLabel}</div>
       <div class="jc-desc">${j.desc}</div>
+      ${levelHTML}
       ${isCurrent?'<div class="jc-current-tag">현재 직업</div>':''}
     </button>`;
   }
@@ -8676,6 +9407,8 @@
     screenFlashToggleEl.checked = settings.screenFlash;
     skillSoundToggleEl.checked = settings.skillSound;
     hitboxToggleEl.checked = settings.hitboxDebug;
+    skipJobSelectToggleEl.checked = settings.skipJobSelect;
+    skipTitleScreenToggleEl.checked = settings.skipTitleScreen;
     const jobLabelEl = document.getElementById('currentJobLabel');
     if(jobLabelEl) jobLabelEl.textContent = `${currentJobDef().icon} ${currentJobDef().label}`;
     if(adminUnlocked) fillAdminInputs();
@@ -8891,12 +9624,93 @@
   }
   villageMapGoHomeBtnEl.addEventListener('click', goHomeFromVillageMap);
 
+  // ============ 랭킹(명예의 전당): 직업별 · 부문별(전투력/스테이지) TOP 3, Firebase 실시간 반영 ============
+  const rankingBtnEl = $('rankingBtn'), rankingModalEl = $('rankingModal'), rankingCloseBtnEl = $('rankingCloseBtn');
+  const rankingJobTabsEl = $('rankingJobTabs'), rankingListEl = $('rankingList');
+  const rankingMetricTabsEl = $('rankingMetricTabs'), rankingSubNoteEl = $('rankingSubNote');
+  const RANK_MEDALS = ['🥇','🥈','🥉'];
+  // 부문별 설정: DB 정렬 기준 필드, 대표값 라벨, 표시 포맷
+  const RANKING_METRICS = {
+    power:{ field:'power', label:'전투력', noteLabel:'전투력', fmt:v=> formatBigNum(v||0) },
+    stage:{ field:'stage', label:'스테이지', noteLabel:'스테이지', fmt:v=> (v||1)+'스테이지' },
+    level:{ field:'level', label:'레벨', noteLabel:'레벨', fmt:v=> (v||1)+'lv' },
+  };
+  let rankingCurJob = 'warrior';
+  let rankingCurMetric = 'power';
+  let rankingLiveRef = null, rankingLiveHandler = null;
+
+  function renderRankingRows(snapVal){
+    if(!snapVal){ rankingListEl.innerHTML = '<div class="ranking-empty">아직 랭킹 기록이 없습니다. 첫 번째 주인공이 되어보세요!</div>'; return; }
+    const metric = RANKING_METRICS[rankingCurMetric];
+    // Realtime DB는 orderByChild 결과를 오름차순으로 주므로, 선택된 부문 기준 내림차순으로 뒤집어 TOP 3만 취한다.
+    const rows = Object.values(snapVal).sort((a,b)=> (b[metric.field]||0)-(a[metric.field]||0)).slice(0,3);
+    if(rows.length===0){ rankingListEl.innerHTML = '<div class="ranking-empty">아직 랭킹 기록이 없습니다. 첫 번째 주인공이 되어보세요!</div>'; return; }
+    // 선택된 부문의 값만 표시한다 (다른 두 지표는 보여주지 않음)
+    rankingListEl.innerHTML = rows.map((r,i)=> `
+      <div class="ranking-row rank-${i+1}">
+        <div class="ranking-medal">${RANK_MEDALS[i]||''}</div>
+        <div class="ranking-info">
+          <div class="ranking-name">${(r.name||'이름없는 모험가')}</div>
+        </div>
+        <div class="ranking-power">
+          <div class="rp-val">${metric.fmt(r[metric.field])}</div>
+          <div class="rp-label">${metric.label}</div>
+        </div>
+      </div>`).join('');
+  }
+  // 직업/부문 탭을 바꾸거나 모달을 닫을 때는 이전 실시간 구독을 반드시 해제해야 불필요한 리스너가 쌓이지 않는다.
+  function unsubscribeRankingLive(){
+    if(rankingLiveRef && rankingLiveHandler) rankingLiveRef.off('value', rankingLiveHandler);
+    rankingLiveRef = null; rankingLiveHandler = null;
+  }
+  function subscribeRankingLive(job, metricKey){
+    unsubscribeRankingLive();
+    rankingListEl.innerHTML = '<div class="ranking-empty">불러오는 중...</div>';
+    const metric = RANKING_METRICS[metricKey];
+    if(rankingSubNoteEl) rankingSubNoteEl.textContent = `직업별 ${metric.noteLabel} TOP 3 · 실시간 갱신`;
+    // 선택된 부문 기준 상위 3명만: limitToLast(3) (오름차순 정렬이므로 마지막 3개 = 상위 3명)
+    rankingLiveRef = db.ref('rankings/'+job).orderByChild(metric.field).limitToLast(3);
+    rankingLiveHandler = rankingLiveRef.on('value', snap=>{ renderRankingRows(snap.val()); },
+      err=>{ console.error('랭킹 조회 실패:', err); rankingListEl.innerHTML = '<div class="ranking-empty">랭킹을 불러오지 못했습니다.</div>'; });
+  }
+  function openRanking(){
+    rankingModalEl.classList.add('show');
+    subscribeRankingLive(rankingCurJob, rankingCurMetric);
+  }
+  function closeRanking(){
+    rankingModalEl.classList.remove('show');
+    unsubscribeRankingLive();
+  }
+  if(rankingBtnEl) rankingBtnEl.addEventListener('click', openRanking);
+  if(rankingCloseBtnEl) rankingCloseBtnEl.addEventListener('click', closeRanking);
+  if(rankingModalEl) rankingModalEl.addEventListener('click', e=>{ if(e.target===rankingModalEl) closeRanking(); });
+  if(rankingJobTabsEl){
+    rankingJobTabsEl.addEventListener('click', e=>{
+      const btn = e.target.closest('.rankingJobBtn'); if(!btn) return;
+      rankingJobTabsEl.querySelectorAll('.rankingJobBtn').forEach(b=> b.classList.remove('active'));
+      btn.classList.add('active');
+      rankingCurJob = btn.dataset.job;
+      subscribeRankingLive(rankingCurJob, rankingCurMetric);
+    });
+  }
+  if(rankingMetricTabsEl){
+    rankingMetricTabsEl.addEventListener('click', e=>{
+      const btn = e.target.closest('.rankingMetricBtn'); if(!btn) return;
+      rankingMetricTabsEl.querySelectorAll('.rankingMetricBtn').forEach(b=> b.classList.remove('active'));
+      btn.classList.add('active');
+      rankingCurMetric = btn.dataset.metric;
+      subscribeRankingLive(rankingCurJob, rankingCurMetric);
+    });
+  }
+
+
   // 닉네임
   nameSaveBtnEl.addEventListener('click', ()=>{
     const v = nameInputEl.value.trim().slice(0,10);
     settings.playerName = v;
     toast(v ? `닉네임이 "${v}"(으)로 설정되었습니다.` : '닉네임이 초기화되었습니다.', 'success', true);
     updateHudText();
+    updateRanking();
   });
 
   // 알림 토글
@@ -8908,6 +9722,13 @@
   screenFlashToggleEl.addEventListener('change', e=>{ settings.screenFlash = e.target.checked; });
   skillSoundToggleEl.addEventListener('change', e=>{ settings.skillSound = e.target.checked; });
   hitboxToggleEl.addEventListener('change', e=>{ settings.hitboxDebug = e.target.checked; });
+  skipJobSelectToggleEl.addEventListener('change', e=>{ settings.skipJobSelect = e.target.checked; });
+  // "게임시작 화면 건너뛰기" 설정은 타이틀 화면 자체를 건너뛰는 것이라 즉시 반영해도 의미가 없다(이미 지나온 화면이므로).
+  // 다음 접속부터 적용되도록 값만 저장해두고, 깜빡임 없이 스킵되도록 브라우저 캐시에도 함께 기록해둔다.
+  skipTitleScreenToggleEl.addEventListener('change', e=>{
+    settings.skipTitleScreen = e.target.checked;
+    writeCachedSkipTitleScreen(e.target.checked);
+  });
 
   // ============ 배경음(BGM) / 효과음 볼륨 ============
   function bgmSrc(n){ return `mp3/bgm${n}.mp3`; }
@@ -8932,10 +9753,22 @@
       sfxMasterGain.gain.value = settings.sfxVolume/100;
       sfxMasterGain.connect(sfxCtx.destination);
     }
-    if(sfxCtx.state==='suspended') sfxCtx.resume().catch(()=>{});
+    // 볼륨을 0으로 낮춘 사이(=suspend된 상태) 다시 소리를 재생하려는 경우를 대비해,
+    // 실제로 소리를 낼 때는 현재 볼륨이 0보다 클 때만 resume한다 (호출부에서 이미 volume<=0이면
+    // 함수 진입 전에 return하지만, 방어적으로 한 번 더 확인).
+    if(sfxCtx.state==='suspended' && settings.sfxVolume>0) sfxCtx.resume().catch(()=>{});
     return sfxCtx;
   }
-  function applySfxVolume(){ if(sfxMasterGain) sfxMasterGain.gain.value = settings.sfxVolume/100; }
+  // 효과음 볼륨을 반영한다. gain 값을 0으로 낮추는 것만으로는 일부 모바일 브라우저(특히 iOS Safari)에서
+  // 이미 스케줄링된 소리가 완전히 묵음 처리되지 않는 경우가 있어, 볼륨이 0이면 AudioContext 자체를
+  // suspend시켜 확실하게 무음을 보장한다. 볼륨을 다시 올리면 resume한다.
+  function applySfxVolume(){
+    if(sfxMasterGain) sfxMasterGain.gain.value = settings.sfxVolume/100;
+    if(sfxCtx){
+      if(settings.sfxVolume<=0){ if(sfxCtx.state==='running') sfxCtx.suspend().catch(()=>{}); }
+      else { if(sfxCtx.state==='suspended') sfxCtx.resume().catch(()=>{}); }
+    }
+  }
 
   // 뽑기(가챠) 탭에 들어가 있는 동안 true - 이때는 일반 게임 효과음(전투 등)은 들리지 않고,
   // 뽑기 연출 전용 효과음(always:true로 표시된 것)만 들리게 한다. 배경음(BGM)에는 영향 없음.
@@ -9108,6 +9941,7 @@
       if(!settings.skillSound) return; // 설정에서 스킬 효과음이 꺼져 있으면 보스 패턴 예고음을 생략
       const cfg = {
         slam:{f:120, fe:260, type:'sine', dur:0.35}, burst:{f:300, fe:900, type:'sawtooth', dur:0.3},
+        novaburst:{f:220, fe:760, type:'sawtooth', dur:0.42}, groundquake:{f:90, fe:200, type:'sine', dur:0.4},
         spread:{f:500, fe:1200, type:'square', dur:0.25}, summon:{f:150, fe:110, type:'sine', dur:0.4},
         arrowrain:{f:900, fe:1400, type:'triangle', dur:0.3}, arena:{f:200, fe:520, type:'sine', dur:0.5},
         dash:{f:600, fe:220, type:'sawtooth', dur:0.16}, tripledash:{f:720, fe:260, type:'sawtooth', dur:0.14},
@@ -9123,6 +9957,14 @@
       } else if(pattern==='burst'){
         sfxNoise({dur:0.25, startGain:0.38, filterFreq:3500, filterType:'highpass'});
         sfxTone({freq:900, freqEnd:180, type:'sawtooth', dur:0.2, startGain:0.2});
+      } else if(pattern==='novaburst'){
+        sfxNoise({dur:0.4, startGain:0.44, filterFreq:2600, filterType:'highpass'});
+        sfxTone({freq:1100, freqEnd:140, type:'sawtooth', dur:0.32, startGain:0.24});
+        sfxTone({freq:700, freqEnd:90, type:'sine', dur:0.3, startGain:0.16, delay:0.05});
+      } else if(pattern==='groundquake'){
+        sfxNoise({dur:0.45, startGain:0.4, filterFreq:180});
+        sfxTone({freq:65, freqEnd:28, type:'sine', dur:0.4, startGain:0.3});
+        sfxTone({freq:60, freqEnd:24, type:'sine', dur:0.38, startGain:0.24, delay:0.09});
       } else if(pattern==='spread'){
         [0,1,2,3].forEach(i=> sfxTone({freq:700, freqEnd:250, type:'square', dur:0.12, startGain:0.15, delay:i*0.05}));
       } else if(pattern==='summon'){
@@ -9190,8 +10032,11 @@
     bgmWasPlayingBeforePreview = false;
   }
 
-  // 브라우저 자동재생 정책 우회: 최초 사용자 조작 시 배경음 재생 및 효과음 오디오 컨텍스트 활성화
-  function tryStartBgm(){ if(bgmAudio.paused) bgmAudio.play().catch(()=>{}); ensureSfxCtx(); }
+  // 브라우저 자동재생 정책 우회: 최초 사용자 조작 시 효과음 오디오 컨텍스트만 미리 활성화해둔다.
+  // 배경음(bgmAudio)은 여기서 재생하지 않는다 — 로그인/로비 화면에서 아무 조작(입력창 클릭, 로그인 버튼 등)이나
+  // 해도 소리가 나지 않아야 하며, 실제 배경음은 메인 로비의 "게임시작" 버튼을 눌러야 시작된다(그 자체가 사용자
+  // 제스처이므로 자동재생 정책도 별도 우회 트릭 없이 통과한다).
+  function tryStartBgm(){ ensureSfxCtx(); applySfxVolume(); }
   ['click','touchstart','keydown'].forEach(ev=> document.addEventListener(ev, tryStartBgm, {once:true}));
 
   sfxVolumeEl.addEventListener('input', e=>{
@@ -9414,6 +10259,49 @@
     if(loadingTipTimer){ clearInterval(loadingTipTimer); loadingTipTimer = null; }
   }
 
+  // ===== 타이틀 화면 (로그인보다 먼저 뜨는 첫 화면) =====
+  // 페이지에 처음 들어오면 이 화면만 보이고, 로그인/로딩/직업선택 등 다른 화면은 전부 이 화면 뒤에 가려져 있다.
+  // "게임 시작"을 눌러야만 실제 로그인 흐름이 화면에 드러난다(그 전까지는 소리도 나지 않고 아무것도 움직이지 않는다).
+  const titleScreenEl = $('titleScreenOverlay');
+  const titleStartBtnEl = $('titleStartBtn');
+  let titleStarted = false;
+  // "게임시작 화면 건너뛰기" 설정은 실제 계정 데이터(Firebase)를 불러와야 알 수 있는데,
+  // 그 로딩에는 시간이 걸리므로 매번 타이틀 화면이 잠깐 보였다가 사라지는 깜빡임이 생긴다.
+  // 이를 막기 위해 이 설정값을 브라우저에도 캐시해두고, 다음 접속부터는 데이터 로딩을 기다리지 않고
+  // 곧바로(타이틀 화면 없이) 로딩 화면으로 진입한다. 실제 설정과 다르면 데이터 로딩 후 자동으로 값이 갱신된다.
+  const TITLE_SKIP_LS_KEY = 'rpgSkipTitleScreenPref';
+  function readCachedSkipTitleScreen(){ try{ return localStorage.getItem(TITLE_SKIP_LS_KEY) === '1'; }catch(_){ return false; } }
+  function writeCachedSkipTitleScreen(v){ try{ localStorage.setItem(TITLE_SKIP_LS_KEY, v ? '1' : '0'); }catch(_){} }
+  // 타이틀 화면이 떠 있는 동안에도 Firebase 인증/데이터 로딩 자체는 뒤에서 미리 진행해둔다(빠른 진입을 위해).
+  // 다만 그 결과로 로딩화면/로그인화면/직업선택 등을 "보여주는" 동작은 titleStarted가 true가 된 뒤에만 수행한다.
+  function revealAuthFlow(){
+    if(currentUser){
+      if(dataLoaded){
+        if(!gameStarted){ gameStarted = true; beginGameOrPickJob(); }
+      } else {
+        showLoadingScreen();
+      }
+    } else {
+      authOverlayEl.classList.remove('hide');
+    }
+  }
+  function startTitleFlow(){
+    titleScreenEl.classList.add('hide');
+    titleStarted = true;
+    revealAuthFlow();
+  }
+  if(titleStartBtnEl){
+    titleStartBtnEl.addEventListener('click', startTitleFlow);
+  }
+  if(readCachedSkipTitleScreen()){
+    // 캐시된 값이 "켜짐"이면, 실제 설정을 다시 확인하기 전부터 타이틀 화면을 띄우지 않고
+    // 바로 로딩 화면으로 넘어가 깜빡임 없이 이어지도록 한다.
+    titleScreenEl.classList.add('hide');
+    titleStarted = true;
+    showLoadingScreen();
+  }
+
+
   const AUTH_ERROR_MSG = {
     'auth/invalid-email':'올바른 이메일 형식이 아닙니다.',
     'auth/user-not-found':'가입되지 않은 이메일입니다.',
@@ -9459,7 +10347,7 @@
     el.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); authLoginBtnEl.click(); } });
   });
 
-  let currentUser = null, dataLoaded = false, gameStarted = false, saveTimer = null;
+  // (currentUser, dataLoaded, gameStarted, saveTimer는 파일 최상단에서 이미 선언됨)
 
   function userDataRef(){ return db.ref('users/' + currentUser.uid + '/save'); }
 
@@ -9485,6 +10373,28 @@
   function saveGame(){
     if(!currentUser || !dataLoaded) return;
     userDataRef().set(collectSaveData()).catch(err=> console.error('저장 실패:', err));
+    updateRanking();
+  }
+
+  // ============ 직업별 실시간 랭킹 (전투력 / 레벨 / 스테이지) ============
+  // 경로: rankings/{직업}/{uid} = {name, level, stage, power, updatedAt}
+  // 공격력 위주로, 체력·방어력·레벨을 보조 반영한 종합 지표를 "전투력"으로 사용한다.
+  function computeCombatPower(){
+    const atk = state.atk || 0;
+    const maxHp = (player && player.maxHp) ? player.maxHp : (typeof effectiveMaxHp==='function' ? effectiveMaxHp() : 0);
+    const defPct = state.def || 0; // 0~70(%)
+    return Math.round(atk*12 + maxHp*0.8 + defPct*15 + (state.level||1)*8);
+  }
+  function updateRanking(){
+    if(!currentUser || !state.job || !dataLoaded) return;
+    const power = computeCombatPower();
+    db.ref('rankings/'+state.job+'/'+currentUser.uid).set({
+      name: settings.playerName || '이름없는 모험가',
+      level: state.level||1,
+      stage: state.maxClearedStage || state.stage || 1,
+      power: power,
+      updatedAt: Date.now(),
+    }).catch(err=> console.error('랭킹 갱신 실패:', err));
   }
 
   // 인벤토리(inv)/장착 장비(equip) 객체를 정상 구조로 정규화한다.
@@ -9565,13 +10475,14 @@
     applyHpGrowth();
     applySfxVolume();
     applyBgmVolume();
-    setBgmTrack(settings.bgmTrack, {forcePlay:false});
+    setBgmTrack(settings.bgmTrack, {forcePlay:true}); // "게임시작" 버튼 클릭(사용자 제스처) 직후 호출되므로 여기서 실제로 배경음이 시작된다
     toast('모험을 시작합니다! 잡몹을 처치해 성장한 뒤, 원할 때 보스를 소환하세요.', 'success');
     startStage();
     restorePlayerPosition();
     updateCamera();
     updateHudText();
     renderGachaView();
+    updateRanking(); // 접속 직후에도 최신 전투력/레벨/스테이지가 랭킹에 즉시 반영되도록
     requestAnimationFrame(loop);
 
     if(saveTimer) clearInterval(saveTimer);
@@ -9580,14 +10491,17 @@
     document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') saveGame(); });
   }
 
-  // 최초 게임 시작 전, 아직 직업을 고르지 않은(신규) 캐릭터라면 직업 선택 화면부터 보여준다
+  // 로그인 이후 기본은 항상 직업 선택 화면(각 직업별 레벨을 보고 고를 수 있도록).
+  // 단, 설정에서 "로딩시 직업선택 화면 건너뛰기"를 켰고, 이미 마지막으로 플레이한 직업(state.job)이 있다면
+  // 화면을 띄우지 않고 그 직업으로 바로 게임을 시작한다. (한 번도 직업을 고른 적 없는 신규 유저는
+  // 설정이 켜져 있어도 반드시 직업 선택 화면을 거쳐야 하므로 state.job 존재 여부를 함께 확인한다.)
   function beginGameOrPickJob(){
     hideLoadingScreen();
-    if(!state.job){
-      showJobSelectOverlay(startGameAfterAuth);
-    } else {
+    if(settings.skipJobSelect && state.job){
       startGameAfterAuth();
+      return;
     }
+    showJobSelectOverlay(startGameAfterAuth);
   }
 
   auth.onAuthStateChanged(user=>{
@@ -9596,23 +10510,32 @@
       dataLoaded = false;
       authErrorEl.textContent = '';
       authOverlayEl.classList.add('hide');
-      if(!gameStarted) showLoadingScreen(); // 최초 진입: 데이터를 불러오는 동안 로딩 화면 표시
+      if(titleStarted && !gameStarted) showLoadingScreen(); // 타이틀 화면을 넘어온 뒤 최초 진입이면 데이터를 불러오는 동안 로딩 화면 표시
       accountStatusEl.textContent = user.email || (user.displayName ? user.displayName+' (구글)' : '구글 계정');
       userDataRef().get().then(snap=>{
         applyLoadedData(snap.exists() ? snap.val() : null);
         dataLoaded = true;
-        if(!gameStarted){ gameStarted = true; beginGameOrPickJob(); }
-        else updateHudText();
+        // 방금 불러온 실제 계정 설정값으로 브라우저 캐시를 최신화해둔다.
+        // (다른 기기에서 설정을 바꿨거나, 이 브라우저에 캐시가 없던 최초 접속인 경우 다음부터 반영되도록)
+        writeCachedSkipTitleScreen(settings.skipTitleScreen);
+        if(titleStarted){
+          if(!gameStarted){ gameStarted = true; beginGameOrPickJob(); }
+          else updateHudText();
+        }
+        // titleStarted가 아직 false면(캐시된 값이 없어 타이틀 화면이 그대로 떠 있던 경우) 데이터만 미리 불러와두고
+        // 화면 전환은 하지 않는다 — titleStartBtn 클릭 시 revealAuthFlow()가 이 상태를 보고 바로 다음 화면을 띄운다.
+        // (여기서 곧바로 타이틀 화면을 넘겨버리면 화면이 잠깐 보였다가 사라지는 깜빡임이 생기므로 하지 않는다.
+        //  대신 다음 접속부터는 위에서 갱신한 캐시 덕분에 처음부터 타이틀 화면 없이 시작된다.)
       }).catch(err=>{
         console.error('불러오기 실패:', err);
         dataLoaded = true;
-        if(!gameStarted){ gameStarted = true; beginGameOrPickJob(); }
+        if(titleStarted && !gameStarted){ gameStarted = true; beginGameOrPickJob(); }
       });
     } else {
       currentUser = null;
       dataLoaded = false;
       hideLoadingScreen();
-      authOverlayEl.classList.remove('hide');
+      if(titleStarted) authOverlayEl.classList.remove('hide');
       accountStatusEl.textContent = '게스트';
     }
   });
