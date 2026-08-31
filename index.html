@@ -3815,8 +3815,19 @@
     atkInc: {label:'공격력 증가', unit:'%', max:45, desc:'공격력이 증가합니다.'},
     evaDown:{label:'회피 감소',   unit:'%', max:30, desc:'상대가 나의 공격을 회피할 확률을 감소시킵니다.'},
     dmgCut: {label:'피해 감소',   unit:'%', max:30, desc:'상대로부터 받는 피해를 감소시킵니다.'},
+    // ---- 신규 옵션 3종 (2026-08 추가) ----
+    // base: 이 옵션이 붙을 수 있는 최솟값(가장 낮은 등급/굴림이어도 이 값 근처에서 시작).
+    // max : 이 옵션이 붙을 수 있는 이론상 최댓값(가장 높은 등급/굴림일 때 도달).
+    // 실제 수치는 rollStatValue()/buildItem()에서 "base + (max-base)×등급별 비율" 공식으로 계산되어,
+    // 기존 옵션들(base 없음=0)과 완전히 동일한 방식으로 등급이 높을수록 base~max 사이에서 더 높은 값이 나온다.
+    mobInc: {label:'필드 몹 증가', unit:'마리', base:10, max:50, desc:'스테이지 시작 시 등장하는 필드 몬스터 수가 늘어납니다. (옵션 등급에 따라 최소 +10마리 ~ 최대 +50마리)'},
+    expInc: {label:'경험치 증가', unit:'%',   base:3,  max:35, desc:'몬스터를 처치할 때 획득하는 경험치가 추가로 늘어납니다. (옵션 등급에 따라 최소 +3% ~ 최대 +35%)'},
+    poison: {label:'독',         unit:'%',   base:1,  max:10, desc:'공격이 적중할 때 낮은 확률로 적에게 독 디버프를 겁니다. 옵션 등급이 높을수록 발동 확률(0.01%~0.1%)·지속시간(1초~10초)·체력 감소량(1%~10%)이 함께 강해집니다.'},
   };
   const STAT_KEYS = Object.keys(STAT_DEFS);
+  // 신규 옵션은 확률형(옵션 등급을 그대로 노출하면 오해의 소지가 있는) 능력치라, 장비 화면에서 요약 수치를 %가 아닌
+  // 전용 문구로 보여주기 위한 표시 전용 헬퍼 목록. (2단계 이후 실제 효과 로직에서도 이 표를 그대로 재사용한다)
+  const NEW_OPTION_KEYS = ['mobInc','expInc','poison'];
 
   // 무기 전용 능력치: 범위공격/사거리 증가/공격속도 — 무기 종류에서만 붙을 수 있다.
   const WEAPON_STAT_DEFS = {
@@ -3925,10 +3936,17 @@
       chosenKeys = pickN(STAT_KEYS, grade.lines, rng);
     }
     const stats = {};
-    chosenKeys.forEach(k=>{
+    // 뽑은 등급(grade)과 100% 일치하는 옵션은 1줄만 확정으로 보장하고, 나머지 줄은 재련(rollStatValue)과
+    // 동일한 확률표(GACHA_GRADES)로 각각 독립적인 등급이 랜덤으로 정해진다. 예) SSS를 뽑아도 나머지 옵션은
+    // 낮은 등급으로 나올 수 있다 — 뽑기 결과가 모든 줄이 최고 등급으로 고정되던 문제를 해결.
+    chosenKeys.forEach((k, i)=>{
       const def = ALL_STAT_DEFS[k];
-      const frac = grade.rMin + rng()*(grade.rMax-grade.rMin);
-      stats[k] = Math.round(def.max*frac*10)/10;
+      const qGrade = (i===0) ? grade : pickGrade(rng);
+      const frac = qGrade.rMin + rng()*(qGrade.rMax-qGrade.rMin);
+      // base가 없는 기존 옵션들은 base=0이라 기존과 동일하게 max*frac으로 계산된다.
+      // base가 있는 신규 옵션(필드 몹 증가/경험치 증가/독)은 base~max 구간 안에서 등급 비율만큼 값이 정해진다.
+      const base = def.base || 0;
+      stats[k] = Math.round((base + (def.max-base)*frac)*10)/10;
     });
     return {id:`${idPrefix||category}_${grade.key}_${idx}`, name, grade:grade.key, category, noun, stats};
   }
@@ -4192,8 +4210,8 @@
     return `<svg viewBox="0 0 7 9" style="image-rendering:pixelated;shape-rendering:crispEdges;">${rects}</svg>`;
   }
 
-  function pickGrade(){
-    const r = Math.random()*100;
+  function pickGrade(rng){
+    const r = (rng||Math.random)()*100;
     let acc = 0;
     for(const g of GACHA_GRADES){ acc += g.prob; if(r < acc) return g; }
     return GACHA_GRADES[GACHA_GRADES.length-1];
@@ -4229,7 +4247,8 @@
   // "옵션 품질 등급"으로 근사한다 (뽑기 등급과 동일한 색/이름 체계를 재련 결과 표시에도 그대로 재사용).
   function statQualityGrade(key, value){
     const def = ALL_STAT_DEFS[key];
-    const frac = def && def.max ? value/def.max : 0;
+    const base = (def && def.base) || 0;
+    const frac = def && def.max ? (value-base)/(def.max-base) : 0;
     for(const g of GACHA_GRADES){ if(frac >= g.rMin-1e-6 && frac <= g.rMax+1e-6) return g; }
     let best = GACHA_GRADES[GACHA_GRADES.length-1], bestDist = Infinity;
     GACHA_GRADES.forEach(g=>{ const mid=(g.rMin+g.rMax)/2; const d=Math.abs(frac-mid); if(d<bestDist){ bestDist=d; best=g; } });
@@ -4241,7 +4260,8 @@
     const def = ALL_STAT_DEFS[key];
     const qGrade = pickGrade();
     const frac = qGrade.rMin + Math.random()*(qGrade.rMax-qGrade.rMin);
-    return Math.round(def.max*frac*10)/10;
+    const base = def.base || 0;
+    return Math.round((base + (def.max-base)*frac)*10)/10;
   }
   // 옵션을 잠글 때 "몇 번째로 잠그는가"에 따른 비용을 계산한다. n은 1부터 시작.
   function lockCostForCount(n){ return REFORGE_LOCK_COST[n] || REFORGE_LOCK_COST[REFORGE_MAX_LOCK]; }
@@ -4592,6 +4612,11 @@
   }
   // 방어력은 고정 수치가 아닌 "받는 피해 감소율(%)"로 작동. 성장으로는 최대 30%, 장비의 "방어력 증가"를 더해 최대 TOTAL_DEF_CAP%까지 오를 수 있다
   const TOTAL_DEF_CAP = 70;
+  // 회피(eva)도 방어력과 마찬가지로 아무리 스택해도 100%(=완전 무적)에 도달하지 못하도록 상한을 둔다.
+  const TOTAL_EVA_CAP = 70;
+  // 방어력·피해감소가 각자 상한이 있어도 곱연산으로 겹치면 실질 피해가 0에 가까워질 수 있어,
+  // 원래 피해량의 최소 이 비율(%)만큼은 항상 들어오도록 하는 하한선.
+  const MIN_DAMAGE_TAKEN_PCT = 10;
   function effectiveDefPct(){
     if(player.defShredActive) return 0; // 최종보스 체력 20% 이하: 방어력 감소 100% 디버프로 방어력이 0으로 취급됨
     return Math.min(TOTAL_DEF_CAP, state.lvDef*GROWTH_DEF_PCT_PER_LV + (gearTotals.defInc||0));
@@ -4806,7 +4831,9 @@
   const STAFF_LANDING_HIT_RADIUS = {spark:26, bolt:32, meteor:40, lightning:48, divine:56};
 
   function tierIndexForStage(stage){ return Math.min(Math.floor((stage-1)/2), MONSTER_ORDER.length-1); }
-  function mobsRequiredForStage(stage){ return Math.min(60, 30 + Math.floor((stage-1)*6)); }
+  // 기본 요구치는 스테이지 난이도로만 정해 60마리로 캡을 두되, "필드 몹 증가" 옵션(gearTotals.mobInc)은
+  // 캡과 별개의 순수 추가분이라 캡을 적용한 뒤에 더한다(그래야 고스테이지에서도 옵션 효과가 깎이지 않는다).
+  function mobsRequiredForStage(stage){ return Math.min(60, 30 + Math.floor((stage-1)*6)) + Math.round(gearTotals.mobInc||0); }
   function viewRadius(){ return Math.hypot(canvas.width, canvas.height)/2; }
 
   function spawnMob(){
@@ -4945,36 +4972,50 @@
   // ============ 레벨/경험치 시스템 ============
   // 레벨 제한 없음. 레벨이 오를수록 다음 레벨까지 필요한 경험치가 계속 늘어난다.
   function expForLevel(lv){ return Math.floor(40*Math.pow(lv, 1.4)) + lv*15; }
+  const LEVELUP_GEM_REWARD = 500; // 레벨업 1회당 지급되는 소환석(다이아) 수
   function gainExp(amount){
     if(!amount) return;
+    // "경험치 증가" 옵션(gearTotals.expInc, %)을 모든 경험치 획득에 공통 적용한다.
+    // gainExp가 잡몹/보스 처치 등 경험치가 들어오는 유일한 통로라 여기 한 곳만 곱해도 전부 반영된다.
+    amount = Math.round(amount * (1 + (gearTotals.expInc||0)/100));
     state.exp += amount;
-    let leveledUp = false;
+    let levelsGained = 0;
     while(state.exp >= expForLevel(state.level)){
       state.exp -= expForLevel(state.level);
       state.level += 1;
-      leveledUp = true;
+      levelsGained += 1;
     }
-    if(leveledUp){ toast(`⭐ 레벨업! Lv.${state.level}`, 'great', true); updateRanking(); }
+    if(levelsGained>0){
+      const gemReward = levelsGained * LEVELUP_GEM_REWARD; // 한 번에 여러 레벨이 오르면 그만큼 누적 지급
+      state.gems += gemReward;
+      toast(`⭐ 레벨업! Lv.${state.level} (소환석 +${gemReward}💠)`, 'great', true);
+      updateRanking();
+    }
     updateHudText();
   }
 
   // ============ 전투 처리 ============
-  function damageMob(mob, amount, isCrit){
+  function damageMob(mob, amount, isCrit, isPoison){
     mob.hp -= amount;
-    mob.hitFlash = 1;
-    mob.squashT = 1; // 맞는 순간 짜부러졌다가 펴지는 타격감 연출
-    // 피격 방향(플레이어 반대쪽)으로 살짝 튕겨나가는 넉백
-    const kdx = mob.wx-player.wx, kdy = mob.wy-player.wy, kd = Math.hypot(kdx,kdy)||1;
-    const kPow = isCrit?3.4:1.9;
-    mob.knockVX = (mob.knockVX||0) + (kdx/kd)*kPow;
-    mob.knockVY = (mob.knockVY||0) + (kdy/kd)*kPow;
-    spawnHitParticles(mob.wx, mob.wy-mob.r*1.4);
-    SFX.mobHit(mob.type);
-    damageNumbers.push({wx:mob.wx, wy:mob.wy-mob.r*3, text:(isCrit?'치명타! -':'-')+amount, vy:-0.6, alpha:1, color: isCrit?'#ff4d4d':'#ffd54f'});
+    if(isPoison){
+      // 독 틱은 넉백/타격 이펙트 없이 살짝 반짝이기만 해서 일반 타격과 구분되게 한다
+      mob.hitFlash = Math.max(mob.hitFlash||0, 0.4);
+    } else {
+      mob.hitFlash = 1;
+      mob.squashT = 1; // 맞는 순간 짜부러졌다가 펴지는 타격감 연출
+      // 피격 방향(플레이어 반대쪽)으로 살짝 튕겨나가는 넉백
+      const kdx = mob.wx-player.wx, kdy = mob.wy-player.wy, kd = Math.hypot(kdx,kdy)||1;
+      const kPow = isCrit?3.4:1.9;
+      mob.knockVX = (mob.knockVX||0) + (kdx/kd)*kPow;
+      mob.knockVY = (mob.knockVY||0) + (kdy/kd)*kPow;
+      spawnHitParticles(mob.wx, mob.wy-mob.r*1.4);
+      SFX.mobHit(mob.type);
+    }
+    damageNumbers.push({wx:mob.wx, wy:mob.wy-mob.r*3, text:(isPoison?'독 -':(isCrit?'치명타! -':'-'))+amount, vy:-0.6, alpha:1, color: isPoison?'#a855f7':(isCrit?'#ff4d4d':'#ffd54f')});
     if(mob.hp<=0 && mob.dying===0){
       mob.dying = 0.001;
       SFX.mobDeath(mob.type);
-      spawnDeathParticles(mob.wx, mob.wy-8, '#ffd54f');
+      spawnDeathParticles(mob.wx, mob.wy-8, isPoison?'#a855f7':'#ffd54f');
       state.mobsKilled += 1;
       state.stageProgress[state.stage] = state.mobsKilled; // 현재 스테이지의 잡몹 처치 진행도 기록
       const g = Math.floor(9+state.stage*2.6);
@@ -5031,7 +5072,19 @@
     SFX.bossDefeat();
     const rewardMult = boss && boss.kind==='final' ? 3 : boss && boss.kind==='elite' ? 1.8 : 1;
     const g = Math.floor((130+state.stage*38)*rewardMult);
-    const gemReward = GACHA_COST_1 * 10; // 보스 처치 시 등급 상관없이 소환석 10회 뽑기 분량 고정 지급
+    // 이 보스 스테이지를 "처음" 깨는 경우(신규 최고기록 갱신)에만 소환석 1000개 고정 지급.
+    // 이미 한 번 깬 적 있는 스테이지를 다시 깨는 반복 클리어는 확률 보상으로: 3% 1000다이아,
+    // 1% 현재 골드의 1%, 나머지 96%는 1다이아만 지급해 무한 파밍으로 다이아가 과다 지급되는 것을 방지한다.
+    const isFirstClear = state.stage > state.maxClearedStage;
+    let gemReward;
+    if(isFirstClear){
+      gemReward = GACHA_COST_1 * 10; // 최초 클리어 고정 보상: 소환석 1000개
+    } else {
+      const roll = Math.random()*100;
+      if(roll < 3) gemReward = 1000;
+      else if(roll < 4) gemReward = Math.max(1, Math.floor(state.gold*0.01));
+      else gemReward = 1;
+    }
     state.gold += g; state.atk += 1; state.gems += gemReward;
     gainExp(Math.floor((40+state.stage*10)*rewardMult));
     const label = boss && boss.kind==='final' ? '🔥 최종보스 처치!' : boss && boss.kind==='elite' ? '⚡ 정예보스 처치!' : '보스 처치!';
@@ -5045,14 +5098,19 @@
 
   function playerTakeDamage(dmg){
     if(player.invuln>0) return;
-    // 회피(eva): 확률적으로 공격을 완전히 무효화
-    if(Math.random()*100 < (gearTotals.eva||0)){
+    // 회피(eva): 확률적으로 공격을 완전히 무효화. 장비를 아무리 겹쳐 껴도 TOTAL_EVA_CAP을 넘지 못하므로
+    // 100% 회피(=완전 무적)는 발생하지 않는다.
+    const evaPct = Math.min(TOTAL_EVA_CAP, gearTotals.eva||0);
+    if(Math.random()*100 < evaPct){
       damageNumbers.push({wx:player.wx, wy:player.wy-24, text:'회피!', vy:-0.6, alpha:1, color:'#3ec9a7'});
       return;
     }
-    // 방어력은 고정 수치 차감이 아닌 퍼센트 감소로 작동. 여기에 피해감소(dmgCut) 스탯을 추가로 곱해 적용한다
+    // 방어력은 고정 수치 차감이 아닌 퍼센트 감소로 작동. 여기에 피해감소(dmgCut) 스탯을 추가로 곱해 적용한다.
+    // 방어력(최대 70%)과 피해감소(최대 90%)가 함께 겹치면 원래는 실질 피해가 거의 0까지 떨어질 수 있었는데,
+    // MIN_DAMAGE_TAKEN_PCT 하한선을 둬서 아무리 방어 스탯을 쌓아도 원래 피해량의 일정 비율 이상은 항상 받게 한다.
     let reduced = Math.max(1, Math.round(dmg * (1 - effectiveDefPct()/100)));
     reduced = Math.max(1, Math.round(reduced * (1 - Math.min(90,(gearTotals.dmgCut||0))/100)));
+    reduced = Math.max(reduced, Math.ceil(dmg * MIN_DAMAGE_TAKEN_PCT/100));
     // 보스전 중에는 일정 확률로 "둔화" 디버프가 걸리며, 저항(res) 스탯만큼 지속시간이 줄어든다
     if(bossActive && Math.random()<0.15){
       const baseDur = 3000;
@@ -5272,6 +5330,24 @@
     const ticks = Math.max(1, Math.round(BLEED_BASE_TICKS * (1 + (gearTotals.acc||0)/100)));
     ref.bleed = {ticksLeft:ticks, tickTimer:BLEED_TICK_MS, dmgPerTick:Math.max(1,Math.round(tickDmg))};
   }
+  // "독" 옵션(gearTotals.poison, 품질 1~10 — 여러 부위에 중첩 장착하면 그 이상도 가능)을 공격 적중마다 판정한다.
+  // 품질이 낮을수록(1에 가까울수록) 0.01% 확률·1초 지속·"현재체력" 기준 1% 감소에 가깝고,
+  // 품질이 높을수록(10에 가까울수록) 0.1% 확률·10초 지속·"최대체력" 기준 10% 감소에 가깝게 선형으로 강해진다.
+  const POISON_TICK_MS = 1000;
+  function applyPoison(ref){
+    const val = gearTotals.poison||0;
+    if(val<=0 || !ref || ref.hp<=0) return;
+    const t = (val-1)/9; // 품질 1→0, 품질 10→1 (여러 부위 중첩으로 10을 넘으면 1을 넘어 계속 비례 상승)
+    const chancePct = 0.01 + t*(0.1-0.01);
+    if(Math.random()*100 >= chancePct) return;
+    const ticks = Math.max(1, Math.round(1 + t*(10-1))); // 1~10틱(1초당 1틱 = 1~10초 지속)
+    const pct = 1 + t*(10-1); // 1~10%
+    // 감소 기준을 "현재체력"에서 "최대체력"으로 서서히 옮겨간다(설명한 최소/최대 스펙 그대로)
+    const baseHp = (ref.hp*(1-Math.min(1,t))) + (ref.maxHp*Math.min(1,t));
+    const totalDrain = Math.max(ticks, Math.round(baseHp * pct/100));
+    const perTick = Math.max(1, Math.round(totalDrain/ticks));
+    ref.poison = {ticksLeft:ticks, tickTimer:POISON_TICK_MS, dmgPerTick:perTick};
+  }
   // 대상 하나에게 실제 피해 판정(치명타/방어관통/회피/출혈/무기 고유 효과)을 적용한다.
   // weapon(무기 프로필)을 넘기면 무기별 피해배율/출혈확률/기절확률이 함께 반영된다. (근접 휘두르기·원거리 투사체 명중 모두 이 함수를 재사용)
   function applyAttackDamage(target, weapon){
@@ -5305,6 +5381,7 @@
       return;
     }
     if(isCrit) applyBleed(ref, Math.round(dmg*0.2));
+    applyPoison(ref); // 크리티컬 여부와 무관하게 모든 적중마다 독 옵션 확률 판정
     // 무기 고유 색으로 튀는 타격 스파크 - 어떤 무기로 맞혔는지 한눈에 느껴지도록
     if(weapon && weapon.color) spawnWeaponHitFx(ref.wx, ref.wy-(ref.r||16)*1.3, weapon.color, weapon.color2);
     // 등급 높은 무기(S 이상)는 타격 지점에서도 작은 확산 링이 함께 터진다. 크리티컬이면 흰 빛줄기까지 곁들여 한층 화려해진다.
@@ -8237,19 +8314,30 @@
   bindHoldRepeat(growDefBtnEl, buyGrowDef);
   bindHoldRepeat(growSpdBtnEl, buyGrowSpd);
 
-  // 큰 숫자(골드 등) 단위 표기: 억(10^8)부터 소문자 a, 이후 4자리(만 단위)씩 올라갈 때마다 b, c ... z,
-  // z(10^108)를 넘으면 대문자 A, B ... Z(10^212)까지 이어서 사용한다.
-  const BIG_NUM_UNIT_LETTERS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  // 큰 숫자(골드/전투력/공격력/체력 등) 단위 표기: 억(10^8)부터 소문자 a, 이후 4자리(만 단위)씩 올라갈 때마다 b, c ... z,
+  // z를 넘으면 대문자 A, B ... Z까지 이어서 쓰고(여기까지 총 52단계 = 기존 방식과 동일),
+  // 그 이후로는 두 글자(aa, ab, ac ... az, aA ... aZ, ba ... zZ, Aa ... ZZ), 세 글자(aaa ... ZZZ)로
+  // 알파벳 52자(a~z, A~Z) 기준의 자리수 표기법으로 자동 확장되어 사실상 무한히 커질 수 있다.
+  const BIG_NUM_ALPHA = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'; // 52자
+  function bigNumTierLabel(tier){
+    // tier(0부터 시작)를 알파벳 코드로 변환. 0~51은 한 글자(a~z,A~Z, 기존과 동일),
+    // 52부터는 두 글자(52*52=2704개), 그 다음은 세 글자... 로 필요한 만큼 자리수가 늘어난다.
+    let n = tier, len = 1, rangeSize = 52;
+    while(n >= rangeSize){ n -= rangeSize; len++; rangeSize *= 52; }
+    let out = '';
+    for(let i=0;i<len;i++){ out = BIG_NUM_ALPHA[n%52] + out; n = Math.floor(n/52); }
+    return out;
+  }
   function formatBigNum(n){
     n = Math.floor(n||0);
     if(n < 100000000) return n.toLocaleString(); // 1억 미만은 기존처럼 천단위 콤마만 표기
-    let tier = Math.min(BIG_NUM_UNIT_LETTERS.length-1, Math.floor((Math.log10(n)-8)/4));
+    let tier = Math.floor((Math.log10(n)-8)/4);
     let divisor = Math.pow(10, 8+tier*4);
     let val = Math.round((n/divisor)*100)/100;
     // 부동소수점 오차로 반올림 시 10000 이상이 되면 한 단위 위로 올려 재계산
-    if(val>=10000 && tier<BIG_NUM_UNIT_LETTERS.length-1){ tier+=1; divisor=Math.pow(10,8+tier*4); val=Math.round((n/divisor)*100)/100; }
+    if(val>=10000){ tier+=1; divisor=Math.pow(10,8+tier*4); val=Math.round((n/divisor)*100)/100; }
     const str = val.toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
-    return str+BIG_NUM_UNIT_LETTERS[tier];
+    return str+bigNumTierLabel(tier);
   }
 
   function toast(msg, cls, force){
@@ -8270,9 +8358,9 @@
     expBarTextEl.textContent = `EXP ${state.exp}/${needExp}`;
     const jobLabelEl = document.getElementById('currentJobLabel');
     if(jobLabelEl) jobLabelEl.textContent = `${currentJobDef().icon} ${currentJobDef().label}`;
-    atkStatEl.textContent=Math.round(effectiveAtk());
+    atkStatEl.textContent=formatBigNum(effectiveAtk());
     playerHpFillEl.style.width = (player.hp/player.maxHp*100)+'%';
-    playerHpTextEl.textContent = `${player.hp}/${player.maxHp}`;
+    playerHpTextEl.textContent = `${formatBigNum(player.hp)}/${formatBigNum(player.maxHp)}`;
     const bossTag = boss && boss.kind==='final' ? '🔥 최종보스전!' : boss && boss.kind==='elite' ? '⚡ 정예보스전!' : '🚩 보스전!';
     // 캐릭터 이름/스테이지 번호는 왼쪽에, 잡몹 처치 진행도(또는 보스전 표시)는 오른쪽에 정렬해 한눈에 구분되도록 한다.
     stageNumLabelEl.textContent = stageLabel(state.stage);
@@ -8290,11 +8378,11 @@
 
     // 성장 탭
     goldGrowViewEl.textContent = formatBigNum(state.gold);
-    hpGrowViewEl.textContent = player.maxHp;
-    growAtkValEl.textContent = state.atk;
+    hpGrowViewEl.textContent = formatBigNum(player.maxHp);
+    growAtkValEl.textContent = formatBigNum(state.atk);
     growAtkCostEl.textContent = formatBigNum(growCostAtk());
     growAtkBtnEl.disabled = state.gold<growCostAtk();
-    growHpValEl.textContent = player.maxHp;
+    growHpValEl.textContent = formatBigNum(player.maxHp);
     growHpCostEl.textContent = formatBigNum(growCostHp());
     growHpBtnEl.disabled = state.gold<growCostHp();
     growDefValEl.textContent = effectiveDefPct().toFixed(1)+'% ('+state.lvDef+'/'+GROWTH_DEF_MAX_LV+')';
@@ -8396,14 +8484,14 @@
     equipTreasureCountEl.textContent = `${tFilled}/${EQUIP_SLOT_COUNT.treasure}`;
     equipEquipmentCountEl.textContent = `${eFilled}/${EQUIP_SLOT_COUNT.equipment}`;
 
-    equipHlAtkEl.textContent = Math.round(effectiveAtk());
-    equipHlHpEl.textContent = effectiveMaxHp();
+    equipHlAtkEl.textContent = formatBigNum(effectiveAtk());
+    equipHlHpEl.textContent = formatBigNum(effectiveMaxHp());
     equipHlDefEl.textContent = effectiveDefPct().toFixed(1)+'%';
     equipHlSpdEl.textContent = (gearTotals.spdInc||0)>0 ? `+${gearTotals.spdInc}%` : '기본';
 
     const extraKeys = Object.keys(ALL_STAT_DEFS).filter(k=> (k==='crit' ? effectiveCritChance() : (gearTotals[k]||0)) > 0 && !['hpInc','defInc','atkInc','spdInc'].includes(k));
     equipStatExtraEl.innerHTML = extraKeys.length
-      ? extraKeys.map(k=> `<div class="equip-stat-row"><span>${ALL_STAT_DEFS[k].label}<button class="stat-info-btn" data-stat="${k}">?</button></span><b>+${k==='crit' ? effectiveCritChance() : gearTotals[k]}%</b></div>`).join('')
+      ? extraKeys.map(k=> `<div class="equip-stat-row"><span>${ALL_STAT_DEFS[k].label}<button class="stat-info-btn" data-stat="${k}">?</button></span><b>+${k==='crit' ? effectiveCritChance() : gearTotals[k]}${ALL_STAT_DEFS[k].unit}</b></div>`).join('')
       : `<div class="equip-stat-empty">장비를 장착하면 추가 능력치가 여기에 표시됩니다.</div>`;
   }
 
@@ -9192,7 +9280,7 @@
   gachaPull10BtnEl.addEventListener('click', ()=> doGachaPull(gachaCurCat, 10));
 
   function statLineText(stats){
-    return Object.keys(stats).map(k=> `${ALL_STAT_DEFS[k].label} +${stats[k]}%`).join(' · ');
+    return Object.keys(stats).map(k=> `${ALL_STAT_DEFS[k].label} +${stats[k]}${ALL_STAT_DEFS[k].unit}`).join(' · ');
   }
 
   function renderGachaView(){
@@ -9253,7 +9341,7 @@
     gachaDetailTitleEl.textContent = `[${item.grade}] ${item.name}`;
     gachaDetailTitleEl.style.color = grade.color;
     gachaDetailBodyEl.innerHTML = `<div class="odds-featured-icon item-icon" style="width:52px;height:52px;margin-bottom:10px;">${itemIconSVG(item)}</div><div class="gacha-detail-body">` + Object.keys(item.stats).map(k=>
-      `<div class="gd-stat-row"><span>${ALL_STAT_DEFS[k].label}</span><b style="color:${grade.color}">+${item.stats[k]}%</b></div>`
+      `<div class="gd-stat-row"><span>${ALL_STAT_DEFS[k].label}</span><b style="color:${grade.color}">+${item.stats[k]}${ALL_STAT_DEFS[k].unit}</b></div>`
     ).join('') + `</div><div class="settings-note" style="margin-top:10px;">${Object.keys(item.stats).map(k=>ALL_STAT_DEFS[k].desc).join(' ')}</div>`;
     gachaDetailModalEl.classList.add('show');
   }
