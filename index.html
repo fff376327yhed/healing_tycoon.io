@@ -61,11 +61,53 @@
   button.hud-chip{ width:auto; flex:0 0 auto; }
   .hud-stage{
     flex:1 1 160px; font-size:12px; color:var(--gold); font-weight:700; min-width:120px;
+    display:flex; align-items:center; justify-content:flex-end; gap:10px; /* 이름/스테이지/처치수를 전부 오른쪽으로 정렬 */
+  }
+  .hud-stage-left{ display:flex; align-items:center; gap:6px; min-width:0; }
+  .hud-stage-name{
+    background:var(--bg-panel-2); border:1px solid var(--line); border-radius:6px;
+    padding:2px 8px; color:var(--text); font-size:11px; font-weight:700;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px;
+  }
+  .hud-stage-num{ color:var(--gold); white-space:nowrap; flex:0 0 auto; }
+  .hud-stage-progress{ color:var(--text-dim); font-size:11.5px; font-weight:700; white-space:nowrap; flex:0 0 auto; }
+  .hud-stage-progress.boss{ color:var(--destroy); }
+  /* HUD 정리 후 #stageName이 #hud 밖으로 나와 독립된 한 줄이 되었으므로,
+     상단 패널과 이어져 보이도록 같은 배경/여백을 준다. */
+  #app > .hud-stage{
+    flex:0 0 auto; background:var(--bg-panel); border-bottom:1px solid var(--line);
+    padding:4px 10px !important; margin-top:-1px;
   }
   .hud-hp{ display:flex; align-items:center; gap:6px; }
   .hpbar-wrap{width:90px; height:9px; background:#100c1c; border-radius:5px; overflow:hidden; border:1px solid var(--line);}
   .hpbar-fill{height:100%; background:linear-gradient(90deg,#3ec9a7,#5be0bd); transition:width 0.15s;}
   #playerHpText{font-size:11px; color:var(--text-dim); white-space:nowrap;}
+
+  /* HUD 간소화: 스테이지/랭킹/마을지도/설정 버튼 4개를 ☰ 메뉴 하나로 접어서
+     상단이 아이콘 칩으로 복잡해 보이지 않도록 정리한다. 공격력(⚔) 칩도 자주 보는 정보가
+     아니라서 기본적으로는 숨기고, 메뉴를 통해서만 노출되는 서브 정보로 뺀다. */
+  .hud-main-row{ display:flex; align-items:center; gap:6px; flex:1 1 auto; min-width:0; flex-wrap:nowrap; }
+  #atkStatChip{ display:none; }
+  .hud-menu-wrap{ position:relative; flex:0 0 auto; }
+  #hudMenuBtn{ width:34px; height:34px; padding:0; border-radius:8px; font-size:15px; justify-content:center; }
+  #hudMenuPopover{
+    position:fixed; z-index:999; overflow:hidden; /* 화면 좌표 기준 고정 배치(JS에서 top/right 계산) - #hud의 stacking/overflow 영향을 받지 않아 항상 완전히 보인다 */
+    background:var(--bg-panel-2); border:1px solid var(--line); border-radius:10px;
+    padding:6px; display:flex; flex-direction:column; gap:4px; min-width:130px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.45);
+  }
+  #hudMenuPopover.hide{ display:none; }
+  #hudMenuPopover button{
+    width:100%; text-align:left; background:transparent; border:0; color:var(--text);
+    font-size:12.5px; font-weight:700; padding:8px 8px; border-radius:6px; cursor:pointer;
+  }
+  #hudMenuPopover button:active{ background:var(--bg-panel); }
+  /* 기존 #settingsBtn/#stageSelectBtn/#villageMapBtn 개별 CSS(width:auto, margin-left:auto)가
+     팝오버 안에서 버튼을 어긋나 보이게 하지 않도록 확실히 초기화 */
+  #hudMenuPopover #settingsBtn,
+  #hudMenuPopover #stageSelectBtn,
+  #hudMenuPopover #villageMapBtn,
+  #hudMenuPopover #rankingBtn{ width:100%; margin-left:0; }
 
   /* ===== 게임 화면 ===== */
   #gameView{ position:relative; flex:1 1 auto; overflow:hidden; touch-action:none; background:#14301c; }
@@ -1146,19 +1188,32 @@
 <div id="app">
 
   <div id="hud">
-    <div class="hud-chip" id="levelChip">🌟 Lv.<span id="levelHud">1</span></div>
-    <div class="hud-chip">💰 <span id="gold">0</span></div>
-    <div class="hud-chip">💠 <span id="gemsHud">0</span></div>
-    <div class="hud-chip">⚔ <span id="atkStat">3</span></div>
-    <div class="hud-stage" id="stageName">1스테이지 · 잡몹 처치 0/5</div>
-    <div class="hud-hp">
-      <div class="hpbar-wrap"><div class="hpbar-fill" id="playerHpFill" style="width:100%"></div></div>
-      <span id="playerHpText">24/24</span>
+    <div class="hud-main-row">
+      <div class="hud-chip" id="levelChip">🌟 Lv.<span id="levelHud">1</span></div>
+      <div class="hud-hp">
+        <div class="hpbar-wrap"><div class="hpbar-fill" id="playerHpFill" style="width:100%"></div></div>
+        <span id="playerHpText">24/24</span>
+      </div>
+      <div class="hud-chip">💰 <span id="gold">0</span></div>
+      <div class="hud-chip">💠 <span id="gemsHud">0</span></div>
+      <div class="hud-chip" id="atkStatChip">⚔ <span id="atkStat">3</span></div>
     </div>
-    <button class="hud-chip" id="stageSelectBtn" style="cursor:pointer;">🗺 스테이지</button>
-    <button class="hud-chip" id="rankingBtn" style="cursor:pointer;">🏆 랭킹</button>
-    <button class="hud-chip" id="villageMapBtn" style="cursor:pointer;">🏘 마을지도</button>
-    <button class="hud-chip" id="settingsBtn" style="cursor:pointer;">⚙</button>
+    <div class="hud-menu-wrap">
+      <button class="hud-chip" id="hudMenuBtn" style="cursor:pointer;">☰</button>
+      <div id="hudMenuPopover" class="hide">
+        <button type="button" id="stageSelectBtn">🗺 스테이지</button>
+        <button type="button" id="rankingBtn">🏆 랭킹</button>
+        <button type="button" id="villageMapBtn">🏘 마을지도</button>
+        <button type="button" id="settingsBtn">⚙ 설정</button>
+      </div>
+    </div>
+  </div>
+  <div class="hud-stage" id="stageName">
+    <div class="hud-stage-left">
+      <span class="hud-stage-name" id="stageNameLabel" style="display:none;"></span>
+      <span class="hud-stage-num" id="stageNumLabel">1-1</span>
+    </div>
+    <span class="hud-stage-progress" id="stageProgressLabel">잡몹 처치 0/5</span>
   </div>
   <div id="expBarWrap">
     <div class="expbar-fill" id="expBarFill" style="width:0%"></div>
@@ -1337,6 +1392,15 @@
         <button class="btn-settings-mini" id="logoutBtn">로그아웃</button>
       </div>
       <div class="settings-note">※ 진행 상황(골드·레벨·설정 등)은 로그인 계정에 자동으로 저장됩니다.</div>
+    </div>
+
+    <div class="settings-section">
+      <h3>🔄 전체 초기화</h3>
+      <div class="settings-row" style="color:var(--fail);">⚠ 골드·레벨·직업·아이템·장비·모든 스테이지 진행도가 전부 삭제되고 신규 계정처럼 처음부터 다시 시작합니다.</div>
+      <div class="settings-btn-row">
+        <button class="btn-settings-mini" id="fullResetBtn" style="color:var(--fail);border-color:var(--fail);">전체 초기화</button>
+      </div>
+      <div class="settings-note">※ 되돌릴 수 없습니다. 닉네임·사운드 등 환경설정과 로그인 상태는 유지됩니다.</div>
     </div>
 
     <div class="settings-section">
@@ -3447,7 +3511,8 @@
   // 지팡이는 다른 원거리 무기와 달리 "자신 주변 반경 n칸 이내"를 노리고 하늘에서 투사체가 떨어지는 소환형 공격 방식을 쓴다.
   // radius: 플레이어 주변 몇 칸 이내의 적을 공격 대상으로 삼을지(등급이 높을수록 넓어짐, 최소 2칸 ~ 최대 10칸).
   // projCount: 한 번의 공격에서 떨어뜨리는 투사체 개수(S 이하 1개, SS 2개, SSS 3개).
-  // aoe: true면 투사체가 떨어진 지점 주변의 다른 적에게도 피해가 들어가는 광역 공격(SSS 전용), false면 지정된 대상 하나에게만 피해가 들어가는 단일 공격.
+  // aoe: true(SSS 전용)면 스플래시로 맞은 대상도 정타와 동일한 피해를 받고, false면 스플래시 대상은 절반 피해만 받는다.
+  // (스플래시 자체는 모든 등급에서 항상 발생한다 — 판정 반경은 STAFF_LANDING_HIT_RADIUS, 적용 로직은 updateStaffDrops() 참고)
   // fallStyle/fallSpeed: 등급마다 다른 낙하 이펙트(스파크/번개/유성 등)와 낙하 속도를 낼 때 쓰인다(파트4에서 사용).
   // eliteFx: true면(SS·SSS 전용) 낙하 지점에 소환 마법진(장판)이 미리 떠오르고, 이 공격으로 적을 처치했을 때
   // 착탄 이펙트 위에 한층 더 화려한 처치 확인 연출이 추가로 겹쳐 터진다(파트5에서 사용).
@@ -3470,6 +3535,9 @@
   }
   const PLAYER_MAXHP=24, PLAYER_INVULN=750;
   const MOB_CONTACT_DAMAGE=2, MOB_CONTACT_COOLDOWN=900;
+  // 잡몹 공격 히트박스: 사거리 안에 들어오면 잠깐 대기 후 링이 차오르고(예고),
+  // 예고가 끝나는 순간 플레이어가 그 판정 반경 안에 있으면 피해가 들어간다 — 보스 패턴과 동일한 "예고 후 판정" 방식.
+  const MOB_ATK_RANGE=30, MOB_ATK_TELEGRAPH_MS=380, MOB_ATK_HIT_RADIUS=26, MOB_ATK_IDLE_GAP_MS=200;
   const BOSS_TOUCH_DAMAGE=3, BOSS_SLAM_DAMAGE=6, BOSS_DASH_DAMAGE=5, BOSS_BURST_DAMAGE=7;
   const BOSS_SLAM_RADIUS=48, BOSS_BURST_RADIUS=72;
   const BOSS_TELE_SLAM=950, BOSS_TELE_DASH=600, BOSS_TELE_BURST=1150;
@@ -3550,7 +3618,7 @@
   const MOB_CHASE_TRIGGER=220; // (더 이상 사용하지 않음 - 몬스터는 항상 추적)
   const AUTO_HUNT_SEARCH_RADIUS=2000; // 조작이 없을 때 사냥할 대상을 찾는 범위
   function stageHpMult(){ return Math.pow(1.07, state.stage-1); } // 스테이지가 오를수록 몬스터 체력 배율 증가
-  function stageDmgMult(){ return 1 + (state.stage-1)*0.06; } // 스테이지가 오를수록 피해량 배율 증가
+  function stageDmgMult(){ return 1 + (state.stage-1)*0.08; } // 스테이지가 오를수록 피해량 배율 증가 (0.06 -> 0.08 상향)
   function bossTimeLimit(){ return Math.round(Math.min(55000, 32000 + state.stage*1400)); } // 보스전 제한시간(ms)
 
   // ============ 챕터/스테이지 (챕터당 30스테이지: 1-1 ~ 1-30, 2-1...) ============
@@ -3570,22 +3638,25 @@
     1: {
       10: {
         name:'고대 늑대왕', type:'rat', tint:'#c46bff',
-        scaleMult:1.35, hpMult:2.3, dmgMult:1.25, radiusMult:1.1, cooldownMult:0.85,
-        patternSet:['slam','dash','burst','arrowrain'], timeBonus:10000,
+        scaleMult:1.35, hpMult:2.0, dmgMult:1.25, radiusMult:1.1, cooldownMult:0.85, // hpMult 2.3 -> 2.0
+        patternSet:['slam','dash','burst','arrowrain'], timeBonus:12000, // 10000 -> 12000
         matchPlayerSpeed:true, // 10스테이지 보스는 이동속도가 플레이어의 현재 이동속도와 동일하다
       },
       20: {
         name:'강철 고블린 파괴자', type:'goblin', tint:'#4fd1ff',
-        scaleMult:1.55, hpMult:3.1, dmgMult:1.4, radiusMult:1.45, cooldownMult:0.6,
+        scaleMult:1.55, hpMult:2.7, dmgMult:1.4, radiusMult:1.45, cooldownMult:0.6, // hpMult 3.1 -> 2.7
         // 20스테이지 보스는 광역기(burst/arena/novaburst/groundquake)를 더 넓은 범위로, 더 자주 사용한다.
         // 화살비(arrowrain)와 이동속도 특성(matchPlayerSpeed)은 여기에 적지 않아도 eliteSpecialFor()가
         // 10스테이지 보스(고대 늑대왕)의 스킬을 자동으로 가져와 중첩시켜준다.
-        patternSet:['slam','dash','burst','arena','novaburst','groundquake'], timeBonus:14000,
+        patternSet:['slam','dash','burst','arena','novaburst','groundquake'], timeBonus:16500, // 14000 -> 16500
       },
       30: {
         name:'태초의 오크 군주', type:'orc', tint:'#ff3b6b',
-        scaleMult:1.8, hpMult:4.6, dmgMult:1.6, radiusMult:1.3, cooldownMult:0.55,
-        patternSet:['slam','dash','burst','spread','summon','tripledash'], timeBonus:20000,
+        // hpMult 4.6 -> 3.9 -> 3.3, timeBonus 24000 -> 26000: 30스테이지 필요DPS를 235.3 -> 약 194로 낮춰
+        // 4개 직업(검사·마법사·궁수·도적) 모두 10%+ 여유를 갖고 클리어 가능하도록 조정.
+        // (20->30 구간 필요DPS 배율이 3.1배 -> 약 2.5배로 완만해짐. hpMult 복리 증가폭이 원인이었음)
+        scaleMult:1.8, hpMult:3.3, dmgMult:1.6, radiusMult:1.3, cooldownMult:0.55,
+        patternSet:['slam','dash','burst','spread','summon','tripledash'], timeBonus:26000, // 20000 -> 24000 -> 26000
         dualClone:true,
       },
     },
@@ -3654,26 +3725,31 @@
 
 
   // ============ 상태 ============
-  let state = {
-    gold:0, atk:3, stage:1, maxClearedStage:0,
-    mobsKilled:0, mobsRequired:5, stageProgress:{}, // stageProgress: 스테이지별로 처치한 잡몹 수를 기억해 재방문 시 그대로 복원
-    def:0, lvAtk:0, lvHp:0, lvDef:0, lvSpd:0,
-    gems:0, // 뽑기 재화(소환석) — 직업마다 완전히 별개로 관리됨(아래 jobStats 참고)
-    job:null, // 직업(클래스): 'warrior'|'mage'|'archer'|'rogue', 최초 접속 시 선택
-    level:1, exp:0, // 캐릭터 레벨/경험치: 제한 없이 계속 오르며, 레벨이 오를수록 필요 경험치도 늘어난다
-    inv:{weapon:[], treasure:[], equipment:[]}, // 보유 아이템: [{id, count}] — 무기는 직업별 id 체계로 나뉘어 있어 창고가 공용 배열이어도 직업간 무기가 섞여 쓰이지 않는다(기존 방식 유지)
-    // 장착 중인 아이템: 무기/보물/장비 모두 슬롯별 id 배열(빈 슬롯은 null) — 무기도 여러 개 동시 장착 가능
-    equip:{weapon:[null,null,null], treasure:[null,null,null,null,null], equipment:[null,null,null,null]},
-    // 직업별 진행치 저장소: { [jobKey]: {level,exp,lvAtk,lvHp,lvDef,lvSpd,atk,def,gold,gems,stage,maxClearedStage,stageProgress} }
-    // 검사와 마법사가 레벨뿐 아니라 골드·보석·스테이지까지 완전히 별개로 진행되도록, 위의 최상위 필드들은
-    // "현재 선택된 직업"의 값을 그대로 반영하는 캐시이며, 직업을 바꿀 때마다 아래 jobStats와 서로 동기화된다.
-    jobStats:{},
-    // 대장간 재련(무기 스탯 리롤/잠금) 결과 저장소: { [itemId]: {stats:{key:value}, locked:{key:true}} }
-    // 무기 아이템 자체(ITEM_INDEX)는 매번 새로 접속할 때 결정론적으로 재생성되므로, 플레이어가 재련한 결과는
-    // 여기 별도로 저장해두었다가 접속 시 applyItemOverrides()로 다시 덮어씌운다. 아이템 id가 직업까지
-    // 포함해 전역적으로 고유하므로 최상위(직업 공용)에 두어도 안전하다.
-    itemOverrides:{},
-  };
+  // 완전히 새로운 최상위 state 객체를 만든다. 최초 접속 시뿐 아니라 "전체 초기화" 기능에서도
+  // 동일한 기본값을 재사용하기 위해 함수로 분리해두었다(둘이 서로 어긋나지 않도록 하기 위함).
+  function createFreshState(){
+    return {
+      gold:0, atk:3, stage:1, maxClearedStage:0,
+      mobsKilled:0, mobsRequired:5, stageProgress:{}, // stageProgress: 스테이지별로 처치한 잡몹 수를 기억해 재방문 시 그대로 복원
+      def:0, lvAtk:0, lvHp:0, lvDef:0, lvSpd:0,
+      gems:0, // 뽑기 재화(소환석) — 직업마다 완전히 별개로 관리됨(아래 jobStats 참고)
+      job:null, // 직업(클래스): 'warrior'|'mage'|'archer'|'rogue', 최초 접속 시 선택
+      level:1, exp:0, // 캐릭터 레벨/경험치: 제한 없이 계속 오르며, 레벨이 오를수록 필요 경험치도 늘어난다
+      inv:{weapon:[], treasure:[], equipment:[]}, // 보유 아이템: [{id, count}] — 무기는 직업별 id 체계로 나뉘어 있어 창고가 공용 배열이어도 직업간 무기가 섞여 쓰이지 않는다(기존 방식 유지)
+      // 장착 중인 아이템: 무기/보물/장비 모두 슬롯별 id 배열(빈 슬롯은 null) — 무기도 여러 개 동시 장착 가능
+      equip:{weapon:[null,null,null], treasure:[null,null,null,null,null], equipment:[null,null,null,null]},
+      // 직업별 진행치 저장소: { [jobKey]: {level,exp,lvAtk,lvHp,lvDef,lvSpd,atk,def,gold,gems,stage,maxClearedStage,stageProgress} }
+      // 검사와 마법사가 레벨뿐 아니라 골드·보석·스테이지까지 완전히 별개로 진행되도록, 위의 최상위 필드들은
+      // "현재 선택된 직업"의 값을 그대로 반영하는 캐시이며, 직업을 바꿀 때마다 아래 jobStats와 서로 동기화된다.
+      jobStats:{},
+      // 대장간 재련(무기 스탯 리롤/잠금) 결과 저장소: { [itemId]: {stats:{key:value}, locked:{key:true}} }
+      // 무기 아이템 자체(ITEM_INDEX)는 매번 새로 접속할 때 결정론적으로 재생성되므로, 플레이어가 재련한 결과는
+      // 여기 별도로 저장해두었다가 접속 시 applyItemOverrides()로 다시 덮어씌운다. 아이템 id가 직업까지
+      // 포함해 전역적으로 고유하므로 최상위(직업 공용)에 두어도 안전하다.
+      itemOverrides:{},
+    };
+  }
+  let state = createFreshState();
   const EQUIP_SLOT_COUNT = {weapon:1, treasure:5, equipment:4};
   // 직업별로 완전히 분리 관리되는 진행치 키 목록: 레벨/경험치/성장 스탯·골드·소환석(보석)·스테이지 진행도뿐 아니라
   // 인벤토리(inv)와 장착 장비(equip)까지 전부 직업마다 따로 저장된다. 즉 직업을 바꾸면 완전히 다른 서버에
@@ -3776,10 +3852,10 @@
   // ===== 직업(클래스) 시스템 =====
   // 직업마다 사용 가능한 무기 종류(noun)가 정해져 있어, 뽑기/인벤토리/장착에서 다른 직업의 무기는 나오지 않는다.
   const JOB_DEFS = {
-    warrior: {key:'warrior', label:'검사',   statLabel:'STR',      desc:'근접 물리 — 검/대검류 (특성: 공격력의 2.5배 추가 피해, 치명타 확률 +70%p, 이동속도 -40%, 공격속도 -45%, 검 등급별 부채꼴 범위·치명타 부여 확률 증가)', icon:'⚔', nouns:['검','대검']},
-    mage:    {key:'mage',    label:'마법사', statLabel:'INT',      desc:'원거리 마법 — 지팡이',  icon:'🪄', nouns:['지팡이']},
-    archer:  {key:'archer',  label:'궁수',   statLabel:'DEX',      desc:'원거리 물리 — 활/석궁', icon:'🏹', nouns:['활','석궁']},
-    rogue:   {key:'rogue',   label:'도적',   statLabel:'SPD/치명타', desc:'빠른 근접 — 단검/쌍검', icon:'🗡', nouns:['단검','쌍검']},
+    warrior: {key:'warrior', label:'검사',   statLabel:'STR',      desc:'근접 물리 — 검/대검류 (특성: 강력한 근접 딜러 — 추가피해·치명타 특화, 대신 이동·공격속도 감소)', icon:'⚔', nouns:['검','대검']},
+    mage:    {key:'mage',    label:'마법사', statLabel:'INT',      desc:'원거리 마법 — 지팡이 (특성: 쿨타임 +200%)',  icon:'🪄', nouns:['지팡이']},
+    archer:  {key:'archer',  label:'궁수',   statLabel:'DEX',      desc:'원거리 물리 — 활/석궁 (특성: 사거리 +70%, 먼 적 명중 시 공격력 +50%)', icon:'🏹', nouns:['활','석궁']},
+    rogue:   {key:'rogue',   label:'도적',   statLabel:'SPD/치명타', desc:'빠른 근접 — 단검/쌍검 (특성: 이동속도 +50%, 공격력 -45%, 강화 최대이동속도 초과 10%p마다 치명타 +20%)', icon:'🗡', nouns:['단검','쌍검']},
   };
   const JOB_KEYS = Object.keys(JOB_DEFS);
   function currentJobDef(){ return JOB_DEFS[state.job] || JOB_DEFS[JOB_KEYS[0]]; }
@@ -4345,12 +4421,21 @@
     renderGachaView();
     renderEquipView();
   }
-  function effectiveAtk(){ return state.atk * (1 + (gearTotals.atkInc||0)/100); }
-  // 최종 치명타 확률 = 장비 합산치 + 직업 고유 보너스(검사는 +70%p 고정). 100%를 넘긴 만큼은 확률로 낭비되지 않고
-  // applyAttackDamage에서 치명타 데미지 배율을 늘리는 데 쓰인다 (모든 치명타 확률 출처에 공통 적용).
+  function effectiveAtk(){
+    let atk = state.atk * (1 + (gearTotals.atkInc||0)/100);
+    if(state.job==='rogue') atk *= 0.55; // 도적 특성: 공격력 -45%
+    return atk;
+  }
+  // 최종 치명타 확률 = 장비 합산치 + 직업 고유 보너스(검사는 +70%p 고정, 도적은 이동속도 초과분에 비례). 100%를 넘긴 만큼은
+  // 확률로 낭비되지 않고 applyAttackDamage에서 치명타 데미지 배율을 늘리는 데 쓰인다 (모든 치명타 확률 출처에 공통 적용).
   function effectiveCritChance(){
     let c = gearTotals.crit||0;
     if(state.job==='warrior') c += 70; // 검사 특성: 치명타 확률 +70%p 고정
+    if(state.job==='rogue'){
+      // 도적 특성: 이동속도가 "강화 최대치 이동속도"(PLAYER_SPEED_MAX)를 10%p 초과할 때마다 치명타 확률 +20%
+      const excessPct = (effectivePlayerSpeed()/PLAYER_SPEED_MAX - 1) * 100;
+      if(excessPct>0) c += Math.floor(excessPct/10)*20;
+    }
     return c;
   }
   // 현재 장착 중인 무기 아이템/프로필. 미장착 시 기본 "검" 프로필을 사용한다.
@@ -4392,9 +4477,10 @@
   // 지팡이는 등급별 STAFF_GRADE_CONFIG.radius(최소 2칸~최대 10칸)를 사거리(=탐색 반경)로 사용한다.
   function effectiveAttackRange(){
     const p = weaponProfile();
-    const baseTiles = state.job==='warrior' ? warriorGradeStats().rangeTiles // 검사: 검 등급에 따른 사거리(1~7칸)
+    let baseTiles = state.job==='warrior' ? warriorGradeStats().rangeTiles // 검사: 검 등급에 따른 사거리(1~7칸)
       : isStaffProfile(p) ? staffGradeConfig().radius
       : p.type==='ranged' ? (p.rangeTiles||6) : (MELEE_RANGE_TILES + (p.rangeBonus||0));
+    if(state.job==='archer') baseTiles *= 1.7; // 궁수 특성: 사거리 +70%
     return (baseTiles*TILE) * (1 + (gearTotals.atkRange||0)/100 + (gearTotals.aoeRange||0)/100);
   }
   function effectiveAttackCooldown(){
@@ -4405,6 +4491,7 @@
       const g = warriorGradeStats();
       if(g.atkSpdPenalty>0) cd /= (1-g.atkSpdPenalty); // SSS 등급 검: 공격속도 추가 -25%
     }
+    if(state.job==='mage') cd *= 3; // 마법사 특성: 쿨타임 +200%(3배)
     return cd;
   }
 
@@ -4496,9 +4583,12 @@
   function effectiveMaxHp(){ return Math.round((PLAYER_MAXHP + state.lvHp*GROWTH_HP_PER_LV) * (1 + (gearTotals.hpInc||0)/100)); }
   function effectivePlayerSpeed(){
     const base = (PLAYER_SPEED + Math.min(state.lvSpd, GROWTH_SPEED_MAX_LV)*GROWTH_SPEED_PER_LV) * (1 + (gearTotals.spdInc||0)/100);
-    if(state.job!=='warrior') return base;
-    // 검사 특성: 이동속도 -40% 기본, 대신 SS 등급 검은 +10%, SSS 등급 검은 +30%만큼 이를 상쇄해준다.
-    return base*0.6*(1+warriorGradeStats().moveSpeedBonus);
+    if(state.job==='warrior'){
+      // 검사 특성: 이동속도 -40% 기본, 대신 SS 등급 검은 +10%, SSS 등급 검은 +30%만큼 이를 상쇄해준다.
+      return base*0.6*(1+warriorGradeStats().moveSpeedBonus);
+    }
+    if(state.job==='rogue') return base*1.5; // 도적 특성: 이동속도 +50%
+    return base;
   }
   // 방어력은 고정 수치가 아닌 "받는 피해 감소율(%)"로 작동. 성장으로는 최대 30%, 장비의 "방어력 증가"를 더해 최대 TOTAL_DEF_CAP%까지 오를 수 있다
   const TOTAL_DEF_CAP = 70;
@@ -4711,6 +4801,9 @@
   // 등급별 낙하 이펙트(fallStyle)마다 하늘에서 떨어지는 높이(dropHeight)를 다르게 준다 — 높을수록 더 오래, 더 화려하게 떨어져 보인다.
   const STAFF_FALL_HEIGHT = {spark:60, bolt:100, meteor:150, lightning:210, divine:270};
   const STAFF_DROP_BASE_MS = 560; // 낙하 기본 소요시간(ms). 실제 소요시간 = 이 값 / 등급별 fallSpeed(등급이 높을수록 더 빨리 떨어짐).
+  // 착탄 스플래시 판정 반경 — spawnStaffLandingFx()가 그리는 시각 이펙트(링) 크기와 맞춰,
+  // "이펙트 범위 안의 적은 실제로 다 맞는다"가 성립하도록 한다. 등급이 높을수록 이펙트가 커지므로 반경도 함께 커진다.
+  const STAFF_LANDING_HIT_RADIUS = {spark:26, bolt:32, meteor:40, lightning:48, divine:56};
 
   function tierIndexForStage(stage){ return Math.min(Math.floor((stage-1)/2), MONSTER_ORDER.length-1); }
   function mobsRequiredForStage(stage){ return Math.min(60, 30 + Math.floor((stage-1)*6)); }
@@ -4719,7 +4812,7 @@
   function spawnMob(){
     const idx = tierIndexForStage(state.stage);
     const type = MONSTER_ORDER[idx];
-    const hp = Math.floor((8 + idx*5 + state.stage*1.6) * stageHpMult());
+    const hp = Math.floor((8 + idx*5 + state.stage*2.4) * stageHpMult()); // 스테이지 계수 1.6 -> 2.4 (일반 스테이지 난이도 상향)
     const ang = Math.random()*Math.PI*2;
     // 화면 안쪽~바로 바깥쪽에 고르게 분포시켜 항상 다수가 눈에 보이도록 함
     const dist = viewRadius()*(0.15 + Math.random()*0.95);
@@ -4740,7 +4833,7 @@
     const special = specialBossFor(chapter, stageInChapter, kind);
     const idx = tierIndexForStage(state.stage);
     const type = (special && special.type) ? special.type : MONSTER_ORDER[idx];
-    const baseHp = Math.floor(((10+idx*6)*10 + state.stage*8) * stageHpMult());
+    const baseHp = Math.floor(((10+idx*6)*10 + state.stage*11) * stageHpMult()); // 스테이지 계수 8 -> 11 (일반 보스 난이도 상향)
     const hp = special ? Math.floor(baseHp*special.hpMult) : baseHp;
     const scaleMult = special ? special.scaleMult : 1;
     const ang = Math.random()*Math.PI*2;
@@ -4888,8 +4981,10 @@
       state.gold += g;
       gainExp(Math.floor(4+state.stage*1.2));
       // 잡몹 처치 시 낮은 확률로 소환석(뽑기 재화) 획득
+      // 이미 한 번 클리어한 스테이지를 재파밍하는 경우(보상 인플레 방지)에는 확률을 3%로 낮춘다.
+      const gemDropChance = (state.stage <= state.maxClearedStage) ? 0.03 : 0.05;
       let gemMsg = '';
-      if(Math.random()<0.05){ state.gems += 1; gemMsg = ', 소환석 +1💠'; }
+      if(Math.random()<gemDropChance){ state.gems += 1; gemMsg = ', 소환석 +1💠'; }
       if(settings.killMsg) toast(`${MONSTER_NAMES[mob.type]} 처치! 골드 +${g}${gemMsg}`, 'gold');
       updateHudText();
     }
@@ -4936,7 +5031,7 @@
     SFX.bossDefeat();
     const rewardMult = boss && boss.kind==='final' ? 3 : boss && boss.kind==='elite' ? 1.8 : 1;
     const g = Math.floor((130+state.stage*38)*rewardMult);
-    const gemReward = boss && boss.kind==='final' ? 30 : boss && boss.kind==='elite' ? 15 : 8;
+    const gemReward = GACHA_COST_1 * 10; // 보스 처치 시 등급 상관없이 소환석 10회 뽑기 분량 고정 지급
     state.gold += g; state.atk += 1; state.gems += gemReward;
     gainExp(Math.floor((40+state.stage*10)*rewardMult));
     const label = boss && boss.kind==='final' ? '🔥 최종보스 처치!' : boss && boss.kind==='elite' ? '⚡ 정예보스 처치!' : '보스 처치!';
@@ -5192,6 +5287,11 @@
     let dmg = effectiveAtk() * (weapon ? (weapon.dmgMult||1) : 1);
     // 검사 특성: 공격력의 2.5배만큼 추가 피해 (대신 이동속도 40% 감소, effectivePlayerSpeed 참고). 검사 선택 시 무조건 적용되는 고정 특성.
     if(state.job==='warrior') dmg += effectiveAtk()*2.5;
+    // 궁수 특성: 사거리의 절반보다 먼 적을 맞출 때마다 이번 공격의 공격력이 50% 증폭된다.
+    if(state.job==='archer'){
+      const distToTarget = Math.hypot(ref.wx-player.wx, ref.wy-player.wy);
+      if(distToTarget > effectiveAttackRange()*0.5) dmg *= 1.5;
+    }
     // 치명타 확률이 100%를 초과하면, 그 초과분만큼 치명타 데미지 배율이 함께 늘어난다(출처 불문 공통 적용).
     // 예: 치명타 확률 130% → 30%p 초과 → 배율 1.5배 + 0.30 = 1.80배
     if(isCrit) dmg *= 1.5 + Math.max(0, critChance-100)/100;
@@ -5309,15 +5409,16 @@
       if(drop.eliteFx && drop.targetKind==='mob' && ref.dying>0){
         spawnStaffKillFx(landX, landY-(ref.r||16), drop);
       }
-      if(drop.aoe){
-        const RAD = 50;
-        mobs.forEach(mob=>{
-          if(mob===ref || mob.dying>0 || mob.dead) return;
-          if(Math.hypot(mob.wx-landX, mob.wy-landY) < RAD) applyAttackDamage({kind:'mob', ref:mob}, {dmgMult:(drop.weapon.dmgMult||1)*0.5});
-        });
-        if(boss && boss!==ref && boss.dying===0 && Math.hypot(boss.wx-landX, boss.wy-landY) < RAD){
-          applyAttackDamage({kind:'boss', ref:boss}, {dmgMult:(drop.weapon.dmgMult||1)*0.5});
-        }
+      // 모든 등급이 착탄 지점 주변에 스플래시 피해를 준다(시각 이펙트 범위 = 실제 판정 범위).
+      // SSS(aoe:true)만 스플래시 대상에게도 정타 그대로, 나머지 등급은 스플래시 대상에게 절반 피해가 들어간다.
+      const RAD = STAFF_LANDING_HIT_RADIUS[drop.fallStyle] || STAFF_LANDING_HIT_RADIUS.spark;
+      const splashMult = drop.aoe ? 1 : 0.5;
+      mobs.forEach(mob=>{
+        if(mob===ref || mob.dying>0 || mob.dead) return;
+        if(Math.hypot(mob.wx-landX, mob.wy-landY) < RAD) applyAttackDamage({kind:'mob', ref:mob}, {dmgMult:(drop.weapon.dmgMult||1)*splashMult});
+      });
+      if(boss && boss!==ref && boss.dying===0 && Math.hypot(boss.wx-landX, boss.wy-landY) < RAD){
+        applyAttackDamage({kind:'boss', ref:boss}, {dmgMult:(drop.weapon.dmgMult||1)*splashMult});
       }
     });
     staffDrops = staffDrops.filter(d=> !d.landed);
@@ -6519,7 +6620,6 @@
       }
       if(mob.hitFlash>0) mob.hitFlash = Math.max(0, mob.hitFlash-dt/150);
       if(mob.squashT>0) mob.squashT = Math.max(0, mob.squashT-dt/220);
-      if(mob.contactCd>0) mob.contactCd -= dt;
       // 피격 넉백: 튕겨나가는 힘을 위치에 반영하고 빠르게 감쇠시킨다
       if(mob.knockVX || mob.knockVY){
         mob.wx += mob.knockVX; mob.wy += mob.knockVY;
@@ -6562,9 +6662,31 @@
         const dx=tx-mob.wx, dy=ty-mob.wy, d=Math.hypot(dx,dy);
         if(d>3){ mob.wx += dx/d*speed*dt*10; mob.wy += dy/d*speed*dt*10; }
       }
-      if(distToPlayer < mob.r+player.r+2 && mob.contactCd<=0){
-        playerTakeDamage(Math.round((mob.contactDamage||MOB_CONTACT_DAMAGE)*stageDmgMult()));
-        mob.contactCd = MOB_CONTACT_COOLDOWN;
+      // 몹 공격 히트박스: 사거리 안에 들어오면 잠깐 대기 후 링이 차오르고(예고),
+      // 예고가 끝나는 순간 플레이어가 그 판정 반경 안에 있으면 피해가 들어간다 — 보스 패턴과 동일한 "예고 후 판정" 방식.
+      if(mob.atkState===undefined){ mob.atkState='idle'; mob.atkTimer=MOB_ATK_IDLE_GAP_MS+Math.random()*300; }
+      if(mob.atkState==='idle'){
+        if(distToPlayer < MOB_ATK_RANGE+mob.r){
+          mob.atkTimer -= dt;
+          if(mob.atkTimer<=0){
+            mob.atkState='telegraph'; mob.atkTimer=MOB_ATK_TELEGRAPH_MS;
+            mob.atkTX=player.wx; mob.atkTY=player.wy; // 예고가 뜬 순간의 위치에 판정이 고정 — 이후 플레이어가 벗어나면 회피된다
+          }
+        } else {
+          mob.atkTimer = MOB_ATK_IDLE_GAP_MS;
+        }
+      } else if(mob.atkState==='telegraph'){
+        mob.atkTimer -= dt;
+        if(mob.atkTimer<=0){
+          const hitR = MOB_ATK_HIT_RADIUS+player.r;
+          if(Math.hypot(player.wx-mob.atkTX, player.wy-mob.atkTY) < hitR){
+            playerTakeDamage(Math.round((mob.contactDamage||MOB_CONTACT_DAMAGE)*stageDmgMult()));
+          }
+          mob.atkState='cooldown'; mob.atkTimer=MOB_CONTACT_COOLDOWN;
+        }
+      } else if(mob.atkState==='cooldown'){
+        mob.atkTimer -= dt;
+        if(mob.atkTimer<=0){ mob.atkState='idle'; mob.atkTimer=0; }
       }
     });
     const cull = viewRadius()*2.4;
@@ -7146,6 +7268,19 @@
     // 잡몹
     mobs.forEach(mob=>{
       const mx=sx(mob.wx), my=sy(mob.wy);
+      // 몹 공격 예고(텔레그래프) 표시 — 판정 반경(MOB_ATK_HIT_RADIUS)과 정확히 같은 크기로 그려서
+      // "이 링 안에 있으면 맞는다"가 눈에 보이는 그대로 성립하도록 한다.
+      if(mob.atkState==='telegraph'){
+        const prog = 1-(mob.atkTimer/MOB_ATK_TELEGRAPH_MS);
+        const ttx = sx(mob.atkTX), tty = sy(mob.atkTY);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,90,60,'+(0.5+0.4*Math.sin(now_ms()/55))+')';
+        ctx.fillStyle = 'rgba(255,90,60,0.14)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(ttx, tty, MOB_ATK_HIT_RADIUS*Math.min(1,prog+0.3), 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(ttx, tty, MOB_ATK_HIT_RADIUS, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
       ctx.save();
       const baseScale = mob.scale||2.6;
       let alpha=1, scale=baseScale;
@@ -8084,6 +8219,7 @@
   const goldEl=$('gold'), gemsHudEl=$('gemsHud');
   const levelHudEl=$('levelHud'), expBarFillEl=$('expBarFill'), expBarTextEl=$('expBarText');
   const stageNameEl=$('stageName'), atkStatEl=$('atkStat');
+  const stageNumLabelEl=$('stageNumLabel'), stageNameLabelEl=$('stageNameLabel'), stageProgressLabelEl=$('stageProgressLabel');
   const playerHpFillEl=$('playerHpFill'), playerHpTextEl=$('playerHpText');
   const summonBossBtnEl=$('summonBossBtn');
   summonBossBtnEl.addEventListener('pointerdown', e=>{ e.preventDefault(); trySummonBoss(); });
@@ -8137,9 +8273,17 @@
     atkStatEl.textContent=Math.round(effectiveAtk());
     playerHpFillEl.style.width = (player.hp/player.maxHp*100)+'%';
     playerHpTextEl.textContent = `${player.hp}/${player.maxHp}`;
-    const bossTag = boss && boss.kind==='final' ? ' 🔥최종보스전!' : boss && boss.kind==='elite' ? ' ⚡정예보스전!' : ' 보스전!';
-    const label = bossActive ? `${stageLabel(state.stage)}${bossTag}` : `${stageLabel(state.stage)} · 잡몹 처치 ${state.mobsKilled}/${state.mobsRequired}`;
-    stageNameEl.textContent = (settings.playerName ? settings.playerName+' · ' : '') + label;
+    const bossTag = boss && boss.kind==='final' ? '🔥 최종보스전!' : boss && boss.kind==='elite' ? '⚡ 정예보스전!' : '🚩 보스전!';
+    // 캐릭터 이름/스테이지 번호는 왼쪽에, 잡몹 처치 진행도(또는 보스전 표시)는 오른쪽에 정렬해 한눈에 구분되도록 한다.
+    stageNumLabelEl.textContent = stageLabel(state.stage);
+    if(settings.playerName){
+      stageNameLabelEl.textContent = settings.playerName;
+      stageNameLabelEl.style.display = '';
+    } else {
+      stageNameLabelEl.style.display = 'none';
+    }
+    stageProgressLabelEl.textContent = bossActive ? bossTag : `잡몹 처치 ${state.mobsKilled}/${state.mobsRequired}`;
+    stageProgressLabelEl.classList.toggle('boss', bossActive);
     const canSummon = !bossActive && !bossIncoming && !inHouse && state.mobsKilled>=state.mobsRequired;
     summonBossBtnEl.classList.toggle('show', canSummon);
     giveUpBossBtnEl.classList.toggle('show', bossActive);
@@ -9314,6 +9458,33 @@
   gachaResultSkipBtnEl.addEventListener('click', skipToAllGachaResults);
   gachaResultCloseBtnEl.addEventListener('click', ()=> gachaResultModalEl.classList.remove('show'));
   gachaResultModalEl.addEventListener('click', e=>{ if(e.target===gachaResultModalEl) gachaResultModalEl.classList.remove('show'); });
+
+  // ============ HUD 메뉴(☰): 스테이지/랭킹/마을지도/설정 버튼을 접어서 보여주는 팝오버 ============
+  const hudMenuBtnEl=$('hudMenuBtn'), hudMenuPopoverEl=$('hudMenuPopover');
+  // #hud/.hud-menu-wrap 내부에 중첩되어 있으면 조상 요소의 stacking context/overflow에 따라 팝오버 일부가
+  // 가려지거나 잘려 보이는 문제가 반복적으로 발생했다. body 바로 아래로 옮겨 그런 영향을 원천 차단한다
+  // (버튼들의 id와 클릭 핸들러는 그대로 유지되므로 동작에는 영향이 없다).
+  if(hudMenuPopoverEl) document.body.appendChild(hudMenuPopoverEl);
+  // 팝오버를 버튼의 실제 화면 좌표(getBoundingClientRect)를 기준으로 position:fixed로 직접 배치한다.
+  // (기존에는 조상 요소의 stacking context/overflow에 따라 메뉴가 가려지거나 화면 경계에 걸쳐 잘려 보이는
+  //  문제가 있었는데, 화면 좌표로 직접 계산해 붙이면 그런 영향을 받지 않고 항상 버튼 바로 아래에 온전히 보인다)
+  function positionHudMenu(){
+    const r = hudMenuBtnEl.getBoundingClientRect();
+    hudMenuPopoverEl.style.top = Math.round(r.bottom + 6) + 'px';
+    hudMenuPopoverEl.style.right = Math.round(window.innerWidth - r.right) + 'px';
+    hudMenuPopoverEl.style.left = 'auto';
+  }
+  function openHudMenu(){ positionHudMenu(); hudMenuPopoverEl.classList.remove('hide'); }
+  function closeHudMenu(){ hudMenuPopoverEl.classList.add('hide'); }
+  function toggleHudMenu(){ hudMenuPopoverEl.classList.contains('hide') ? openHudMenu() : closeHudMenu(); }
+  if(hudMenuBtnEl && hudMenuPopoverEl){
+    hudMenuBtnEl.addEventListener('click', e=>{ e.stopPropagation(); toggleHudMenu(); });
+    // 메뉴 안의 버튼(스테이지/랭킹/마을지도/설정)을 누르면 각자의 클릭 핸들러가 모달을 여는데,
+    // 그와 동시에 이 ☰ 팝오버 자체는 자동으로 닫아준다.
+    hudMenuPopoverEl.addEventListener('click', e=>{ if(e.target.closest('button')) closeHudMenu(); });
+    document.addEventListener('click', ()=> closeHudMenu());
+    window.addEventListener('resize', ()=>{ if(!hudMenuPopoverEl.classList.contains('hide')) positionHudMenu(); });
+  }
 
   // ============ 설정 모달 ============
   const settingsBtnEl=$('settingsBtn'), settingsModalEl=$('settingsModal'), settingsCloseBtnEl=$('settingsCloseBtn');
@@ -10584,6 +10755,32 @@
     saveGame();
     closeSettings();
     auth.signOut();
+  });
+
+  // 전체 초기화: 관리자 여부와 무관하게 누구나 사용 가능한, 계정 진행도 전체를 신규 상태로 되돌리는 기능.
+  // (개별 값만 바꾸는 관리자 설정과 달리, 골드·레벨·직업·인벤토리·장비·스테이지 진행도 등 저장 데이터 전체를 한 번에 초기화한다)
+  $('fullResetBtn').addEventListener('click', ()=>{
+    if(!currentUser){ toast('로그인 후 이용할 수 있습니다.', 'fail', true); return; }
+    const ok = confirm('정말로 전체 초기화하시겠습니까?\n골드·레벨·직업·아이템·장비·모든 스테이지 진행도가 영구적으로 삭제되고 신규 계정처럼 처음부터 시작합니다.\n이 작업은 되돌릴 수 없습니다.');
+    if(!ok) return;
+    state = createFreshState();
+    usedCoupons.clear();
+    adminSkipMobRequirement = false;
+    adminAllStagesCleared = false;
+    adminGodMode = false;
+    toast('전체 초기화 중입니다...', 'success', true);
+    userDataRef().set({
+      state: state,
+      settings: settings,
+      usedCoupons: [],
+      updatedAt: Date.now(),
+      playerPos: null,
+    }).then(()=>{
+      location.reload(); // 클린 상태로 전체 흐름(직업 선택 화면 포함)을 다시 타도록 새로고침
+    }).catch(err=>{
+      console.error('전체 초기화 실패:', err);
+      toast('전체 초기화에 실패했습니다. 다시 시도해주세요.', 'fail', true);
+    });
   });
 })();
 </script>
