@@ -4,7 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>지나가던 힐링게임</title>
+<link rel="icon" type="image/x-icon" href="favicon/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon/favicon-48x48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="favicon/android-chrome-192x192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="favicon/android-chrome-512x512.png">
+<link rel="manifest" href="favicon/site.webmanifest">
+
 <style>
+  /* ============================================================================
+     ⚠ UI 디자인 필수 원칙 (이 파일을 수정하는 모든 사람/AI가 항상 지켜야 함) ⚠
+     텍스트가 공간 부족으로 줄바꿈되어 세로로 쌓이거나(특히 한글은 글자 단위로도 줄바꿈이
+     가능해 한 글자씩 세로로 쪼개지는 사고가 잦음) 여러 줄로 밀리는 디자인은 금지한다.
+     새 UI를 만들거나 기존 레이아웃을 고칠 때는 항상:
+       1) 컨테이너/줄을 가로로 넉넉하게 늘리거나(width:100%, flex-direction:column으로
+          요소를 아래위로 분리해 각 줄이 가로 전체 폭을 쓰게 하는 식),
+       2) 필요하면 font-size를 줄이거나,
+       3) 정말 안되면 white-space:nowrap + text-overflow:ellipsis로 "한 줄 유지 후 말줄임"
+     중 하나를 선택할 것. "일단 줄바꿈되게 두고 보기" 식으로 방치하지 말 것.
+     (html,body의 word-break:keep-all은 이 원칙을 못 지켰을 때를 대비한 최후의 안전장치일
+     뿐, 이것만 믿고 레이아웃을 설계하면 안 된다.)
+     ============================================================================ */
   :root{
     --bg-void: #0f0d17;
     --bg-panel: #1a1626;
@@ -32,12 +54,30 @@
   }
   html,body{
     height:100%; margin:0; overflow:hidden; overscroll-behavior:none;
-    background:var(--bg-void); color:var(--text);
+    background:#000; color:var(--text);
     font-family:'Noto Sans KR', system-ui, sans-serif;
+    /* 한글은 기본적으로 띄어쓰기 없이도 글자와 글자 사이 어디서든 줄바꿈이 허용되는데,
+       flex/grid 자식 요소가 폭이 좁아지면 브라우저가 이 특성 때문에 "한 글자당 한 줄"로
+       극단적으로 좁혀버려 텍스트가 세로 한 줄로 쪼개져 보이는 버그가 여러 화면(모달 툴바,
+       판매 하단바 등)에서 반복 발생했다. keep-all로 단어(공백/기호 기준) 안에서는 줄바꿈이
+       일어나지 않게 해서 이 문제를 화면 하나하나 고치는 대신 전역에서 한 번에 막는다. */
+    word-break:keep-all;
+  }
+  /* ===== 화면 비율 고정 래퍼 =====
+     모바일/태블릿/PC 등 화면 크기와 비율이 저마다 달라도 게임 UI가 일정한 비율로 보이도록,
+     JS(applyViewportScale)가 기기의 실제 가로세로 비율을 폰~노트북/PC 허용 범위 안에서 반영해
+     가로폭(width)을 동적으로 정하고, 화면에 맞춰 레터박스로 축소/확대한다. 아래 420x900은
+     JS가 아직 실행되기 전 첫 렌더링에서 쓰이는 기본값일 뿐, 실제 크기는 JS가 덮어쓴다.
+     transform이 적용된 요소는 자식 중 position:fixed 요소들의 새 기준(containing block)이
+     되므로, 모달/팝오버도 자동으로 이 비율 안에 갇힌다. */
+  #viewportScaler{
+    position:fixed; top:50%; left:50%; width:420px; height:900px;
+    transform-origin:center center; background:var(--bg-void);
+    box-shadow:0 0 60px rgba(0,0,0,0.7); overflow:hidden;
   }
   #app{
     display:flex; flex-direction:column;
-    height:100dvh; width:100vw; overflow:hidden;
+    height:100%; width:100%; overflow:hidden;
     background:
       radial-gradient(circle at 20% -10%, rgba(124,92,255,0.15), transparent 40%),
       radial-gradient(circle at 90% 10%, rgba(212,175,55,0.08), transparent 45%),
@@ -108,6 +148,34 @@
   #hudMenuPopover #stageSelectBtn,
   #hudMenuPopover #villageMapBtn,
   #hudMenuPopover #rankingBtn{ width:100%; margin-left:0; }
+  /* 화면 왼쪽에 떠 있는 채팅 아이콘 버튼 (이모지 버블) + 안 읽은 메시지 배지 */
+  .chat-float-btn{
+    position:fixed; left:14px; bottom:90px; z-index:500;
+    width:52px; height:52px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:24px; line-height:1; cursor:pointer; padding:0;
+    background:var(--bg-panel-2); border:1px solid var(--gold-dim);
+    box-shadow:0 4px 14px rgba(0,0,0,.45);
+  }
+  .chat-float-btn:active{ transform:scale(0.94); }
+  .chat-float-btn.hide{ display:none; }
+  @keyframes chatFloatPing{
+    0%{ transform:scale(1); }
+    30%{ transform:scale(1.22); }
+    55%{ transform:scale(0.92); }
+    100%{ transform:scale(1); }
+  }
+  .chat-float-btn.chat-ping{
+    animation: chatFloatPing 0.5s ease;
+    box-shadow:0 0 0 7px rgba(212,175,55,.35), 0 4px 14px rgba(0,0,0,.45);
+  }
+  .chat-float-btn .chat-unread-badge{ position:absolute; top:-4px; right:-4px; }
+  .chat-unread-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:18px; height:18px; padding:0 5px; border-radius:9px;
+    background:var(--destroy); color:#fff; font-size:10.5px; font-weight:800;
+  }
+  .chat-unread-badge.hide{ display:none; }
 
   /* ===== 게임 화면 ===== */
   #gameView{ position:relative; flex:1 1 auto; overflow:hidden; touch-action:none; background:#14301c; }
@@ -135,33 +203,46 @@
   }
   #attackBtn:active{ transform:scale(0.92); filter:brightness(1.1); }
 
+  /* ===== 미니맵 (필드 화면 우상단에 마을 지도를 작게 상시 표시) ===== */
+  #miniMapWrap{
+    position:absolute; right:10px; top:calc(10px + env(safe-area-inset-top,0px));
+    width:168px; height:168px; border-radius:14px; overflow:hidden;
+    background:rgba(15,13,23,0.55); border:2px solid rgba(255,255,255,0.28);
+    box-shadow:0 4px 14px rgba(0,0,0,0.45); z-index:4; touch-action:none;
+    display:none; /* JS가 설정값에 따라 보임/숨김 전환 */
+  }
+  #miniMapWrap.show{ display:block; }
+  #miniMapWrap:active{ filter:brightness(1.15); }
+  #miniMapCanvas{ width:100%; height:100%; display:block; }
+
   #summonBossBtn{
     position:absolute; left:50%; top:12px; transform:translateX(-50%);
-    width:auto; padding:9px 20px; border-radius:22px;
+    width:auto; max-width:calc(100% - 24px); padding:9px 20px; border-radius:22px;
     background:linear-gradient(135deg,#ff5b4a,#b23327); color:#fff; font-size:13px; font-weight:800;
     border:2px solid rgba(255,255,255,0.4); box-shadow:0 4px 14px rgba(255,59,59,0.45);
-    display:none; z-index:6; touch-action:none; white-space:nowrap;
+    display:none; z-index:6; touch-action:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   #summonBossBtn.show{ display:block; animation:summonPulse 1.1s ease-in-out infinite; }
   @keyframes summonPulse{ 0%,100%{transform:translateX(-50%) scale(1);} 50%{transform:translateX(-50%) scale(1.06);} }
 
   #giveUpBossBtn{
     position:absolute; right:14px; top:calc(48px + env(safe-area-inset-top,0px));
-    width:auto; padding:7px 14px; border-radius:18px;
+    width:auto; max-width:calc(100% - 28px); padding:7px 14px; border-radius:18px;
     background:rgba(20,16,32,0.8); color:#ffb3b3; font-size:12px; font-weight:700;
     border:1.5px solid rgba(255,77,77,0.55);
-    display:none; z-index:6; touch-action:none; white-space:nowrap;
+    display:none; z-index:6; touch-action:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   #giveUpBossBtn.show{ display:block; }
 
   /* 플레이어가 아무 NPC에게든 1칸 이내로 다가가면 나타나는 범용 "말 걸기" 버튼.
-     모바일에서 누르기 쉽도록 상단 중앙(보스소환 버튼 바로 아래)에 고정된 버튼으로 표시한다. */
+     모바일에서 누르기 쉽도록 상단 중앙(보스소환 버튼 바로 아래)에 고정된 버튼으로 표시한다.
+     NPC 이름이 길면 버튼 텍스트가 화면 밖으로 넘치던 문제가 있어 max-width+ellipsis로 제한한다. */
   #npcTalkBtn{
     position:absolute; left:50%; top:56px; transform:translateX(-50%);
-    width:auto; padding:9px 20px; border-radius:22px;
+    width:auto; max-width:calc(100% - 24px); padding:9px 20px; border-radius:22px;
     background:linear-gradient(135deg,#ffcf6b,#c98a2e); color:#2a1a05; font-size:13px; font-weight:800;
     border:2px solid rgba(255,255,255,0.45); box-shadow:0 4px 14px rgba(201,138,46,0.5);
-    display:none; z-index:6; touch-action:none; white-space:nowrap;
+    display:none; z-index:6; touch-action:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   #npcTalkBtn.show{ display:block; animation:summonPulse 1.1s ease-in-out infinite; }
 
@@ -169,7 +250,7 @@
   #toastLayer{
     position:fixed; top:calc(56px + env(safe-area-inset-top,0px)); left:50%; transform:translateX(-50%);
     display:flex; flex-direction:column; gap:6px; align-items:center;
-    pointer-events:none; z-index:50; width:min(90vw,420px);
+    pointer-events:none; z-index:50; width:min(378px,420px);
   }
   .toast{
     background:rgba(20,16,32,0.92); border:1px solid var(--line); border-left:3px solid var(--arcane);
@@ -208,10 +289,8 @@
   .craft-stats .res .label{font-size:11px; color:var(--text-dim);}
   .craft-stats .res .value{font-size:16px; font-weight:700; color:var(--gold);}
 
-  /* ===== 성장 (탭 뷰) ===== */
-  #growView{
-    display:none; flex:1 1 auto; overflow-y:auto; padding:18px 16px 24px;
-  }
+  /* ===== 훈련소(성장) 모달 ===== */
+  #trainingCampModal .craft-card{ max-width:none; }
   .grow-row{
     display:flex; justify-content:space-between; align-items:center;
     padding:14px 0; border-bottom:1px solid var(--line); gap:12px;
@@ -260,11 +339,23 @@
     border-radius:14px; padding:16px 18px;
   }
   .equip-stats-panel h2{font-family:Georgia,'Nanum Myeongjo',serif; font-size:16px; margin:0 0 10px;}
-  .equip-stat-headline{ display:flex; gap:8px; margin-bottom:10px; }
-  .equip-stat-headline .hs{ flex:1; background:var(--bg-panel-2); border:1px solid var(--line); border-radius:9px; padding:7px 4px; text-align:center; }
-  .equip-stat-headline .hs .l{ font-size:10px; color:var(--text-dim); }
-  .equip-stat-headline .hs .v{ font-size:13px; font-weight:800; color:var(--gold); margin-top:2px; }
-  .equip-stat-row{ display:flex; justify-content:space-between; font-size:12px; padding:5px 0; border-bottom:1px solid var(--line); }
+  /* 공격력/최대 체력/방어력/이동속도 4개를 한 줄(flex:1 x4)로 욱여넣던 기존 방식은
+     박스 폭이 좁아지면 "공격력" 같은 라벨이 "공격/력"처럼 줄바꿈(넘침)되는 문제가 있었다.
+     2x2 grid로 바꿔 박스당 가로폭을 2배로 확보하고, 라벨엔 white-space:nowrap +
+     text-overflow:ellipsis를 안전장치로 추가해 어떤 화면 크기에서도 절대 줄바꿈되지 않게 한다. */
+  .equip-stat-headline{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:10px; }
+  .equip-stat-headline .hs{
+    min-width:0; /* flex/grid 자식의 기본 min-width:auto가 축소를 막아 넘침을 유발하므로 명시적으로 0 처리 */
+    background:var(--bg-panel-2); border:1px solid var(--line); border-radius:9px; padding:8px 6px; text-align:center;
+  }
+  .equip-stat-headline .hs .l{
+    font-size:10.5px; color:var(--text-dim);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .equip-stat-headline .hs .v{ font-size:14px; font-weight:800; color:var(--gold); margin-top:2px; }
+  .equip-stat-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:12px; padding:5px 0; border-bottom:1px solid var(--line); }
+  .equip-stat-row span{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .equip-stat-row b{ flex:0 0 auto; }
   .equip-stat-row:last-child{ border-bottom:none; }
   .equip-stat-row b{ color:var(--gold); }
   .equip-stat-empty{ font-size:11.5px; color:var(--text-dim); text-align:center; padding:6px 0; }
@@ -272,20 +363,33 @@
     display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px;
     margin-left:3px; border-radius:50%; background:var(--bg-panel); border:1px solid var(--line);
     color:var(--text-dim); font-size:9px; font-weight:900; line-height:1; padding:0; cursor:pointer; vertical-align:middle;
+    position:relative; /* 마우스 오버 툴팁(#statHoverTip)의 위치 계산 기준점 */
   }
+  /* ===== ?버튼 마우스오버 툴팁 (PC 전용) =====
+     클릭식 모달(statInfoModal)은 그대로 두고, 마우스가 있는 환경(포인터가 fine한 PC)에서는
+     ?버튼에 커서를 올리기만 해도 같은 설명이 뜨는 작은 말풍선을 보여준다.
+     터치 기기는 hover 개념이 없으므로 기존처럼 탭하면 모달이 뜨는 방식이 그대로 유지된다. */
+  #statHoverTip{
+    position:fixed; z-index:1200; max-width:220px; padding:8px 10px; border-radius:8px;
+    background:var(--bg-panel); border:1px solid var(--gold-dim); color:var(--text);
+    font-size:11.5px; line-height:1.45; box-shadow:0 6px 18px rgba(0,0,0,0.45);
+    pointer-events:none; display:none;
+  }
+  #statHoverTip.show{ display:block; }
+  #statHoverTip .tip-title{ color:var(--gold); font-weight:800; margin-bottom:3px; }
   .inv-equipped-badge{
     margin-left:6px; font-size:10px; font-weight:800; color:var(--gold); border:1px solid var(--gold-dim);
     border-radius:6px; padding:1px 6px; vertical-align:middle;
   }
 
-  .equip-pick-list{ display:flex; flex-direction:column; gap:8px; max-height:56vh; overflow-y:auto; }
+  .equip-pick-list{ display:flex; flex-direction:column; gap:8px; max-height:504px; overflow-y:auto; }
   .equip-pick-empty{ font-size:12px; color:var(--text-dim); text-align:center; padding:18px 0; }
   .equip-pick-item{
     display:flex; align-items:center; gap:10px; background:var(--bg-panel-2); border:1px solid var(--line);
     border-radius:10px; padding:9px 10px; cursor:pointer;
   }
   .equip-pick-item.cur{ outline:1.5px solid var(--gold); }
-  .equip-pick-item .epi-name{ font-size:12.5px; font-weight:800; }
+  .equip-pick-item .epi-name{ font-size:12.5px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .equip-pick-item .epi-sub{ font-size:10.5px; color:var(--text-dim); margin-top:2px; }
   .equip-pick-item .epi-tag{ flex:0 0 auto; font-size:10.5px; color:var(--gold); font-weight:800; }
   .equip-pick-unequip-btn{ background:var(--bg-panel); color:#ffb3b3; border:1px solid rgba(255,77,77,0.4); margin-bottom:2px; }
@@ -311,11 +415,34 @@
   }
   .modal-overlay.show{ display:flex; }
   .modal-panel{
-    width:100%; max-width:480px; max-height:86vh; overflow-y:auto;
+    width:100%; max-width:480px; max-height:774px; overflow-y:auto;
     background:var(--bg-panel); border:1px solid var(--line); border-bottom:none;
     border-radius:18px 18px 0 0; padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));
     animation:modalUp 0.22s ease;
   }
+  /* 노트북/PC처럼 화면이 넓을 때(body.layout-wide, JS가 자동으로 붙임)는 모달이 모바일 세로
+     기준 최대폭(480px)에 묶여 화면에 비해 작아 보이므로, 더 넓게+화면 중앙에 뜨도록 바꾼다. */
+  body.layout-wide .modal-overlay{ align-items:center; padding-bottom:0; }
+  body.layout-wide .modal-panel{
+    max-width:720px; max-height:738px; border-radius:18px; border-bottom:1px solid var(--line);
+    padding-bottom:20px;
+  }
+  body.layout-wide .gacha-result-panel, body.layout-wide .gacha-detail-panel{ max-width:640px; width:560px; }
+  /* 모달 외에도 성장/장비/뽑기 탭 안쪽 카드들이 전부 모바일 세로 기준 440px에 묶여
+     있어서, PC 등 넓은 화면에서는 카드만 좁게 뜨고 나머지가 빈 공간으로 남아 작아
+     보이는 문제가 있었다. 같은 방식으로 이 카드들도 layout-wide일 때 넓힌다. */
+  body.layout-wide .craft-card,
+  body.layout-wide .equip-stats-panel,
+  body.layout-wide .gacha-subtabs,
+  body.layout-wide .gacha-banner,
+  body.layout-wide .job-select-panel{ max-width:640px; }
+  /* 카드 자체가 넓어지는 만큼, 그 안의 글자 크기도 비율에 맞게 살짝 키워서
+     넓은 화면에서 상대적으로 작아 보이지 않게 한다. */
+  body.layout-wide .equip-stat-headline .v{ font-size:17px; }
+  body.layout-wide .equip-stat-headline .l{ font-size:12px; }
+  body.layout-wide .equip-section-title{ font-size:14px; }
+  body.layout-wide .equip-slot .slot-grade-chip{ font-size:10px; padding:2px 6px; }
+  body.layout-wide .equip-slot .slot-plus{ font-size:26px; }
   /* 모달/목록 내부 스크롤바를 기본 OS 스크롤바 대신 게임 톤에 맞는 얇은 스크롤바로 통일 */
   .modal-panel, .odds-item-list, .gacha-inv-list, .gacha-result-list{
     scrollbar-width:thin; scrollbar-color: var(--gold-dim) transparent;
@@ -351,6 +478,11 @@
   }
   .settings-input-row .btn-settings-mini{ flex:0 0 auto; width:76px; }
   .settings-toggle-row{ display:flex; align-items:center; justify-content:space-between; padding:6px 0; font-size:13px; }
+  .settings-select-row{ display:flex; align-items:center; justify-content:space-between; padding:6px 0; font-size:13px; gap:10px; }
+  .settings-select-row select{
+    background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text);
+    border-radius:8px; padding:7px 10px; font-size:12.5px; width:auto; flex:0 0 auto;
+  }
   .switch{ position:relative; display:inline-block; width:42px; height:24px; flex-shrink:0; }
   .switch input{ opacity:0; width:0; height:0; }
   .slider{ position:absolute; cursor:pointer; inset:0; background:#3a2f55; border-radius:24px; transition:0.2s; }
@@ -560,15 +692,33 @@
   #stageSelectBtn{ width:auto; padding:5px 10px; font-size:14px; }
   #villageMapBtn{ width:auto; padding:5px 10px; font-size:14px; }
   #villageMapCanvas{
-    width:100%; aspect-ratio:1/1; max-height:62vh; display:block;
+    width:100%; aspect-ratio:1/1; max-height:558px; display:block;
     background:#182f1c; border-radius:12px; border:1px solid var(--line); touch-action:none;
   }
   .village-map-note{ font-size:11px; color:var(--text-dim); margin-top:8px; text-align:center; }
-  .village-map-legend{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
-  .village-map-legend span{
-    background:var(--bg-panel-2); border:1px solid var(--line); border-radius:8px;
-    padding:4px 8px; font-size:11px; color:var(--text-dim);
+
+  /* ===== 채팅 ===== */
+  .chat-log{
+    display:flex; flex-direction:column; gap:7px; min-height:200px; max-height:50vh;
+    overflow-y:auto; background:var(--bg-panel-2); border:1px solid var(--line);
+    border-radius:12px; padding:10px 12px; margin-bottom:10px;
   }
+  .chat-log-empty{ font-size:12.5px; color:var(--text-dim); text-align:center; padding:22px 0; }
+  /* 메신저 스타일: 내 채팅은 오른쪽, 다른 유저 채팅은 왼쪽으로 정렬 */
+  .chat-row{ display:flex; margin-bottom:6px; }
+  .chat-row:not(.mine){ justify-content:flex-start; }
+  .chat-row.mine{ justify-content:flex-end; }
+  .chat-row .chat-bubble{
+    max-width:75%; padding:6px 10px; border-radius:13px;
+    background:var(--bg-panel-2); border:1px solid var(--gold-dim);
+  }
+  .chat-row.mine .chat-bubble{ background:var(--success); border-color:var(--success); }
+  .chat-row .chat-row-name{ display:block; font-weight:800; font-size:11px; color:var(--gold); margin-bottom:2px; }
+  .chat-row.mine .chat-row-name{ color:#0c2a22; text-align:right; }
+  .chat-row .chat-row-text{ font-size:13px; line-height:1.4; word-break:break-all; color:var(--text); }
+  .chat-row.mine .chat-row-text{ color:#0c2a22; }
+  .chat-row .chat-row-time{ display:block; font-size:9.5px; color:var(--text-dim); margin-top:2px; text-align:right; }
+  .chat-row.mine .chat-row-time{ color:#0c2a2299; }
   .chapter-tabs{ display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:12px; }
   .chapter-tab{
     flex:0 0 auto; width:auto; padding:7px 14px; font-size:12px; font-weight:800;
@@ -652,7 +802,7 @@
     background:var(--gband,var(--gold)); margin:5px 0 6px;
     box-shadow:0 0 8px 1px color-mix(in srgb, var(--gband,var(--gold)) 80%, transparent), inset 0 0 0 2px rgba(255,255,255,0.25);
   }
-  .gacha-banner-name{ font-size:15px; font-weight:800; color:var(--text); line-height:1.3; }
+  .gacha-banner-name{ font-size:15px; font-weight:800; color:var(--text); line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .gacha-banner-hint{ font-size:10.5px; color:var(--text-dim); margin-top:6px; }
   .gacha-banner-hint::after{ content:' ›'; font-weight:900; }
 
@@ -668,7 +818,7 @@
     margin-top:10px; background:var(--bg-panel-2); color:var(--text); border:1px solid var(--line);
   }
 
-  .gacha-inv-list{ display:flex; flex-direction:column; gap:8px; max-height:56vh; overflow-y:auto; }
+  .gacha-inv-list{ display:flex; flex-direction:column; gap:8px; max-height:504px; overflow-y:auto; }
   .gacha-inv-empty{ font-size:12px; color:var(--text-dim); text-align:center; padding:18px 0; }
   .inv-item{
     display:flex; align-items:center; gap:10px; background:var(--bg-panel-2); border:1px solid var(--line);
@@ -689,6 +839,49 @@
   .btn-equip{ background:var(--bg-panel); color:var(--gold); border:1px solid var(--gold-dim); }
   .btn-unequip{ background:var(--bg-panel); color:#ffb3b3; border:1px solid rgba(255,77,77,0.4); }
   .btn-sell{ background:var(--bg-panel); color:var(--text-dim); border:1px solid var(--line); }
+  .inv-item-price{ font-size:10.5px; color:var(--gold-dim); margin-top:2px; }
+
+  /* ===== 보유 아이템 모달 - 선택판매(체크박스/등급별 일괄판매) ===== */
+  .gacha-inv-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+  .gacha-inv-toolbar .toolbar-title{
+    font-size:11px; color:var(--text-dim);
+    flex:1 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .btn-sellmode{
+    background:var(--bg-panel-2); color:var(--text); border:1px solid var(--line);
+    padding:6px 10px; font-size:11.5px; font-weight:800; border-radius:8px; flex:0 0 auto;
+  }
+  .btn-sellmode.active{ background:var(--arcane); color:#fff; border-color:var(--arcane); }
+
+  .gacha-grade-filter{ display:none; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .gacha-grade-filter.show{ display:flex; }
+  .gacha-grade-chip{
+    display:flex; align-items:center; gap:5px; padding:5px 9px; border-radius:20px;
+    border:1.5px solid var(--line); background:var(--bg-panel-2); font-size:11px; font-weight:800; cursor:pointer;
+  }
+  .gacha-grade-chip.checked{ border-color:var(--gold); background:rgba(212,175,55,0.15); }
+  .gacha-grade-chip .dot{ width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
+  .gacha-grade-chip .cnt{ color:var(--text-dim); font-weight:700; }
+
+  .inv-item-check{ flex:0 0 auto; width:19px; height:19px; accent-color:var(--gold); display:none; }
+  .inv-item.sell-mode .inv-item-check{ display:block; }
+  .inv-item.sell-mode .inv-item-actions{ display:none; } /* 선택판매 모드 중엔 개별 장착/판매 버튼을 숨겨 혼동 방지 */
+  .inv-item.selected{ outline:1.5px solid var(--arcane); }
+
+  .gacha-sell-footer{
+    display:none; flex-direction:column; align-items:stretch; gap:8px;
+    position:sticky; bottom:0; margin-top:10px; padding:10px 12px;
+    background:var(--bg-panel); border:1px solid var(--gold-dim); border-radius:12px;
+    box-shadow:0 -6px 16px rgba(0,0,0,0.35);
+  }
+  .gacha-sell-footer.show{ display:flex; }
+  /* 이 문구는 항상 한 줄로만 표시한다(절대 줄바꿈해서 세로로 쌓이지 않게). 버튼과 한 줄에
+     같이 두면 공간이 부족할 때 줄바꿈되므로, 아예 버튼을 아래 별도 줄로 내리고 이 문구가
+     한 줄 전체 폭을 쓰게 해서 항상 가로로 넉넉하게 보이도록 한다. */
+  .gacha-sell-footer .fee-info{ font-size:12px; color:var(--text); line-height:1.4; white-space:nowrap; overflow-x:auto; }
+  .gacha-sell-footer .fee-info b{ color:var(--gold); }
+  .gacha-sell-footer button{ width:100%; padding:9px 16px; font-size:12.5px; font-weight:800; border-radius:9px; }
+  .gacha-sell-footer button:disabled{ opacity:0.4; }
 
   /* ---- 대장간 재련 모달 ---- */
   .reforge-item-head{
@@ -696,9 +889,9 @@
     border-radius:10px; padding:10px; margin-bottom:12px;
   }
   .reforge-item-headinfo{ flex:1 1 auto; min-width:0; }
-  .reforge-item-name{ font-size:13.5px; font-weight:800; }
+  .reforge-item-name{ font-size:13.5px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .reforge-item-grade{ font-size:11px; font-weight:800; margin-top:3px; }
-  .reforge-stat-list{ display:flex; flex-direction:column; gap:8px; max-height:44vh; overflow-y:auto; }
+  .reforge-stat-list{ display:flex; flex-direction:column; gap:8px; max-height:396px; overflow-y:auto; }
   .reforge-stat-row{
     display:flex; align-items:center; gap:8px; background:var(--bg-panel-2); border:1px solid var(--line);
     border-radius:10px; padding:9px 10px;
@@ -741,7 +934,7 @@
     border-radius:10px; padding:10px; margin-bottom:12px;
   }
   .odds-featured-icon{ flex:0 0 auto; width:44px; height:44px; }
-  .odds-featured-name{ font-size:13px; font-weight:800; color:var(--gold); }
+  .odds-featured-name{ font-size:13px; font-weight:800; color:var(--gold); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .odds-featured-sub{ font-size:10.5px; color:var(--text-dim); margin-top:2px; }
   .odds-grade-block{ border-bottom:1px solid var(--line); }
   .odds-grade-block:last-of-type{ border-bottom:none; }
@@ -786,7 +979,7 @@
 
   /* 무기: 1인칭 시점(FPP) 전투 연출 - 숲 속에서 다가오는 몬스터들을 클릭으로 베어 넘긴다 */
   .gacha-anim-stage.scene-weapon{
-    width:min(94vw, 520px); height:min(74vh, 620px);
+    width:min(395px, 520px); height:min(666px, 620px);
   }
   .scene-weapon{
     overflow:hidden; border-radius:14px;
@@ -894,7 +1087,7 @@
      결국 어지러워진다. 어지러운 상태로 상자 곁을 맴돌며 뚜껑이 들썩이다가, 플레이어가
      화면을 탭하는 순간에야 비로소 쓰러지며 상자에 부딪혀 상자가 열린다. */
   .gacha-anim-stage.scene-treasure{
-    width:min(94vw, 420px); height:min(64vh, 320px);
+    width:min(395px, 420px); height:min(576px, 320px);
   }
   .scene-treasure{
     overflow:hidden; border-radius:14px;
@@ -1019,7 +1212,7 @@
 
   /* 장비: 필드 캐릭터가 대장간 모루 앞에서 직접 망치질하는 연출 - 플레이어가 탭/스페이스바로 내려친다 */
   .gacha-anim-stage.scene-equipment{
-    width:min(94vw, 460px); height:min(66vh, 320px);
+    width:min(395px, 460px); height:min(594px, 320px);
   }
   .scene-equipment{
     overflow:hidden; border-radius:14px;
@@ -1111,7 +1304,7 @@
   .gacha-anim-best.show{ animation:gachaBestIn 0.4s ease forwards; }
   @keyframes gachaBestIn{ 0%{ opacity:0; transform:translateY(6px) scale(0.85); } 100%{ opacity:1; transform:translateY(0) scale(1); } }
 
-  .gacha-result-panel, .gacha-detail-panel{ max-width:440px; width:92vw; }
+  .gacha-result-panel, .gacha-detail-panel{ max-width:440px; width:386px; }
   /* 결과를 한 번에 다 보여주지 않고 카드 한 장씩 넘기며 확인하는 방식 */
   .gacha-result-progress{ text-align:center; font-size:11.5px; font-weight:800; letter-spacing:0.5px; color:var(--text-dim); margin-bottom:10px; }
   .gacha-result-card{ min-height:320px; display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
@@ -1152,7 +1345,7 @@
     border:1px solid var(--line); font-size:12px; font-weight:700; cursor:pointer;
     display:flex; align-items:center; justify-content:center; white-space:nowrap;
   }
-  .gacha-result-list{ display:none; flex-direction:column; gap:8px; max-height:56vh; overflow-y:auto; margin-top:12px; }
+  .gacha-result-list{ display:none; flex-direction:column; gap:8px; max-height:504px; overflow-y:auto; margin-top:12px; }
   .gacha-result-list.show{ display:flex; }
   .gacha-summary-row{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:4px; }
   .gacha-summary-chip{
@@ -1171,6 +1364,7 @@
 </style>
 </head>
 <body>
+<div id="viewportScaler">
 <div id="titleScreenOverlay">
   <div class="title-panel">
     <div class="title-logo">🌿 지나가던 힐링게임 🌿</div>
@@ -1225,6 +1419,7 @@
     <div id="joystickZone">
       <div id="joystickBase"><div id="joystickHandle"></div></div>
     </div>
+    <div id="miniMapWrap"><canvas id="miniMapCanvas"></canvas></div>
     <button id="attackBtn">⚔</button>
     <button id="summonBossBtn">⚠ 보스 소환</button>
     <button id="giveUpBossBtn">🏳 보스 포기</button>
@@ -1260,50 +1455,6 @@
     </div>
   </div>
 
-  <div id="growView">
-    <div class="craft-card">
-      <h2>📈 성장</h2>
-      <div class="desc">골드를 사용해 캐릭터의 기본 능력치를 영구적으로 강화합니다.</div>
-
-      <div class="grow-row">
-        <div class="grow-info">
-          <div class="grow-label">⚔ 공격력</div>
-          <div class="grow-value">현재 <b id="growAtkVal">3</b></div>
-        </div>
-        <button class="btn-upgrade grow-btn" id="growAtkBtn">레벨업 (<span id="growAtkCost">45</span> 골드)</button>
-      </div>
-
-      <div class="grow-row">
-        <div class="grow-info">
-          <div class="grow-label">❤ 체력</div>
-          <div class="grow-value">최대 <b id="growHpVal">24</b></div>
-        </div>
-        <button class="btn-upgrade grow-btn" id="growHpBtn">레벨업 (<span id="growHpCost">35</span> 골드)</button>
-      </div>
-
-      <div class="grow-row">
-        <div class="grow-info">
-          <div class="grow-label">🛡 방어력</div>
-          <div class="grow-value">피해 감소 <b id="growDefVal">0.0% (0/20)</b> (최대치 있음)</div>
-        </div>
-        <button class="btn-upgrade grow-btn" id="growDefBtn">레벨업 (<span id="growDefCost">55</span> 골드)</button>
-      </div>
-
-      <div class="grow-row">
-        <div class="grow-info">
-          <div class="grow-label">🥾 이동속도</div>
-          <div class="grow-value">레벨 <b id="growSpdVal">0/20</b> (최대치 있음)</div>
-        </div>
-        <button class="btn-upgrade grow-btn" id="growSpdBtn">레벨업 (<span id="growSpdCost">75</span> 골드)</button>
-      </div>
-
-      <div class="craft-stats">
-        <div class="res"><div class="label">보유 골드</div><div class="value" id="goldGrowView">0</div></div>
-        <div class="res"><div class="label">최대 체력</div><div class="value" id="hpGrowView">24</div></div>
-      </div>
-    </div>
-  </div>
-
   <div id="gachaView">
     <div class="gacha-subtabs" id="gachaSubtabs">
       <button class="gachaSubBtn active" data-cat="weapon">⚔ 무기</button>
@@ -1334,7 +1485,6 @@
   <nav id="navbar">
     <button class="navBtn active" data-tab="field"><span class="ic">⚔</span>필드</button>
     <button class="navBtn" data-tab="equip"><span class="ic">🛡</span>장비</button>
-    <button class="navBtn" data-tab="grow"><span class="ic">📈</span>성장</button>
     <button class="navBtn" data-tab="gacha"><span class="ic">🎴</span>뽑기</button>
   </nav>
 
@@ -1418,7 +1568,7 @@
         <input type="text" id="nameInput" maxlength="10" placeholder="닉네임 입력 (최대 10자)">
         <button class="btn-settings-mini" id="nameSaveBtn">저장</button>
       </div>
-      <div class="settings-note" id="nameLockNote">※ 닉네임은 한 번 설정하면 다시 바꿀 수 없습니다. 설정하지 않으면 랜덤한 이름이 자동으로 부여됩니다.</div>
+      <div class="settings-note" id="nameLockNote">※ 설정하지 않으면 랜덤한 이름이 자동으로 부여됩니다. 이후에도 언제든 바꿀 수 있습니다.</div>
     </div>
 
     <div class="settings-section">
@@ -1475,13 +1625,22 @@
     </div>
 
     <div class="settings-section">
+      <h3>🗺 미니맵</h3>
+      <div class="settings-toggle-row">
+        <span>마을 미니맵 표시</span>
+        <label class="switch"><input type="checkbox" id="miniMapToggle" checked><span class="slider"></span></label>
+      </div>
+      <div class="settings-note">※ 필드를 걸어 다닐 때 화면 오른쪽 위에 마을 지도를 작게 띄워 보여줍니다. 탭하면 전체 지도를 엽니다.</div>
+    </div>
+
+    <div class="settings-section">
       <h3>🚀 시작</h3>
       <div class="settings-toggle-row">
-        <span>로딩시 직업선택 화면 건너뛰기 (마지막으로 저장된 직업으로 바로 시작)</span>
+        <span>로딩시 직업선택 화면 건너뛰기</span>
         <label class="switch"><input type="checkbox" id="skipJobSelectToggle"><span class="slider"></span></label>
       </div>
       <div class="settings-toggle-row">
-        <span>게임시작 화면 건너뛰기 (접속 시 타이틀 화면 없이 바로 진입)</span>
+        <span>게임시작 화면 건너뛰기</span>
         <label class="switch"><input type="checkbox" id="skipTitleScreenToggle"><span class="slider"></span></label>
       </div>
     </div>
@@ -1489,7 +1648,7 @@
     <div class="settings-section">
       <h3>⚔ 전투</h3>
       <div class="settings-toggle-row">
-        <span>몬스터 자동 추격 (내 캐릭터가 몬스터/보스를 자동으로 쫓아가기)</span>
+        <span>몬스터 자동 추격</span>
         <label class="switch"><input type="checkbox" id="monsterChaseToggle" checked><span class="slider"></span></label>
       </div>
       <div class="settings-toggle-row">
@@ -1497,7 +1656,7 @@
         <label class="switch"><input type="checkbox" id="noAutoEnterHouseToggle"><span class="slider"></span></label>
       </div>
       <div class="settings-toggle-row">
-        <span>히트박스 표시 (내 캐릭터/몬스터/보스의 판정 범위와 공격 부채꼴을 화면에 그려서 보여줌)</span>
+        <span>히트박스 표시</span>
         <label class="switch"><input type="checkbox" id="hitboxToggle"><span class="slider"></span></label>
       </div>
     </div>
@@ -1505,15 +1664,15 @@
     <div class="settings-section">
       <h3>✨ 화면 이펙트</h3>
       <div class="settings-toggle-row">
-        <span>무기 공격 이펙트 (타격 시 화려한 파티클/참격 연출)</span>
+        <span>무기 공격 이펙트</span>
         <label class="switch"><input type="checkbox" id="weaponFxToggle" checked><span class="slider"></span></label>
       </div>
       <div class="settings-toggle-row">
-        <span>이펙트 화면 깜빡임 (강한 타격 시 화면 전체가 번쩍이는 섬광)</span>
+        <span>이펙트 화면 깜빡임</span>
         <label class="switch"><input type="checkbox" id="screenFlashToggle" checked><span class="slider"></span></label>
       </div>
       <div class="settings-toggle-row">
-        <span>스킬 효과음 (보스 패턴 예고·발동 시 나는 효과음)</span>
+        <span>스킬 효과음</span>
         <label class="switch"><input type="checkbox" id="skillSoundToggle" checked><span class="slider"></span></label>
       </div>
     </div>
@@ -1534,11 +1693,11 @@
       </div>
       <div id="adminPanel" style="display:none;">
         <div class="settings-toggle-row">
-          <span>⚡ 관리자 모드 (골드/다이아 무한 + 전 무기·장비·보물 소지)</span>
+          <span>⚡ 관리자 모드</span>
           <label class="switch"><input type="checkbox" id="adminGodModeToggle"><span class="slider"></span></label>
         </div>
         <div class="settings-toggle-row">
-          <span>잡몹 처치 제거 (모든 스테이지 즉시 보스 소환)</span>
+          <span>잡몹 처치 제거</span>
           <label class="switch"><input type="checkbox" id="adminSkipMobToggle"><span class="slider"></span></label>
         </div>
         <div class="admin-stage-row" style="margin-top:10px;">
@@ -1550,7 +1709,7 @@
         <div class="settings-note">※ 원하는 챕터·스테이지로 즉시 이동합니다(클리어 여부와 무관).</div>
         <div class="admin-grid">
           <div class="admin-field"><label>골드</label><input type="number" id="adminGoldInput" min="0"><button class="btn-settings-mini" data-set="gold">설정</button></div>
-          <div class="admin-field"><label>다이아(소환석)</label><input type="number" id="adminGemsInput" min="0"><button class="btn-settings-mini" data-set="gems">설정</button></div>
+          <div class="admin-field"><label>다이아</label><input type="number" id="adminGemsInput" min="0"><button class="btn-settings-mini" data-set="gems">설정</button></div>
           <div class="admin-field"><label>공격력 Lv</label><input type="number" id="adminAtkInput" min="0"><button class="btn-settings-mini" data-set="atk">설정</button></div>
           <div class="admin-field"><label>체력 Lv</label><input type="number" id="adminHpInput" min="0"><button class="btn-settings-mini" data-set="hp">설정</button></div>
           <div class="admin-field"><label>방어력 Lv</label><input type="number" id="adminDefInput" min="0"><button class="btn-settings-mini" data-set="def">설정</button></div>
@@ -1637,7 +1796,16 @@
       <h2>🎒 보유 아이템</h2>
       <button class="modal-close" id="gachaInvCloseBtn">✕</button>
     </div>
+    <div class="gacha-inv-toolbar">
+      <span class="toolbar-title" id="gachaInvToolbarTitle">아이템을 눌러 상세정보를 확인하세요</span>
+      <button class="btn-sellmode" id="gachaInvSellModeBtn">☑ 선택판매</button>
+    </div>
+    <div class="gacha-grade-filter" id="gachaInvGradeFilter"></div>
     <div id="gachaInvList" class="gacha-inv-list"></div>
+    <div class="gacha-sell-footer" id="gachaInvSellFooter">
+      <div class="fee-info">선택 <b id="gachaInvSelCount">0</b>개 · 판매 시 다이아 <b id="gachaInvSelGems">0</b>💠 획득</div>
+      <button class="btn-upgrade" id="gachaInvSellConfirmBtn" disabled>판매</button>
+    </div>
   </div>
 </div>
 
@@ -1651,6 +1819,8 @@
     <div id="equipPickList" class="equip-pick-list"></div>
   </div>
 </div>
+
+<div id="statHoverTip"><div class="tip-title" id="statHoverTipTitle"></div><div id="statHoverTipDesc"></div></div>
 
 <div class="modal-overlay" id="statInfoModal">
   <div class="modal-panel gacha-detail-panel" style="max-width:320px;">
@@ -1669,11 +1839,28 @@
       <button class="modal-close" id="villageMapCloseBtn">✕</button>
     </div>
     <canvas id="villageMapCanvas"></canvas>
-    <div class="village-map-note">📍 초록색 점이 현재 내 위치입니다.</div>
+    <div class="village-map-note">📍 초록색 점이 현재 내 위치입니다. · 휠/핀치로 확대·축소, 드래그로 이동할 수 있어요.</div>
     <button id="villageMapGoHomeBtn" class="btn-upgrade" style="margin-top:12px;">🏡 내 집으로 돌아가기</button>
-    <div class="village-map-legend" id="villageMapLegend"></div>
   </div>
 </div>
+
+<button type="button" id="chatFloatBtn" class="chat-float-btn hide">💬<span id="chatUnreadBadge" class="chat-unread-badge hide">0</span></button>
+
+<div class="modal-overlay" id="chatModal">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h2>💬 채팅</h2>
+      <button class="modal-close" id="chatCloseBtn">✕</button>
+    </div>
+    <div class="chat-log" id="chatLog"></div>
+    <div class="settings-input-row">
+      <input type="text" id="chatInput" maxlength="60" placeholder="메시지를 입력하세요">
+      <button class="btn-settings-mini" id="chatSendBtn">전송</button>
+    </div>
+    <div class="settings-note">※ 채팅은 지금 접속한 모든 유저에게 실시간으로 공유됩니다. 서로 예의를 지켜주세요.</div>
+  </div>
+</div>
+
 
 <div class="modal-overlay" id="rankingModal">
   <div class="modal-panel">
@@ -1694,6 +1881,55 @@
     </div>
     <div class="settings-note" style="margin-bottom:10px;" id="rankingSubNote">직업별 전투력 TOP 3 · 실시간 갱신</div>
     <div id="rankingList" class="ranking-list"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="trainingCampModal">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h2>🏋 훈련소 - 체력 단련</h2>
+      <button class="modal-close" id="trainingCampCloseBtn">✕</button>
+    </div>
+    <div class="craft-card">
+      <div class="desc">골드를 사용해 캐릭터의 기본 능력치를 영구적으로 강화합니다.</div>
+
+      <div class="grow-row">
+        <div class="grow-info">
+          <div class="grow-label">⚔ 공격력</div>
+          <div class="grow-value">현재 <b id="growAtkVal">3</b></div>
+        </div>
+        <button class="btn-upgrade grow-btn" id="growAtkBtn">레벨업 (<span id="growAtkCost">45</span> 골드)</button>
+      </div>
+
+      <div class="grow-row">
+        <div class="grow-info">
+          <div class="grow-label">❤ 체력</div>
+          <div class="grow-value">최대 <b id="growHpVal">24</b></div>
+        </div>
+        <button class="btn-upgrade grow-btn" id="growHpBtn">레벨업 (<span id="growHpCost">35</span> 골드)</button>
+      </div>
+
+      <div class="grow-row">
+        <div class="grow-info">
+          <div class="grow-label">🛡 방어력</div>
+          <div class="grow-value">피해 감소 <b id="growDefVal">0.0% (0/20)</b> (최대치 있음)</div>
+        </div>
+        <button class="btn-upgrade grow-btn" id="growDefBtn">레벨업 (<span id="growDefCost">55</span> 골드)</button>
+      </div>
+
+      <div class="grow-row">
+        <div class="grow-info">
+          <div class="grow-label">🥾 이동속도</div>
+          <div class="grow-value">레벨 <b id="growSpdVal">0/20</b> (최대치 있음)</div>
+        </div>
+        <button class="btn-upgrade grow-btn" id="growSpdBtn">레벨업 (<span id="growSpdCost">75</span> 골드)</button>
+      </div>
+
+      <div class="craft-stats">
+        <div class="res"><div class="label">보유 골드</div><div class="value" id="goldGrowView">0</div></div>
+        <div class="res"><div class="label">최대 체력</div><div class="value" id="hpGrowView">24</div></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1732,6 +1968,7 @@
   </div>
 </div>
 
+</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.2/firebase-app-compat.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.2/firebase-auth-compat.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.2/firebase-database-compat.min.js"></script>
@@ -1851,6 +2088,53 @@
   const MONSTER_ORDER = ['rat','slime','goblin','skeleton','orc'];
   const MONSTER_NAMES = {rat:'들쥐', slime:'슬라임', goblin:'고블린', skeleton:'해골전사', orc:'오크'};
 
+  // ============ 스테이지별 잡몹 외형/이름 테마 (1챕터 1~30 스테이지 전용) ============
+  // 몬스터의 종류(스프라이트)는 기존처럼 tierIndexForStage()가 정하는 5종(들쥐/슬라임/고블린/해골전사/오크)을 그대로 쓰되,
+  // 스테이지마다 고유한 색조(tint)와 이름을 입혀서 "같은 스프라이트라도 스테이지를 넘어갈 때마다 다른 몬스터처럼" 보이게 한다.
+  // tint가 있으면 drawPixelArt가 스프라이트 전체를 해당 색 실루엣으로 칠한다(보스 전용 tint와 동일한 방식).
+  const STAGE_MOB_THEME = {
+    1: { name:'들쥐', tint:null },
+    2: { name:'붉은 들쥐', tint:'#b5533f' },
+    3: { name:'슬라임', tint:null },
+    4: { name:'산성 슬라임', tint:'#9ee13f' },
+    5: { name:'고블린', tint:null },
+    6: { name:'약탈 고블린', tint:'#c97b3d' },
+    7: { name:'해골전사', tint:null },
+    8: { name:'저주받은 해골', tint:'#7a5cff' },
+    9: { name:'오크', tint:null },
+    10:{ name:'숲 오크 정찰병', tint:'#6b8f3a' },
+    11:{ name:'늪지 오크', tint:'#4a6b4a' },
+    12:{ name:'늪지 오크 전사', tint:'#3a5a3a' },
+    13:{ name:'동굴 오크', tint:'#5a4a3a' },
+    14:{ name:'동굴 오크 전사', tint:'#4a3a2a' },
+    15:{ name:'설원 오크', tint:'#9fd6e0' },
+    16:{ name:'설원 오크 전사', tint:'#6fb0c0' },
+    17:{ name:'화산 오크', tint:'#e0653a' },
+    18:{ name:'화산 오크 전사', tint:'#b03a1a' },
+    19:{ name:'강철 오크', tint:'#8a9aa6' },
+    20:{ name:'강철 오크 정예병', tint:'#5a6a76' },
+    21:{ name:'어둠 오크', tint:'#3a2a4a' },
+    22:{ name:'어둠 오크 전사', tint:'#2a1a3a' },
+    23:{ name:'역병 오크', tint:'#6a8a3a' },
+    24:{ name:'역병 오크 전사', tint:'#4a6a1a' },
+    25:{ name:'폭풍 오크', tint:'#3a6ea5' },
+    26:{ name:'폭풍 오크 전사', tint:'#2a4e85' },
+    27:{ name:'혈투 오크', tint:'#a5233a' },
+    28:{ name:'혈투 오크 전사', tint:'#85031a' },
+    29:{ name:'심연 오크', tint:'#4a1a5a' },
+    30:{ name:'태초의 오크', tint:'#ff3b6b' },
+  };
+  // 챕터1(1~30) 외의 스테이지는 아직 디자인되지 않았으므로 기본(무테마) 처리
+  function mobThemeForStage(stage){
+    if(chapterOf(stage)!==1) return null;
+    return STAGE_MOB_THEME[stageInChapterOf(stage)] || null;
+  }
+  // 잡몹 처치 메시지 등에 표시할 이름: 스테이지 테마 이름이 있으면 그것을, 없으면 기본 종족 이름을 사용
+  function mobDisplayName(mob){
+    if(mob.themeName) return mob.themeName;
+    return MONSTER_NAMES[mob.type] || '몬스터';
+  }
+
   function hexToRgba(hex, a){
     const h = hex.replace('#','');
     const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
@@ -1937,6 +2221,59 @@
     const label = 'Lv.' + (state.level||1) + (settings.playerName ? ' ' + settings.playerName : '');
     drawNpcNameTag(px, py, label);
   }
+  const NAME_TAG_H = 21; // drawNpcNameTag의 boxH와 동일 (말풍선을 이름표 바로 위에 붙이기 위한 기준값)
+  // 채팅으로 보낸 말을 최대 3줄까지 자동 줄바꿈한다 (한 글자씩 측정 - 한글은 띄어쓰기 없이도
+  // 폭이 넘치면 바로 다음 줄로 넘겨야 자연스럽다).
+  function wrapChatBubbleText(text, maxWidth){
+    const lines = [];
+    let line = '';
+    for(const ch of text){
+      const test = line + ch;
+      if(line && ctx.measureText(test).width > maxWidth){
+        lines.push(line); line = ch;
+        if(lines.length>=3) return lines;
+      } else {
+        line = test;
+      }
+    }
+    if(line) lines.push(line);
+    return lines;
+  }
+  // 플레이어가 채팅을 보내면 일정 시간(player.chatBubble.expireAt까지) 머리 위에 말풍선으로 띄운다.
+  // 이름표(drawPlayerNameTag) 바로 위에, 마지막 0.4초 동안은 서서히 사라지도록 그린다.
+  function drawPlayerChatBubble(px, py){
+    const bubble = player.chatBubble;
+    if(!bubble) return;
+    const remain = bubble.expireAt - now_ms();
+    if(remain<=0){ player.chatBubble = null; return; }
+    ctx.save();
+    ctx.font = 'bold 13px "Malgun Gothic", "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    const maxTextWidth = 150;
+    const lines = wrapChatBubbleText(bubble.text, maxTextWidth);
+    const lineH = 16;
+    let textW = 0; lines.forEach(l=>{ textW = Math.max(textW, ctx.measureText(l).width); });
+    const boxW = Math.max(48, textW+20), boxH = lines.length*lineH+12, r = 9, tailH = 8;
+    const tipY = py-NAME_TAG_H-6; // 이름표 바로 위 여백
+    const by0 = tipY-tailH-boxH, bx0 = px-boxW/2;
+    ctx.globalAlpha = Math.min(1, remain/400);
+    ctx.fillStyle = 'rgba(255,250,238,0.97)';
+    ctx.strokeStyle = 'rgba(60,48,30,0.85)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(bx0+r, by0);
+    ctx.lineTo(bx0+boxW-r, by0); ctx.arcTo(bx0+boxW, by0, bx0+boxW, by0+r, r);
+    ctx.lineTo(bx0+boxW, by0+boxH-r); ctx.arcTo(bx0+boxW, by0+boxH, bx0+boxW-r, by0+boxH, r);
+    ctx.lineTo(px+7, by0+boxH);
+    ctx.lineTo(px, by0+boxH+tailH);
+    ctx.lineTo(px-7, by0+boxH);
+    ctx.lineTo(bx0+r, by0+boxH); ctx.arcTo(bx0, by0+boxH, bx0, by0+boxH-r, r);
+    ctx.lineTo(bx0, by0+r); ctx.arcTo(bx0, by0, bx0+r, by0, r);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#221c33';
+    lines.forEach((l,i)=>{ ctx.fillText(l, px, by0+18+i*lineH); });
+    ctx.restore();
+  }
   // 건물 실내에 배치하는 NPC - 그림자 + 픽셀아트 + 이름표를 함께 그린다.
   // 매 프레임 그려질 때마다 frameInteriorNPCs에 현재 위치를 등록해두어, 플레이어가 1칸 이내로
   // 다가오면 말을 걸 수 있게 한다. onTalk을 넘기면(예: 대장장이) 말 걸기 시 해당 동작을 실행하고,
@@ -2013,14 +2350,52 @@
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
 
+  // ============ 화면 비율(반응형 스케일링) ============
+  // 화면 비율은 항상 자동감지만 사용한다(설정에서 수동으로 고를 수 있는 옵션은 없음).
+  // 게임 필드는 "월드좌표 1 = 화면 픽셀 1"로 그리기 때문에 화면 비율이 달라도 그림 자체가
+  // 늘어나거나 찌그러지지 않고 "더 많이/적게 보이는" 차이만 생긴다. 그래서 실제 화면 비율을
+  // 그대로 써서 상하좌우 여백(레터박스) 없이 완전히 꽉 채운다. 아래 ASPECT_CLAMP는 정말
+  // 극단적으로 이상한 값(0에 가깝거나 무한대에 가까운 비율)만 막기 위한 안전장치일 뿐,
+  // 실제 존재하는 기기 범위에서는 사실상 항상 실제 비율 그대로 적용된다.
+  const BASE_H = 900;
+  const ASPECT_CLAMP = {
+    mobile: { min: 0.2,   max: 0.999 },
+    pc:     { min: 1.001, max: 5     }
+  };
+  let BASE_W = 420;
+  const viewportScalerEl = document.getElementById('viewportScaler');
+  // 참고: 랭킹/PvP가 있는 게임이라 화면 비율에 따라 유저마다 보이는 필드 범위가 달라지는
+  // 편차는 남아있다. 완전히 동일한 시야를 보장하려면 화면 꽉 채우기 대신 고정 비율(레터박스)
+  // 방식으로 되돌려야 한다.
+  function detectDeviceType(){
+    return (window.innerWidth / window.innerHeight) < 1 ? 'mobile' : 'pc';
+  }
+  function applyViewportScale(){
+    if(!viewportScalerEl) return;
+    const rawAspect = window.innerWidth / window.innerHeight;
+    const deviceType = detectDeviceType();
+    const clamp = ASPECT_CLAMP[deviceType === 'mobile' ? 'mobile' : 'pc'];
+    const aspect = Math.min(Math.max(rawAspect, clamp.min), clamp.max);
+    document.body.dataset.deviceType = deviceType;
+    BASE_W = Math.round(BASE_H * aspect);
+    viewportScalerEl.style.width = BASE_W + 'px';
+    viewportScalerEl.style.height = BASE_H + 'px';
+    // 가로가 넓은(태블릿 가로/노트북/PC) 레이아웃일 때는 모달 등 일부 UI가 모바일 세로 기준
+    // 최대폭(480px 등)에 묶여 화면에 비해 작아 보이므로, 이 경우 body에 클래스를 달아 CSS에서
+    // 더 넓은 최대폭을 쓸 수 있게 한다.
+    document.body.classList.toggle('layout-wide', (BASE_W / BASE_H) >= 0.95);
+    const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+    viewportScalerEl.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  }
   function resizeCanvas(){
     const rect = gameView.getBoundingClientRect();
     canvas.width = Math.max(1, Math.round(rect.width));
     canvas.height = Math.max(1, Math.round(rect.height));
   }
-  window.addEventListener('resize', resizeCanvas);
-  window.addEventListener('orientationchange', ()=>setTimeout(resizeCanvas,150));
-  resizeCanvas();
+  function handleViewportResize(){ applyViewportScale(); resizeCanvas(); }
+  window.addEventListener('resize', handleViewportResize);
+  window.addEventListener('orientationchange', ()=>setTimeout(handleViewportResize,150));
+  handleViewportResize();
 
   // ============ 무한 필드 카메라 ============
   const camera = {x:0, y:0};
@@ -2156,6 +2531,8 @@
     { type:'brickhouse', cx:420,  cy:1120, halfW:54, halfH:34, npcSet:3 }, // 남쪽 벽돌집
     { type:'brickhouse', cx:-420, cy:1160, halfW:54, halfH:34, npcSet:4 }, // 남쪽 벽돌집 2
     { type:'brickhouse', cx:960,  cy:-1080,halfW:54, halfH:34, npcSet:5 }, // 북동쪽 벽돌집
+    // --- 마을에서 한참 떨어진 곳의 훈련소 (성장을 담당) ---
+    { type:'trainingcamp', cx:1650, cy:1550, halfW:140, halfH:100, collide:false }, // 훈련소 (마을 남동쪽 멀리)
     // --- 마을 꾸미기 요소 : 관련 건물 옆에 자연스럽게 붙여 배치 ---
     { type:'well',       cx:-30,  cy:70,   halfW:20, halfH:20 }, // 우물 (마을 중앙 광장)
     { type:'signpost',   cx:40,   cy:150,  halfW:14, halfH:12 }, // 마을 표지판 (광장 입구)
@@ -2216,6 +2593,10 @@
     { name:'꼬마 뽀실이',       art:NPC_ART_CHILD,      scale:1.9, kind:'orbit',  orbitCx:150, orbitCy:60, orbitRx:34, orbitRy:20, orbitMs:3200 },
     // 오두막 지역 사이를 한가로이 오가는 떠돌이 여행자
     { name:'떠돌이 로엔',       art:NPC_ART_TRAVELER,   scale:2.5, kind:'patrol', points:[{x:-880,y:225},{x:-800,y:248},{x:-880,y:288},{x:-956,y:248}], speed:0.04 },
+    // 훈련소(cx:1650,cy:1550,halfW:140,halfH:100) 안에서 훈련병들을 지도하는 교관. 말을 걸면 성장(스탯 강화) 창이 열린다.
+    { name:'훈련 교관 갈드',    art:NPC_ART_GUARD,      scale:2.8, kind:'idle',   wx:1650, wy:1500, onTalk:openTrainingCamp },
+    // 교관 옆에서 표적을 향해 꾸준히 연습하는 훈련병
+    { name:'훈련병 유노',       art:NPC_ART_ADVENTURER, scale:2.4, kind:'idle',   wx:1590, wy:1610 },
   ];
   // 순찰형 NPC는 시작 위치를 첫 지점으로 초기화
   VILLAGE_NPCS.forEach(npc=>{
@@ -2269,7 +2650,7 @@
   }
   // drawVillageNpc가 이번 프레임에 계산해둔 좌표(_curWx/_curWy)를 바탕으로 말 걸기 대상 목록을 만든다.
   function villageNpcTalkList(){
-    return VILLAGE_NPCS.map(n=>({ wx: n._curWx!==undefined?n._curWx:n.wx, wy: n._curWy!==undefined?n._curWy:n.wy, name:n.name }));
+    return VILLAGE_NPCS.map(n=>({ wx: n._curWx!==undefined?n._curWx:n.wx, wy: n._curWy!==undefined?n._curWy:n.wy, name:n.name, onTalk:n.onTalk }));
   }
   // 마을 건물들과의 충돌을 모두 해소 (사각형 벽 영역만 판정, collide:false 장식은 통과 가능)
   function resolveVillageCollision(x, y, r){
@@ -2406,6 +2787,7 @@
     if(inHouse) return;
     inHouse = true;
     currentHouse = b;
+    leaveWorldPresence(); // 실내는 개인 공간이므로 다른 유저에게는 안 보이게 함
     const silent = opts && opts.silent;
     if(!(opts && opts.keepPos)){
       player.wx = 0; player.wy = ROOM_H/2 - 40;
@@ -2428,6 +2810,7 @@
     inHouse = false; currentHouse = null;
     player.wx = door.x; player.wy = door.y + player.r + 16;
     player.moving = false;
+    enterWorldPresence(state.stage); // 필드로 나왔으니 다시 다른 유저에게 보이게 함
     if(typeof attackBtn!=='undefined') attackBtn.style.display = 'flex';
     nearbyTalkNPC = null;
     if(typeof npcTalkBtnEl!=='undefined') npcTalkBtnEl.classList.remove('show');
@@ -3235,6 +3618,86 @@
     ctx.fillRect(bx-b.halfW+2, by-14, 4, 15);
     ctx.fillRect(bx+b.halfW-6, by-14, 4, 15);
   }
+  // 훈련소: 넓은 흙바닥 연무장 + 나무 울타리(남쪽 입구) + 표적 짚 인형 + 무기 거치대 + 펄럭이는 깃발
+  function drawTrainingCamp(b){
+    const bx = sx(b.cx), by = sy(b.cy);
+    const w = b.halfW*2, h = b.halfH*2;
+    // 다져진 흙바닥
+    ctx.fillStyle = '#8a7450';
+    ctx.fillRect(bx-w/2, by-h/2, w, h);
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)'; ctx.lineWidth=1;
+    for(let i=1;i<6;i++){
+      const lx = bx-w/2 + w*i/6;
+      ctx.beginPath(); ctx.moveTo(lx, by-h/2); ctx.lineTo(lx, by+h/2); ctx.stroke();
+    }
+    // 나무 울타리 (남쪽 중앙만 입구로 비워둠)
+    const gateHalf = 34;
+    ctx.strokeStyle = '#6b4a2c'; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(bx-w/2, by-h/2); ctx.lineTo(bx+w/2, by-h/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx-w/2, by-h/2); ctx.lineTo(bx-w/2, by+h/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx+w/2, by-h/2); ctx.lineTo(bx+w/2, by+h/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx-w/2, by+h/2); ctx.lineTo(bx-gateHalf, by+h/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx+gateHalf, by+h/2); ctx.lineTo(bx+w/2, by+h/2); ctx.stroke();
+    // 울타리 기둥
+    ctx.fillStyle = '#5c4630';
+    for(let px=bx-w/2; px<=bx+w/2+0.01; px+=w/8){ ctx.fillRect(px-2, by-h/2-6, 4, 10); }
+    ctx.fillRect(bx-w/2-2, by+h/2-4, 4, 10); ctx.fillRect(bx+w/2-2, by+h/2-4, 4, 10);
+    // 입구 아치 기둥 + 현판 "훈련소"
+    const archY = by+h/2;
+    ctx.strokeStyle = '#6b4a2c'; ctx.lineWidth=5;
+    ctx.beginPath(); ctx.moveTo(bx-gateHalf, archY); ctx.lineTo(bx-gateHalf, archY-46); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx+gateHalf, archY); ctx.lineTo(bx+gateHalf, archY-46); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx-gateHalf-4, archY-44); ctx.lineTo(bx+gateHalf+4, archY-44); ctx.stroke();
+    ctx.fillStyle = '#8a6b45';
+    ctx.fillRect(bx-34, archY-58, 68, 16);
+    ctx.strokeStyle = '#4a3220'; ctx.lineWidth=1.5;
+    ctx.strokeRect(bx-34, archY-58, 68, 16);
+    ctx.fillStyle = '#f0e6c8';
+    ctx.font = 'bold 11px "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('훈련소', bx, archY-47);
+    ctx.textAlign = 'left';
+    // 표적용 짚 인형 두 개 (화살이 박혀있음)
+    function dummy(ox, oy){
+      const dx = bx+ox, dy = by+oy;
+      ctx.strokeStyle = '#6b4a2c'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(dx, dy); ctx.lineTo(dx, dy-34); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(dx-12, dy-24); ctx.lineTo(dx+12, dy-24); ctx.stroke();
+      ctx.fillStyle = '#d4b45a';
+      ctx.beginPath(); ctx.ellipse(dx, dy-14, 10, 14, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#c9a24a';
+      ctx.beginPath(); ctx.arc(dx, dy-34, 7, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#3a2c1e'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(dx-18, dy-20); ctx.lineTo(dx-6, dy-16); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(dx+16, dy-8); ctx.lineTo(dx+5, dy-10); ctx.stroke();
+    }
+    dummy(-w*0.22, h*0.18);
+    dummy(w*0.14, h*0.28);
+    // 무기 거치대 (연습용 목검 세 자루)
+    const rackX = bx - w*0.32, rackY = by - h*0.28;
+    ctx.strokeStyle = '#5c4630'; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(rackX-22, rackY); ctx.lineTo(rackX+22, rackY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(rackX-16, rackY); ctx.lineTo(rackX-16, rackY+16); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(rackX+16, rackY); ctx.lineTo(rackX+16, rackY+16); ctx.stroke();
+    ctx.strokeStyle = '#a97c4f'; ctx.lineWidth=3;
+    [-10,0,10].forEach((ox,i)=>{
+      ctx.beginPath(); ctx.moveTo(rackX+ox, rackY-2); ctx.lineTo(rackX+ox+(i-1)*4, rackY-36); ctx.stroke();
+    });
+    // 깃대 + 바람에 펄럭이는 깃발
+    const poleX = bx + w*0.36, poleY = by - h*0.34;
+    ctx.strokeStyle = '#5c4630'; ctx.lineWidth=3.5;
+    ctx.beginPath(); ctx.moveTo(poleX, poleY+30); ctx.lineTo(poleX, poleY-44); ctx.stroke();
+    const flagT = now_ms()/420;
+    ctx.fillStyle = '#7c1f2a';
+    ctx.beginPath();
+    ctx.moveTo(poleX, poleY-42);
+    for(let i=0;i<=6;i++){
+      const t=i/6;
+      ctx.lineTo(poleX+22*t, poleY-42+8*t+Math.sin(flagT+t*4)*2.5);
+    }
+    ctx.lineTo(poleX, poleY-24);
+    ctx.closePath(); ctx.fill();
+  }
   const VILLAGE_DRAWERS = {
     house: drawCenterHouse,
     blacksmith: drawBlacksmith,
@@ -3257,6 +3720,7 @@
     signpost: drawSignpost,
     lamppost: drawLamppost,
     bench: drawBench,
+    trainingcamp: drawTrainingCamp,
   };
   // 주요 건축물 이름표 정보: 표시 이름 / 지도 아이콘 / 지붕(장식) 위로 이름표를 띄울 여유 높이
   const BUILDING_INFO = {
@@ -3270,12 +3734,39 @@
     ruins:      { label:'폐가',   icon:'🏚️', roofOffset:20 },
     cottage:    { label:'오두막', icon:'🛖', roofOffset:45 },
     brickhouse: { label:'벽돌집', icon:'🧱', roofOffset:50 },
+    trainingcamp:{ label:'훈련소', icon:'🏋', roofOffset:40 },
   };
   // 건물별 이름표 정보를 계산. 내 집(isPlayerHouse)은 타입 기본값 대신 전용 라벨/아이콘을 쓴다.
   function labelInfoFor(b){
     const base = BUILDING_INFO[b.type];
     if(b.isPlayerHouse) return { label:'내 집', icon:'🏡', roofOffset: base?base.roofOffset:55, mine:true };
     return base;
+  }
+  // 이름 문자열(예: "이웃 토마스")에서 마지막 단어(개인 이름)만 뽑아낸다.
+  function lastNameWordOf(fullName){
+    const parts = String(fullName).trim().split(/\s+/);
+    return parts[parts.length-1];
+  }
+  // 마을지도 및 필드 공용: 거주 건물(집/오두막/벽돌집/저택)은 재질 이름 대신 실제로 사는 주민의 이름으로 "OO네 집"처럼 표시한다.
+  // 내 집은 그대로 "내 집"으로 두고, 대장간/상점/여관/길드/교회 등 시설 건물은 기존 라벨을 유지한다.
+  function residentHouseLabelFor(b){
+    if(b.isPlayerHouse) return null;
+    if(b.type==='house'){
+      const v = HOUSE_NPC_VARIANTS[b.npcSet||0] || HOUSE_NPC_VARIANTS[0];
+      return lastNameWordOf(v.name) + '네 집';
+    }
+    if(b.type==='cottage'){
+      const v = COTTAGE_NPC_VARIANTS[b.npcSet||0] || COTTAGE_NPC_VARIANTS[0];
+      return lastNameWordOf(v.name) + '네 집';
+    }
+    if(b.type==='brickhouse'){
+      const v = BRICKHOUSE_NPC_VARIANTS[b.npcSet||0] || BRICKHOUSE_NPC_VARIANTS[0];
+      return lastNameWordOf(v.name) + '네 집';
+    }
+    if(b.type==='bighouse'){
+      return lastNameWordOf('영주 폰 아셀') + '네 집';
+    }
+    return null;
   }
   // 건축물 위에 이름표(반투명 패널 + 텍스트)를 띄워 어떤 건물인지 한눈에 알 수 있게 한다
   function drawBuildingLabel(b){
@@ -3286,7 +3777,7 @@
     ctx.font = 'bold 13px "Noto Sans KR", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
-    const text = info.label;
+    const text = residentHouseLabelFor(b) || info.label;
     const textW = ctx.measureText(text).width;
     const boxW = Math.max(46, textW + 20), boxH = 22, r = 7;
     const bx0 = lx-boxW/2, by0 = ly-boxH;
@@ -3673,6 +4164,47 @@
   function patternOnlySpecial(patternSet){
     return { hpMult:1, dmgMult:1, radiusMult:1, scaleMult:1, cooldownMult:1, patternSet, timeBonus:0, name:null, type:null };
   }
+  // ============ 일반보스(10·20·30 정예/최종보스가 아닌 스테이지)의 스테이지별 외형/이름 디자인 (1챕터 1~30 전용) ============
+  // 스탯(체력·공격력 등)은 건드리지 않고 이름·색조(tint)·스프라이트(type)만 스테이지마다 다르게 입혀서
+  // "스테이지를 넘어갈 때마다 보스 외형이 특이하게 바뀐다"는 요구를 만족시킨다. patternSet(스킬)은 기존 로직이 그대로 담당한다.
+  const NORMAL_BOSS_DESIGN_BY_CHAPTER = {
+    1: {
+      1: { name:'겁먹은 들쥐 대장', type:'rat', tint:'#b58e5c' },
+      2: { name:'굶주린 들쥐 두목', type:'rat', tint:'#7a5c3a' },
+      3: { name:'산성 슬라임', type:'slime', tint:'#9be15d' },
+      4: { name:'젤리 여왕 슬라임', type:'slime', tint:'#ff8fd6' },
+      5: { name:'정찰 고블린 대장', type:'goblin', tint:'#7d9b4e' },
+      6: { name:'약탈자 고블린 두목', type:'goblin', tint:'#c97b3d' },
+      7: { name:'방랑 해골병 대장', type:'skeleton', tint:'#9aa5b1' },
+      8: { name:'저주받은 해골 기사', type:'skeleton', tint:'#6b5cff' },
+      9: { name:'숲속 오크 정찰대장', type:'orc', tint:'#88a34c' },
+      // 10 = 고대 늑대왕 (SPECIAL_BOSS_BY_CHAPTER에서 관리)
+      11: { name:'그림자 늑대', type:'rat', tint:'#5b3a8a' },
+      12: { name:'서리 늑대', type:'rat', tint:'#7ecbe0' },
+      13: { name:'검은 발톱 늑대', type:'rat', tint:'#333333' },
+      14: { name:'피의 이빨 늑대', type:'rat', tint:'#a3273f' },
+      15: { name:'강철 갈기 늑대', type:'rat', tint:'#8f9aa6' },
+      16: { name:'심연의 늑대', type:'rat', tint:'#2e0854' },
+      17: { name:'폭풍 늑대', type:'rat', tint:'#3a6ea5' },
+      18: { name:'화염 발톱 늑대', type:'rat', tint:'#e06b2e' },
+      19: { name:'늑대 파수꾼', type:'rat', tint:'#556b2f' },
+      // 20 = 강철 고블린 파괴자 (SPECIAL_BOSS_BY_CHAPTER에서 관리)
+      21: { name:'녹슨 갑주 고블린', type:'goblin', tint:'#8a7a4a' },
+      22: { name:'폭탄 고블린', type:'goblin', tint:'#ff8c3b' },
+      23: { name:'주술사 고블린', type:'goblin', tint:'#8a5cff' },
+      24: { name:'독침 고블린', type:'goblin', tint:'#5ce15c' },
+      25: { name:'얼음 갑주 고블린', type:'goblin', tint:'#a0e0ff' },
+      26: { name:'검은 강철 고블린', type:'goblin', tint:'#2f2f2f' },
+      27: { name:'전쟁 고블린 대장', type:'goblin', tint:'#c93b3b' },
+      28: { name:'마검사 고블린', type:'goblin', tint:'#ff3bb0' },
+      29: { name:'고블린 파괴자 계승자', type:'goblin', tint:'#ffd54f' },
+      // 30 = 태초의 오크 군주 (SPECIAL_BOSS_BY_CHAPTER에서 관리)
+    },
+  };
+  function normalBossDesignFor(chapter, stageInChapter){
+    const byChapter = NORMAL_BOSS_DESIGN_BY_CHAPTER[chapter];
+    return (byChapter && byChapter[stageInChapter]) || null;
+  }
   // 챕터별로 디자인된 10·20스테이지 정예보스 설정(없으면 기본값)을 반환 - 다른 일반보스들이 패턴을 빌려 쓸 때 기준이 된다.
   // 20스테이지 보스는 10스테이지 보스의 스킬(화살비 등)과 이동속도 특성(matchPlayerSpeed)을 그대로 이어받아
   // 자신의 고유 스킬(결계/광역기 등)과 중첩해서 함께 사용한다 - "이전 보스 스킬을 전부 가져와서 쓰는" 요구사항.
@@ -3703,11 +4235,17 @@
     }
     // 일반보스(정예/최종이 아닌 스테이지): 10을 지난 11~19 구간은 10보스와, 21~29 구간은 20보스와 동일한 스킬(패턴)을 사용한다.
     // 단, 패턴만 빌려 쓸 뿐 체력/공격력/크기 등 다른 스탯은 원래의 일반보스 값 그대로 유지된다.
+    // 이름/색조/스프라이트(외형)는 NORMAL_BOSS_DESIGN_BY_CHAPTER에 스테이지별로 디자인된 값이 있으면 덧씌운다.
+    const design = normalBossDesignFor(chapter, stageInChapter);
     if(stageInChapter>10 && stageInChapter<20){
-      return patternOnlySpecial(eliteSpecialFor(chapter, 10).patternSet);
+      return Object.assign(patternOnlySpecial(eliteSpecialFor(chapter, 10).patternSet), design || {});
     }
     if(stageInChapter>20 && stageInChapter<CHAPTER_STAGE_COUNT){
-      return patternOnlySpecial(eliteSpecialFor(chapter, 20).patternSet);
+      return Object.assign(patternOnlySpecial(eliteSpecialFor(chapter, 20).patternSet), design || {});
+    }
+    if(design){
+      // 1~9 스테이지: 기본 패턴(slam/dash/burst)만 사용하되 외형/이름만 디자인 값으로 교체
+      return Object.assign({ hpMult:1, dmgMult:1, radiusMult:1, scaleMult:1, cooldownMult:1, patternSet:['slam','dash','burst'], timeBonus:0 }, design);
     }
     return null;
   }
@@ -3785,7 +4323,7 @@
 
 
   // ===== 설정 =====
-  let settings = { sfxVolume:70, bgmVolume:50, bgmTrack:'1', notify:true, killMsg:true, playerName:'', monsterChase:true, noAutoEnterHouse:false, weaponFx:true, screenFlash:true, skillSound:true, hitboxDebug:false, skipJobSelect:false, skipTitleScreen:false };
+  let settings = { sfxVolume:70, bgmVolume:50, bgmTrack:'1', notify:true, killMsg:true, playerName:'', monsterChase:true, noAutoEnterHouse:false, weaponFx:true, screenFlash:true, skillSound:true, hitboxDebug:false, skipJobSelect:false, skipTitleScreen:false, miniMap:true };
   let adminUnlocked = false;
   let adminSkipMobRequirement = false; // 관리자: 모든 스테이지에서 잡몹 처치 없이 즉시 보스 소환 허용
   let adminAllStagesCleared = false; // 관리자: 비밀번호 입력 시 모든 스테이지를 클리어한 것으로 판정
@@ -4845,11 +5383,13 @@
     const dist = viewRadius()*(0.15 + Math.random()*0.95);
     const wx = player.wx + Math.cos(ang)*dist;
     const wy = player.wy + Math.sin(ang)*dist;
+    const theme = mobThemeForStage(state.stage);
     mobs.push({
       type, wx, wy, hp, maxHp:hp, r: type==='goblin'||type==='skeleton'?11:9,
       wanderT: 0, wanderTX:wx, wanderTY:wy, contactCd:0, hitFlash:0, dying:0, dead:false,
       defPct: Math.min(35, idx*3), evaPct: Math.min(20, idx*1.5), // 방어관통(defPen)/회피감소(evaDown) 스탯이 작동할 대상
       bleed:null,
+      tint: theme ? theme.tint : null, themeName: theme ? theme.name : null, // 스테이지 테마 외형/이름
     });
   }
 
@@ -4951,6 +5491,7 @@
     mobs = []; boss=null; bossActive=false; bossIncoming=false; spawnTimer=0;
     player.poisons = []; player.defShredActive = false; // 최종보스(30) 전용 독/방어력감소 디버프 초기화
     resetHuntTarget();
+    if(!inHouse) enterWorldPresence(state.stage); // 스테이지가 바뀔 때마다 그 스테이지의 프레즌스로 갈아탐
     updateHudText();
   }
 
@@ -5011,7 +5552,7 @@
       spawnHitParticles(mob.wx, mob.wy-mob.r*1.4);
       SFX.mobHit(mob.type);
     }
-    damageNumbers.push({wx:mob.wx, wy:mob.wy-mob.r*3, text:(isPoison?'독 -':(isCrit?'치명타! -':'-'))+amount, vy:-0.6, alpha:1, color: isPoison?'#a855f7':(isCrit?'#ff4d4d':'#ffd54f')});
+    damageNumbers.push({wx:mob.wx, wy:mob.wy-mob.r*3, text:(isPoison?'독 -':(isCrit?'치명타! -':'-'))+formatBigNum(amount), vy:-0.6, alpha:1, color: isPoison?'#a855f7':(isCrit?'#ff4d4d':'#ffd54f')});
     if(mob.hp<=0 && mob.dying===0){
       mob.dying = 0.001;
       SFX.mobDeath(mob.type);
@@ -5026,7 +5567,7 @@
       const gemDropChance = (state.stage <= state.maxClearedStage) ? 0.03 : 0.05;
       let gemMsg = '';
       if(Math.random()<gemDropChance){ state.gems += 1; gemMsg = ', 소환석 +1💠'; }
-      if(settings.killMsg) toast(`${MONSTER_NAMES[mob.type]} 처치! 골드 +${g}${gemMsg}`, 'gold');
+      if(settings.killMsg) toast(`${mobDisplayName(mob)} 처치! 골드 +${g}${gemMsg}`, 'gold');
       updateHudText();
     }
   }
@@ -5047,7 +5588,7 @@
         clone.hp -= toClone;
         clone.hitFlash = 1;
         SFX.bossHit();
-        damageNumbers.push({wx:clone.wx, wy:clone.wy-clone.r*3, text:'-'+toClone, vy:-0.6, alpha:1, color:'#ffb3b3'});
+        damageNumbers.push({wx:clone.wx, wy:clone.wy-clone.r*3, text:'-'+formatBigNum(toClone), vy:-0.6, alpha:1, color:'#ffb3b3'});
         if(clone.hp<=0 && clone.dying===0){
           clone.dying = 0.001;
           spawnDeathParticles(clone.wx, clone.wy-8, '#ff3b6b');
@@ -5060,7 +5601,7 @@
     boss.squashT = 1;
     spawnHitParticles(boss.wx, boss.wy-boss.scale*4);
     SFX.bossHit();
-    damageNumbers.push({wx:boss.wx, wy:boss.wy-boss.scale*10, text:(isCrit?'치명타! -':'-')+amount, vy:-0.6, alpha:1, color: isCrit?'#ff4d4d':'#ff8c42'});
+    damageNumbers.push({wx:boss.wx, wy:boss.wy-boss.scale*10, text:(isCrit?'치명타! -':'-')+formatBigNum(amount), vy:-0.6, alpha:1, color: isCrit?'#ff4d4d':'#ff8c42'});
     if(boss.hp<=0 && boss.dying===0){
       boss.dying = 0.001;
       spawnDeathParticles(boss.wx, boss.wy-10, '#ff8c42');
@@ -5120,7 +5661,7 @@
     player.hp = Math.max(0, player.hp-reduced);
     player.invuln = PLAYER_INVULN;
     player.hitFlashT = 1;
-    damageNumbers.push({wx:player.wx, wy:player.wy-24, text:'-'+reduced, vy:-0.6, alpha:1, color:'#ff6b5b'});
+    damageNumbers.push({wx:player.wx, wy:player.wy-24, text:'-'+formatBigNum(reduced), vy:-0.6, alpha:1, color:'#ff6b5b'});
     updateHudText();
     if(player.hp<=0){
       const wasBossFight = bossActive;
@@ -5778,8 +6319,11 @@
   function loop(now){
     const dt = Math.min(32, now-lastTime); lastTime = now;
     update(dt);
+    broadcastPresence(); // 다른 유저에게 내 위치/상태를 (스로틀링해서) 실시간으로 알림
     render();
     if(villageMapModalEl.classList.contains('show')) drawVillageMap();
+    updateMiniMapVisibility();
+    if(miniMapShown) drawMiniMap();
     requestAnimationFrame(loop);
   }
   function now_ms(){ return performance.now(); }
@@ -6211,12 +6755,13 @@
             SFX.bossActivate('summon');
             const idx=tierIndexForStage(state.stage);
             const mtype=MONSTER_ORDER[idx];
+            const summonTheme=mobThemeForStage(state.stage);
             for(let i=0;i<BOSS_SUMMON_COUNT;i++){
               const ang=Math.random()*Math.PI*2, dist=50+Math.random()*40;
               const hp=Math.floor((8+idx*5+state.stage*1.6)*stageHpMult()*0.7);
               mobs.push({type:mtype, wx:clone.wx+Math.cos(ang)*dist, wy:clone.wy+Math.sin(ang)*dist, hp, maxHp:hp,
                 r: mtype==='goblin'||mtype==='skeleton'?11:9, wanderT:0, wanderTX:0, wanderTY:0, contactCd:0, hitFlash:0, dying:0, dead:false,
-                spd: SUMMONED_MOB_SPEED});
+                spd: SUMMONED_MOB_SPEED, tint: summonTheme?summonTheme.tint:null, themeName: summonTheme?summonTheme.name:null});
             }
             clone.specialState='cooldown'; clone.specialTimer=bossCooldownMs()*0.7;
           } else {
@@ -6454,12 +6999,13 @@
           const n = BOSS_SUMMON_COUNT;
           const idx = tierIndexForStage(state.stage);
           const mtype = MONSTER_ORDER[idx];
+          const summonTheme2 = mobThemeForStage(state.stage);
           for(let i=0;i<n;i++){
             const ang = Math.random()*Math.PI*2, dist = 60+Math.random()*40;
             const hp = Math.floor((8+idx*5+state.stage*1.6)*stageHpMult()*0.8);
             mobs.push({type:mtype, wx:boss.wx+Math.cos(ang)*dist, wy:boss.wy+Math.sin(ang)*dist, hp, maxHp:hp,
               r: mtype==='goblin'||mtype==='skeleton'?11:9, wanderT:0, wanderTX:0, wanderTY:0, contactCd:0, hitFlash:0, dying:0, dead:false,
-              spd: SUMMONED_MOB_SPEED});
+              spd: SUMMONED_MOB_SPEED, tint: summonTheme2?summonTheme2.tint:null, themeName: summonTheme2?summonTheme2.name:null});
           }
           boss.state='cooldown'; boss.teleTimer=bossCooldownMs()*0.7;
         } else if(boss.teleType==='arrowrain'){
@@ -6535,10 +7081,12 @@
         boss.arenaSpawnTimer = BOSS_ARENA_SPAWN_INTERVAL;
         const idx = tierIndexForStage(state.stage);
         const mtype = MONSTER_ORDER[idx];
+        const arenaTheme = mobThemeForStage(state.stage);
         const ang = Math.random()*Math.PI*2, dist = Math.min(boss.arenaRadius*0.7, 95);
         const hp = Math.floor((8+idx*5+state.stage*1.6)*stageHpMult()*0.7);
         mobs.push({type:mtype, wx:boss.arenaCenter.x+Math.cos(ang)*dist, wy:boss.arenaCenter.y+Math.sin(ang)*dist, hp, maxHp:hp,
-          r: mtype==='goblin'||mtype==='skeleton'?11:9, wanderT:0, wanderTX:0, wanderTY:0, contactCd:0, hitFlash:0, dying:0, dead:false});
+          r: mtype==='goblin'||mtype==='skeleton'?11:9, wanderT:0, wanderTX:0, wanderTY:0, contactCd:0, hitFlash:0, dying:0, dead:false,
+          tint: arenaTheme?arenaTheme.tint:null, themeName: arenaTheme?arenaTheme.name:null});
       }
       // 결계 안에서는 부하 소환과 별개로 주기적으로 범위 공격을 사용한다
       if(boss.arenaAoeTelegraphT>0){
@@ -7074,6 +7622,7 @@
     drawGearAura(ctx, sx(player.wx)+lungeX, sy(player.wy)+player.bob+lungeY, now_ms());
     drawPixelArt(ctx, CHAR_ART, sx(player.wx)+lungeX, sy(player.wy)+player.bob+lungeY, 2.8, ptint);
     drawPlayerNameTag(sx(player.wx)+lungeX, sy(player.wy)+player.bob+lungeY-(CHAR_ART.length*2.8)-6);
+    drawPlayerChatBubble(sx(player.wx)+lungeX, sy(player.wy)+player.bob+lungeY-(CHAR_ART.length*2.8)-6);
     if(player.attackAnimT>0){
       const wp = lungeWp;
       if(wp.type==='ranged'){
@@ -7341,6 +7890,8 @@
       }
     }
     ctx.restore();
+
+    drawOtherPlayers(); // 같은 스테이지에 있는 다른 유저들
 
     // 잡몹
     mobs.forEach(mob=>{
@@ -7894,6 +8445,7 @@
     drawGearAura(ctx, sx(player.wx), sy(player.wy)+player.bob, now_ms());
     drawPixelArt(ctx, CHAR_ART, sx(player.wx), sy(player.wy)+player.bob, 2.8, null);
     drawPlayerNameTag(sx(player.wx), sy(player.wy)+player.bob-(CHAR_ART.length*2.8)-6);
+    drawPlayerChatBubble(sx(player.wx), sy(player.wy)+player.bob-(CHAR_ART.length*2.8)-6);
   }
 
   // 같은 '집'/'오두막' 타입이라도 건물마다(npcSet) 다른 주민이 살도록 하는 변형 목록.
@@ -8406,7 +8958,6 @@
   // ============ 하단 네비게이션 (필드 / 장비 / 성장 / 뽑기) ============
   const gameViewEl = document.getElementById('gameView');
   const equipViewEl = document.getElementById('equipView');
-  const growViewEl = document.getElementById('growView');
   const gachaViewEl = document.getElementById('gachaView');
   const navBtns = document.querySelectorAll('.navBtn');
   navBtns.forEach(btn=>{
@@ -8416,7 +8967,6 @@
       const tab = btn.dataset.tab;
       gameViewEl.style.display = tab==='field' ? 'block' : 'none';
       equipViewEl.style.display = tab==='equip' ? 'flex' : 'none';
-      growViewEl.style.display = tab==='grow' ? 'block' : 'none';
       gachaViewEl.style.display = tab==='gacha' ? 'block' : 'none';
       if(tab==='field') resizeCanvas();
       if(tab==='equip') renderEquipView();
@@ -8521,6 +9071,43 @@
   document.getElementById('statInfoCloseBtn').addEventListener('click', ()=> statInfoModalEl.classList.remove('show'));
   statInfoModalEl.addEventListener('click', e=>{ if(e.target===statInfoModalEl) statInfoModalEl.classList.remove('show'); });
 
+  // ---- ?버튼 마우스오버 툴팁 (클릭식 모달과 별개로 항상 함께 동작) ----
+  const statHoverTipEl = document.getElementById('statHoverTip');
+  const statHoverTipTitleEl = document.getElementById('statHoverTipTitle');
+  const statHoverTipDescEl = document.getElementById('statHoverTipDesc');
+  function showStatHoverTip(btn){
+    const info = STAT_HEADLINE_DESC[btn.dataset.stat] || ALL_STAT_DEFS[btn.dataset.stat];
+    if(!info) return;
+    statHoverTipTitleEl.textContent = info.label;
+    statHoverTipDescEl.textContent = info.desc;
+    statHoverTipEl.classList.add('show');
+    positionStatHoverTip(btn);
+  }
+  function hideStatHoverTip(){ statHoverTipEl.classList.remove('show'); }
+  function positionStatHoverTip(btn){
+    const r = btn.getBoundingClientRect();
+    const tipR = statHoverTipEl.getBoundingClientRect();
+    let left = r.left + r.width/2 - tipR.width/2;
+    left = Math.max(8, Math.min(left, window.innerWidth - tipR.width - 8));
+    let top = r.bottom + 8;
+    if(top + tipR.height > window.innerHeight - 8) top = r.top - tipR.height - 8; // 아래 공간이 없으면 위로 뒤집기
+    statHoverTipEl.style.left = Math.round(left) + 'px';
+    statHoverTipEl.style.top = Math.round(top) + 'px';
+  }
+  // .stat-info-btn은 여러 화면(장비 탭 등)에서 동적으로 다시 그려지므로, 특정 컨테이너 대신
+  // document에 위임해 새로 렌더링된 버튼에도 항상 hover가 동작하게 한다.
+  // (이전엔 '(hover:hover) and (pointer:fine)' 미디어쿼리로 마우스 기기만 걸러냈으나,
+  // 터치스크린이 달린 노트북 등 일부 환경에서 마우스가 있는데도 이 체크가 실패해 호버가
+  // 아예 동작하지 않는 문제가 있어 제거했다. 터치로 탭했을 때 뜨는 합성 mouseover는
+  // 곧이어 오는 mouseout으로 자연히 사라지므로 실사용에 문제 없다.)
+  document.addEventListener('mouseover', e=>{
+    const btn = e.target.closest('.stat-info-btn');
+    if(btn) showStatHoverTip(btn);
+  });
+  document.addEventListener('mouseout', e=>{
+    if(e.target.closest('.stat-info-btn')) hideStatHoverTip();
+  });
+
   let equipPickCategory = null, equipPickSlotIndex = 0;
   function openEquipPicker(category, slotIndex){
     equipPickCategory = category; equipPickSlotIndex = slotIndex;
@@ -8581,6 +9168,14 @@
   const gachaBannerEl=$('gachaBanner'), gachaBannerIconEl=$('gachaBannerIcon'), gachaBannerGradeEl=$('gachaBannerGrade'), gachaBannerNameEl=$('gachaBannerName');
   const gachaOddsModalEl=$('gachaOddsModal'), gachaOddsTitleEl=$('gachaOddsTitle'), gachaOddsFeaturedEl=$('gachaOddsFeatured'), gachaOddsListEl=$('gachaOddsList'), gachaOddsCloseBtnEl=$('gachaOddsCloseBtn');
   const gachaInvModalEl=$('gachaInvModal'), gachaInvOpenBtnEl=$('gachaInvOpenBtn'), gachaInvCloseBtnEl=$('gachaInvCloseBtn');
+  const gachaInvToolbarTitleEl=$('gachaInvToolbarTitle'), gachaInvSellModeBtnEl=$('gachaInvSellModeBtn');
+  const gachaInvGradeFilterEl=$('gachaInvGradeFilter'), gachaInvSellFooterEl=$('gachaInvSellFooter');
+  const gachaInvSelCountEl=$('gachaInvSelCount'), gachaInvSelGemsEl=$('gachaInvSelGems'), gachaInvSellConfirmBtnEl=$('gachaInvSellConfirmBtn');
+  // 선택판매(체크박스/등급별 일괄판매) 상태: 모달을 닫거나 카테고리를 바꾸면 초기화한다.
+  let gachaInvSellMode = false;
+  let gachaInvSelectedIds = new Set();
+  // SS 이상 등급은 판매 전 별도의 강한 확인 문구를 띄운다.
+  const SELL_CONFIRM_GRADES = ['SSS', 'SS'];
   let gachaAnimating = false;
   // 연출 건너뛰기: 진행 중인 타이머를 모두 지우고 즉시 결과로 넘어간다
   let gachaAnimTimers = [];
@@ -9230,7 +9825,7 @@
     gachaOddsTitleEl.textContent = `🎴 ${GACHA_CATEGORY_LABEL[gachaCurCat]} 확률 정보`;
     gachaOddsFeaturedEl.innerHTML = `
       <div class="odds-featured-icon item-icon">${itemIconSVG(item)}</div>
-      <div>
+      <div style="flex:1 1 auto; min-width:0;">
         <div class="odds-featured-name" style="color:${grade.color}">${item.name}</div>
         <div class="odds-featured-sub">이 카테고리의 시그니처 아이템. 어떤 색이 가장 귀할지는 직접 확인해보세요.</div>
       </div>`;
@@ -9260,9 +9855,81 @@
   gachaOddsModalEl.addEventListener('click', e=>{ if(e.target===gachaOddsModalEl) gachaOddsModalEl.classList.remove('show'); });
 
   // ---- 보유 아이템: 항상 보이던 목록 대신, 버튼을 눌러 모달로 확인 ----
-  gachaInvOpenBtnEl.addEventListener('click', ()=>{ renderGachaView(); gachaInvModalEl.classList.add('show'); });
-  gachaInvCloseBtnEl.addEventListener('click', ()=> gachaInvModalEl.classList.remove('show'));
-  gachaInvModalEl.addEventListener('click', e=>{ if(e.target===gachaInvModalEl) gachaInvModalEl.classList.remove('show'); });
+  gachaInvOpenBtnEl.addEventListener('click', ()=>{ exitGachaInvSellMode(); renderGachaView(); gachaInvModalEl.classList.add('show'); });
+  gachaInvCloseBtnEl.addEventListener('click', ()=>{ exitGachaInvSellMode(); gachaInvModalEl.classList.remove('show'); });
+  gachaInvModalEl.addEventListener('click', e=>{ if(e.target===gachaInvModalEl){ exitGachaInvSellMode(); gachaInvModalEl.classList.remove('show'); } });
+
+  // ---- 선택판매 모드 on/off ----
+  function exitGachaInvSellMode(){
+    gachaInvSellMode = false;
+    gachaInvSelectedIds = new Set();
+  }
+  gachaInvSellModeBtnEl.addEventListener('click', ()=>{
+    gachaInvSellMode = !gachaInvSellMode;
+    gachaInvSelectedIds = new Set();
+    renderGachaView();
+  });
+
+  // 현재 카테고리(gachaCurCat)에서, 특정 등급(grade)에 해당하는 보유 아이템 id들을 모두 돌려준다.
+  function invIdsOfGrade(grade){
+    return invListFor(gachaCurCat)
+      .filter(e=> findItemById(gachaCurCat, e.id).grade===grade)
+      .map(e=> e.id);
+  }
+  // 등급 칩 클릭 시: 해당 등급 아이템이 전부 선택돼 있으면 전체 해제, 아니면 전체 선택(등급별 일괄 선택).
+  function toggleGradeSelection(grade){
+    const ids = invIdsOfGrade(grade);
+    const allSelected = ids.length>0 && ids.every(id=> gachaInvSelectedIds.has(id));
+    ids.forEach(id=> allSelected ? gachaInvSelectedIds.delete(id) : gachaInvSelectedIds.add(id));
+    renderGachaView();
+  }
+  function renderGachaInvGradeFilter(inv){
+    gachaInvGradeFilterEl.innerHTML = GACHA_GRADES.map(g=>{
+      const ids = inv.filter(e=> findItemById(gachaCurCat, e.id).grade===g.key).map(e=>e.id);
+      if(ids.length===0) return '';
+      const checked = ids.every(id=> gachaInvSelectedIds.has(id));
+      return `<div class="gacha-grade-chip${checked?' checked':''}" data-grade="${g.key}">
+        <span class="dot" style="background:${g.color}"></span>${g.key} <span class="cnt">${ids.length}</span>
+      </div>`;
+    }).join('');
+    gachaInvGradeFilterEl.querySelectorAll('.gacha-grade-chip').forEach(chip=>{
+      chip.addEventListener('click', ()=> toggleGradeSelection(chip.dataset.grade));
+    });
+  }
+  // 선택된 아이템들의 총 개수(수량 포함)와 예상 다이아 지급량을 계산해 하단 바를 갱신한다.
+  function updateGachaSellFooter(inv){
+    const selectedEntries = inv.filter(e=> gachaInvSelectedIds.has(e.id));
+    const totalCount = selectedEntries.reduce((sum,e)=> sum+e.count, 0);
+    const totalGems = selectedEntries.reduce((sum,e)=>{
+      const grade = findItemById(gachaCurCat, e.id).grade;
+      return sum + (SELL_VALUE[grade]||1) * e.count;
+    }, 0);
+    gachaInvSelCountEl.textContent = totalCount;
+    gachaInvSelGemsEl.textContent = totalGems;
+    gachaInvSellConfirmBtnEl.disabled = selectedEntries.length===0;
+    return {selectedEntries, totalCount, totalGems};
+  }
+  // 선택된 아이템들을 실제로 판매 처리한다. SS 이상 등급이 포함되어 있으면 문구를 강조한다.
+  function confirmAndSellSelected(inv){
+    const {selectedEntries, totalCount, totalGems} = updateGachaSellFooter(inv);
+    if(selectedEntries.length===0) return;
+    const gradesInSelection = Array.from(new Set(selectedEntries.map(e=> findItemById(gachaCurCat, e.id).grade)));
+    const highGrades = GACHA_GRADES.filter(g=> SELL_CONFIRM_GRADES.indexOf(g.key)>=0 && gradesInSelection.indexOf(g.key)>=0).map(g=>g.key);
+    let msg = `아이템 ${totalCount}개를 판매하면 다이아 ${totalGems}개를 획득합니다.\n판매하시겠습니까?`;
+    if(highGrades.length>0){
+      msg = `⚠ ${highGrades.join(', ')}등급 아이템이 포함되어 있습니다!\n\n아이템 ${totalCount}개를 판매하면 다이아 ${totalGems}개를 획득합니다.\n\n정말로 ${highGrades.join(', ')}등급을 판매하시겠습니까?`;
+    }
+    if(!confirm(msg)) return;
+    // sellItem()은 1개씩 차감하는 함수이므로, 보유 수량만큼 반복 호출해 스택 전체를 판매한다.
+    selectedEntries.forEach(e=>{
+      const count = e.count;
+      for(let i=0;i<count;i++) sellItem(gachaCurCat, e.id);
+    });
+    toast(`아이템 ${totalCount}개 판매! 다이아 +${totalGems}💠`, 'gold', true);
+    exitGachaInvSellMode();
+    renderGachaView();
+  }
+  gachaInvSellConfirmBtnEl.addEventListener('click', ()=> confirmAndSellSelected(invListFor(gachaCurCat)));
 
   // 주의: .gachaSubBtn 클래스는 랭킹 직업탭/대장간 카테고리탭도 스타일 재사용을 위해 같이 쓰므로,
   // 반드시 가챠 전용 컨테이너(#gachaSubtabs) 안에서만 찾아야 한다. document 전체에서 찾으면
@@ -9273,6 +9940,7 @@
       document.querySelectorAll('#gachaSubtabs .gachaSubBtn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       gachaCurCat = btn.dataset.cat;
+      exitGachaInvSellMode(); // 카테고리를 바꾸면 이전 카테고리 기준으로 선택했던 항목은 무의미하므로 초기화
       renderGachaView();
     });
   });
@@ -9295,6 +9963,20 @@
       const gj = GACHA_GRADES.findIndex(g=>g.key===findItemById(gachaCurCat,b.id).grade);
       return gi-gj;
     });
+
+    // ---- 선택판매(체크박스/등급별 일괄판매) 툴바 상태 갱신 ----
+    gachaInvSellModeBtnEl.classList.toggle('active', gachaInvSellMode);
+    gachaInvSellModeBtnEl.textContent = gachaInvSellMode ? '✕ 선택취소' : '☑ 선택판매';
+    gachaInvGradeFilterEl.classList.toggle('show', gachaInvSellMode && inv.length>0);
+    gachaInvSellFooterEl.classList.toggle('show', gachaInvSellMode && inv.length>0);
+    gachaInvToolbarTitleEl.textContent = gachaInvSellMode
+      ? '등급 칩을 누르면 해당 등급이 한번에 선택됩니다'
+      : '아이템을 눌러 상세정보를 확인하세요';
+    if(gachaInvSellMode && inv.length>0){
+      renderGachaInvGradeFilter(inv);
+      updateGachaSellFooter(inv);
+    }
+
     if(inv.length===0){
       gachaInvListEl.innerHTML = '<div class="gacha-inv-empty">보유한 아이템이 없습니다. 뽑기로 획득해보세요!</div>';
       return;
@@ -9304,33 +9986,55 @@
       const grade = GRADE_BY_KEY[item.grade];
       const equippedSlot = findEquippedSlot(gachaCurCat, entry.id);
       const isEquipped = equippedSlot>=0;
+      const sellPrice = SELL_VALUE[item.grade] || 1;
+      const isSelected = gachaInvSelectedIds.has(entry.id);
       const row = document.createElement('div');
-      row.className = 'inv-item' + (isEquipped ? ' equipped' : '');
+      row.className = 'inv-item'
+        + (isEquipped ? ' equipped' : '')
+        + (gachaInvSellMode ? ' sell-mode' : '')
+        + (isSelected ? ' selected' : '');
       row.innerHTML = `
+        <input type="checkbox" class="inv-item-check" ${isSelected?'checked':''}>
         <div class="inv-icon-box item-icon">${itemIconSVG(item)}</div>
         <div class="inv-grade-badge" style="background:${grade.color}">${item.grade}</div>
         <div class="inv-item-info">
           <div class="inv-item-name">${item.name} ${entry.count>1?`x${entry.count}`:''}${isEquipped?'<span class="inv-equipped-badge">장착중</span>':''}</div>
           <div class="inv-item-sub">${statLineText(item.stats)}</div>
+          <div class="inv-item-price">💠 판매가 ${sellPrice}${entry.count>1?` (전체 ${sellPrice*entry.count})`:''}</div>
         </div>
         <div class="inv-item-actions">
           <button class="${isEquipped?'btn-unequip':'btn-equip'}" data-act="${isEquipped?'unequip':'equip'}">${isEquipped?'해제':'장착'}</button>
           <button class="btn-sell" data-act="sell">판매</button>
         </div>`;
-      row.querySelector('.inv-item-info').addEventListener('click', ()=> openItemDetail(gachaCurCat, entry.id));
-      row.querySelector('[data-act="equip"], [data-act="unequip"]')?.addEventListener('click', e=>{
-        e.stopPropagation();
-        if(isEquipped){ unequipItem(gachaCurCat, equippedSlot); return; }
-        const slots = state.equip[gachaCurCat];
-        const emptySlot = slots.indexOf(null);
-        if(emptySlot<0){
-          // 무기는 슬롯이 1개뿐이라 "가득 찼다"고 막지 않고 곧바로 새 무기로 교체한다
-          if(gachaCurCat==='weapon'){ equipItem(gachaCurCat, entry.id, 0); return; }
-          toast('슬롯이 가득 찼습니다. 장비 탭에서 교체해주세요.', 'fail', true); return;
-        }
-        equipItem(gachaCurCat, entry.id, emptySlot);
-      });
-      row.querySelector('[data-act="sell"]').addEventListener('click', e=>{ e.stopPropagation(); sellItem(gachaCurCat, entry.id); });
+      if(gachaInvSellMode){
+        // 선택판매 모드에서는 행을 누르면 상세정보 대신 체크박스가 토글되게 한다.
+        row.addEventListener('click', ()=>{
+          isSelected ? gachaInvSelectedIds.delete(entry.id) : gachaInvSelectedIds.add(entry.id);
+          renderGachaView();
+        });
+      } else {
+        row.querySelector('.inv-item-info').addEventListener('click', ()=> openItemDetail(gachaCurCat, entry.id));
+        row.querySelector('[data-act="equip"], [data-act="unequip"]')?.addEventListener('click', e=>{
+          e.stopPropagation();
+          if(isEquipped){ unequipItem(gachaCurCat, equippedSlot); return; }
+          const slots = state.equip[gachaCurCat];
+          const emptySlot = slots.indexOf(null);
+          if(emptySlot<0){
+            // 무기는 슬롯이 1개뿐이라 "가득 찼다"고 막지 않고 곧바로 새 무기로 교체한다
+            if(gachaCurCat==='weapon'){ equipItem(gachaCurCat, entry.id, 0); return; }
+            toast('슬롯이 가득 찼습니다. 장비 탭에서 교체해주세요.', 'fail', true); return;
+          }
+          equipItem(gachaCurCat, entry.id, emptySlot);
+        });
+        row.querySelector('[data-act="sell"]').addEventListener('click', e=>{
+          e.stopPropagation();
+          // 개별 "판매" 버튼도 SS 이상 등급이면 판매 전 다이아 지급량과 함께 재확인한다.
+          if(SELL_CONFIRM_GRADES.indexOf(item.grade)>=0){
+            if(!confirm(`⚠ ${item.grade}등급 아이템입니다!\n판매하면 다이아 ${sellPrice}개를 획득합니다.\n정말로 ${item.grade}등급을 판매하시겠습니까?`)) return;
+          }
+          sellItem(gachaCurCat, entry.id);
+        });
+      }
       gachaInvListEl.appendChild(row);
     });
   }
@@ -9351,6 +10055,17 @@
   // ===== NPC 말 걸기 버튼 (실내/야외 공용) =====
   const npcTalkBtnEl=$('npcTalkBtn');
   npcTalkBtnEl.addEventListener('click', ()=> talkToNpc(nearbyTalkNPC));
+
+  // ===== 훈련소: 성장(스탯 강화) 모달 =====
+  const trainingCampModalEl=$('trainingCampModal'), trainingCampCloseBtnEl=$('trainingCampCloseBtn');
+  function openTrainingCamp(){
+    toast('훈련 교관 갈드: "차렷! 오늘도 구슬땀 좀 흘려보자!"', 'success', true);
+    updateHudText();
+    trainingCampModalEl.classList.add('show');
+  }
+  function closeTrainingCamp(){ trainingCampModalEl.classList.remove('show'); }
+  trainingCampCloseBtnEl.addEventListener('click', closeTrainingCamp);
+  trainingCampModalEl.addEventListener('click', e=>{ if(e.target===trainingCampModalEl) closeTrainingCamp(); });
 
   // ===== 대장간: 무기 재련 모달 =====
   const blacksmithModalEl=$('blacksmithModal'), blacksmithCloseBtnEl=$('blacksmithCloseBtn'), blacksmithWeaponListEl=$('blacksmithWeaponList');
@@ -9552,14 +10267,17 @@
   // #hud/.hud-menu-wrap 내부에 중첩되어 있으면 조상 요소의 stacking context/overflow에 따라 팝오버 일부가
   // 가려지거나 잘려 보이는 문제가 반복적으로 발생했다. body 바로 아래로 옮겨 그런 영향을 원천 차단한다
   // (버튼들의 id와 클릭 핸들러는 그대로 유지되므로 동작에는 영향이 없다).
-  if(hudMenuPopoverEl) document.body.appendChild(hudMenuPopoverEl);
+  if(hudMenuPopoverEl && viewportScalerEl) viewportScalerEl.appendChild(hudMenuPopoverEl);
   // 팝오버를 버튼의 실제 화면 좌표(getBoundingClientRect)를 기준으로 position:fixed로 직접 배치한다.
   // (기존에는 조상 요소의 stacking context/overflow에 따라 메뉴가 가려지거나 화면 경계에 걸쳐 잘려 보이는
   //  문제가 있었는데, 화면 좌표로 직접 계산해 붙이면 그런 영향을 받지 않고 항상 버튼 바로 아래에 온전히 보인다)
+  // #viewportScaler로 옮겼으므로 기준도 실제 브라우저 창(window.innerWidth)이 아니라
+  // #viewportScaler의 화면 좌표(getBoundingClientRect)로 잡아야 레터박스 환경에서도 위치가 맞는다.
   function positionHudMenu(){
     const r = hudMenuBtnEl.getBoundingClientRect();
+    const scalerR = viewportScalerEl ? viewportScalerEl.getBoundingClientRect() : {right:window.innerWidth};
     hudMenuPopoverEl.style.top = Math.round(r.bottom + 6) + 'px';
-    hudMenuPopoverEl.style.right = Math.round(window.innerWidth - r.right) + 'px';
+    hudMenuPopoverEl.style.right = Math.round(scalerR.right - r.right) + 'px';
     hudMenuPopoverEl.style.left = 'auto';
   }
   function openHudMenu(){ positionHudMenu(); hudMenuPopoverEl.classList.remove('hide'); }
@@ -9585,6 +10303,7 @@
   const weaponFxToggleEl=$('weaponFxToggle'), screenFlashToggleEl=$('screenFlashToggle'), skillSoundToggleEl=$('skillSoundToggle'), hitboxToggleEl=$('hitboxToggle');
   const skipJobSelectToggleEl=$('skipJobSelectToggle');
   const skipTitleScreenToggleEl=$('skipTitleScreenToggle');
+  const miniMapToggleEl=$('miniMapToggle');
   const couponInputEl=$('couponInput'), couponBtnEl=$('couponBtn');
   const adminLoginRowEl=$('adminLoginRow'), adminPanelEl=$('adminPanel'), adminPwInputEl=$('adminPwInput'), adminPwBtnEl=$('adminPwBtn');
   const adminGoldInputEl=$('adminGoldInput'), adminGemsInputEl=$('adminGemsInput');
@@ -9661,12 +10380,11 @@
 
   function openSettings(){
     nameInputEl.value = settings.playerName;
-    const nameLocked = !!settings.playerName;
-    nameInputEl.disabled = nameLocked;
-    nameSaveBtnEl.disabled = nameLocked;
-    nameLockNoteEl.textContent = nameLocked
-      ? `※ 닉네임은 "${settings.playerName}"(으)로 설정되어 있으며, 이후에는 변경할 수 없습니다.`
-      : '※ 닉네임은 한 번 설정하면 다시 바꿀 수 없습니다. 설정하지 않으면 랜덤한 이름이 자동으로 부여됩니다.';
+    nameInputEl.disabled = false;
+    nameSaveBtnEl.disabled = false;
+    nameLockNoteEl.textContent = settings.playerName
+      ? '※ 닉네임은 언제든 다시 바꿀 수 있습니다. 채팅 등에서 이 이름으로 표시됩니다.'
+      : '※ 설정하지 않으면 랜덤한 이름이 자동으로 부여됩니다. 이후에도 언제든 바꿀 수 있습니다.';
     sfxVolumeEl.value = settings.sfxVolume;
     sfxVolumeLabelEl.textContent = settings.sfxVolume + '%';
     bgmVolumeEl.value = settings.bgmVolume;
@@ -9683,6 +10401,7 @@
     hitboxToggleEl.checked = settings.hitboxDebug;
     skipJobSelectToggleEl.checked = settings.skipJobSelect;
     skipTitleScreenToggleEl.checked = settings.skipTitleScreen;
+    miniMapToggleEl.checked = settings.miniMap;
     const jobLabelEl = document.getElementById('currentJobLabel');
     if(jobLabelEl) jobLabelEl.textContent = `${currentJobDef().icon} ${currentJobDef().label}`;
     if(adminUnlocked) fillAdminInputs();
@@ -9765,7 +10484,7 @@
 
   // ============ 마을 지도 모달 ============
   const villageMapBtnEl=$('villageMapBtn'), villageMapModalEl=$('villageMapModal'), villageMapCloseBtnEl=$('villageMapCloseBtn');
-  const villageMapCanvasEl=$('villageMapCanvas'), villageMapLegendEl=$('villageMapLegend');
+  const villageMapCanvasEl=$('villageMapCanvas');
   const villageMapCtx = villageMapCanvasEl.getContext('2d');
 
   // 지도에 표시할 범위를 모든 건물 좌표로부터 자동 계산 (여백 포함)
@@ -9780,18 +10499,46 @@
   }
   const VILLAGE_MAP_BOUNDS = computeVillageMapBounds();
 
-  function renderVillageMapLegend(){
-    villageMapLegendEl.innerHTML = '';
-    const mineSpan = document.createElement('span');
-    mineSpan.textContent = '🏡 내 집';
-    mineSpan.style.color = '#ffe9ad';
-    villageMapLegendEl.appendChild(mineSpan);
-    Object.keys(BUILDING_INFO).forEach(type=>{
-      const info = BUILDING_INFO[type];
-      const span = document.createElement('span');
-      span.textContent = `${info.icon} ${info.label}`;
-      villageMapLegendEl.appendChild(span);
-    });
+  // ── 지도 확대/축소·이동(팬) 상태 ──
+  // villageMapScale: 월드좌표 1단위당 화면 픽셀 수. villageMapOffX/Y: 화면상의 원점 오프셋.
+  let villageMapScale = null, villageMapOffX = 0, villageMapOffY = 0;
+  let villageMapMinScale = 1, villageMapMaxScale = 1;
+
+  // 캔버스 크기에 딱 맞춰(줌 1배) 지도를 다시 중앙 정렬한다.
+  function fitVillageMapView(cw, ch){
+    const { minX, maxX, minY, maxY } = VILLAGE_MAP_BOUNDS;
+    const worldW = maxX-minX, worldH = maxY-minY;
+    const baseScale = Math.min(cw/worldW, ch/worldH);
+    villageMapMinScale = baseScale*0.6;
+    villageMapMaxScale = baseScale*4.5;
+    villageMapScale = baseScale;
+    villageMapOffX = (cw - worldW*baseScale)/2;
+    villageMapOffY = (ch - worldH*baseScale)/2;
+  }
+
+  // 지도가 화면 밖으로 너무 멀리 드래그되지 않도록 오프셋을 보정한다.
+  function clampVillageMapView(cw, ch){
+    if(villageMapScale==null) return;
+    const { minX, maxX, minY, maxY } = VILLAGE_MAP_BOUNDS;
+    const worldW = maxX-minX, worldH = maxY-minY;
+    const contentW = worldW*villageMapScale, contentH = worldH*villageMapScale;
+    villageMapOffX = contentW<=cw ? (cw-contentW)/2 : Math.min(0, Math.max(cw-contentW, villageMapOffX));
+    villageMapOffY = contentH<=ch ? (ch-contentH)/2 : Math.min(0, Math.max(ch-contentH, villageMapOffY));
+  }
+
+  // screenX/screenY(캔버스 기준 픽셀) 지점을 고정한 채 scale에 factor배를 곱해 확대/축소한다.
+  function zoomVillageMapAt(screenX, screenY, factor){
+    const cw = villageMapCanvasEl.width, ch = villageMapCanvasEl.height;
+    if(cw===0 || ch===0) return;
+    if(villageMapScale==null) fitVillageMapView(cw, ch);
+    const { minX, minY } = VILLAGE_MAP_BOUNDS;
+    const worldX = (screenX - villageMapOffX)/villageMapScale + minX;
+    const worldY = (screenY - villageMapOffY)/villageMapScale + minY;
+    const newScale = Math.max(villageMapMinScale, Math.min(villageMapMaxScale, villageMapScale*factor));
+    villageMapScale = newScale;
+    villageMapOffX = screenX - (worldX-minX)*newScale;
+    villageMapOffY = screenY - (worldY-minY)*newScale;
+    clampVillageMapView(cw, ch);
   }
 
   function resizeVillageMapCanvas(){
@@ -9803,23 +10550,25 @@
   function drawVillageMap(){
     const cw = villageMapCanvasEl.width, ch = villageMapCanvasEl.height;
     if(cw===0 || ch===0) return;
+    if(villageMapScale==null) fitVillageMapView(cw, ch);
     const m = villageMapCtx;
     const { minX, maxX, minY, maxY } = VILLAGE_MAP_BOUNDS;
-    const worldW = maxX-minX, worldH = maxY-minY;
-    const scale = Math.min(cw/worldW, ch/worldH);
-    const offX = (cw - worldW*scale)/2, offY = (ch - worldH*scale)/2;
+    const scale = villageMapScale;
+    const offX = villageMapOffX, offY = villageMapOffY;
     const mx = wx => offX + (wx-minX)*scale;
     const my = wy => offY + (wy-minY)*scale;
 
     m.clearRect(0,0,cw,ch);
+    m.save();
+    m.beginPath(); m.rect(0,0,cw,ch); m.clip();
     m.fillStyle = '#17301c'; m.fillRect(0,0,cw,ch);
     // 은은한 격자 배경
     m.strokeStyle = 'rgba(255,255,255,0.05)'; m.lineWidth = 1;
     for(let gx=Math.ceil(minX/200)*200; gx<maxX; gx+=200){
-      m.beginPath(); m.moveTo(mx(gx), offY); m.lineTo(mx(gx), ch-offY); m.stroke();
+      m.beginPath(); m.moveTo(mx(gx), my(minY)); m.lineTo(mx(gx), my(maxY)); m.stroke();
     }
     for(let gy=Math.ceil(minY/200)*200; gy<maxY; gy+=200){
-      m.beginPath(); m.moveTo(offX, my(gy)); m.lineTo(cw-offX, my(gy)); m.stroke();
+      m.beginPath(); m.moveTo(mx(minX), my(gy)); m.lineTo(mx(maxX), my(gy)); m.stroke();
     }
 
     // 건물 (주요 건물만 아이콘+이름표, 그 외 시설은 작은 점으로 표시)
@@ -9837,24 +10586,45 @@
         m.fillText(info.icon, px, py);
         m.font = 'bold 10px "Noto Sans KR", sans-serif';
         m.fillStyle = info.mine ? '#fff4cf' : '#ffd97a';
-        m.fillText(info.label, px, py+14);
+        const residentLabel = residentHouseLabelFor(b);
+        m.fillText(residentLabel || info.label, px, py+14);
       } else {
         m.fillStyle = 'rgba(212,175,55,0.55)';
         m.beginPath(); m.arc(px, py, 2.5, 0, Math.PI*2); m.fill();
       }
     });
 
-    // 플레이어 현재 위치 (은은하게 맥동)
+    // 플레이어 현재 위치 (은은하게 맥동 + 눈에 잘 띄는 핀 모양 + 라벨)
     const ppx = mx(player.wx), ppy = my(player.wy);
     const pulse = 1 + 0.25*Math.sin(now_ms()/300);
-    m.fillStyle = 'rgba(62,201,167,0.28)';
-    m.beginPath(); m.arc(ppx, ppy, 11*pulse, 0, Math.PI*2); m.fill();
+    m.fillStyle = 'rgba(62,201,167,0.30)';
+    m.beginPath(); m.arc(ppx, ppy, 20*pulse, 0, Math.PI*2); m.fill();
+    m.strokeStyle = '#0f0d17'; m.lineWidth = 2.5;
+    m.beginPath(); m.arc(ppx, ppy, 9, 0, Math.PI*2); m.stroke();
     m.fillStyle = '#3ec9a7';
-    m.beginPath(); m.arc(ppx, ppy, 6, 0, Math.PI*2); m.fill();
-    m.strokeStyle = '#fff'; m.lineWidth = 1.5;
-    m.beginPath(); m.arc(ppx, ppy, 6, 0, Math.PI*2); m.stroke();
+    m.beginPath(); m.arc(ppx, ppy, 9, 0, Math.PI*2); m.fill();
+    m.strokeStyle = '#fff'; m.lineWidth = 2;
+    m.beginPath(); m.arc(ppx, ppy, 9, 0, Math.PI*2); m.stroke();
+    m.font = 'bold 11px "Noto Sans KR", sans-serif';
+    m.textAlign = 'center'; m.textBaseline = 'alphabetic';
+    m.fillStyle = 'rgba(15,13,23,0.75)';
+    m.fillRect(ppx-26, ppy-30, 52, 16);
+    m.fillStyle = '#3ec9a7';
+    m.fillText('📍 내 위치', ppx, ppy-19);
+    m.restore();
   }
 
+  // 지도를 처음 열 때는 전체 지도 대신, 내 위치를 중심으로 적당히 확대한 상태로 보여준다
+  // (훈련소처럼 마을에서 멀리 떨어진 시설이 생기면서 전체 지도 기준 배율이 너무 작아져
+  //  내 위치 점이 눈에 잘 안 띄는 문제를 막기 위함. 전체 지도는 더블클릭으로 볼 수 있다.)
+  function focusVillageMapOnPlayer(cw, ch){
+    fitVillageMapView(cw, ch); // 줌 한계(min/max)를 먼저 계산해둔다
+    const { minX, minY } = VILLAGE_MAP_BOUNDS;
+    villageMapScale = Math.min(villageMapMaxScale, villageMapScale*2.2);
+    villageMapOffX = cw/2 - (player.wx-minX)*villageMapScale;
+    villageMapOffY = ch/2 - (player.wy-minY)*villageMapScale;
+    clampVillageMapView(cw, ch);
+  }
   // 보스전(소환 연출 포함) 중에는 마을 지도 자체를 사용할 수 없다
   function isVillageMapLocked(){ return bossActive || bossIncoming; }
   function openVillageMap(){
@@ -9862,15 +10632,149 @@
       toast('보스전 중에는 마을 지도를 사용할 수 없습니다.', 'fail', true);
       return;
     }
-    renderVillageMapLegend();
     villageMapModalEl.classList.add('show');
-    requestAnimationFrame(()=>{ resizeVillageMapCanvas(); drawVillageMap(); });
+    requestAnimationFrame(()=>{
+      resizeVillageMapCanvas();
+      focusVillageMapOnPlayer(villageMapCanvasEl.width, villageMapCanvasEl.height);
+      drawVillageMap();
+    });
   }
   function closeVillageMap(){ villageMapModalEl.classList.remove('show'); }
   villageMapBtnEl.addEventListener('click', openVillageMap);
   villageMapCloseBtnEl.addEventListener('click', closeVillageMap);
   villageMapModalEl.addEventListener('click', e=>{ if(e.target===villageMapModalEl) closeVillageMap(); });
-  window.addEventListener('resize', ()=>{ if(villageMapModalEl.classList.contains('show')){ resizeVillageMapCanvas(); drawVillageMap(); } });
+  window.addEventListener('resize', ()=>{
+    if(villageMapModalEl.classList.contains('show')){
+      resizeVillageMapCanvas();
+      fitVillageMapView(villageMapCanvasEl.width, villageMapCanvasEl.height);
+      drawVillageMap();
+    }
+  });
+
+  // ===== 미니맵 (필드 화면 우상단에 항상 떠 있는 작은 마을 지도, 설정에서 켜고 끌 수 있음) =====
+  const miniMapWrapEl = $('miniMapWrap'), miniMapCanvasEl = $('miniMapCanvas');
+  const miniMapCtx = miniMapCanvasEl.getContext('2d');
+  let miniMapScale = null, miniMapOffX = 0, miniMapOffY = 0;
+  let miniMapShown = false; // 매 프레임 불필요한 DOM 클래스 갱신을 피하기 위한 마지막 표시 상태 캐시
+
+  // 캔버스 해상도를 실제 표시 크기(CSS px)에 맞춰 선명하게 설정하고, 미니맵 전용 축척을 계산해둔다.
+  // (전체 지도와 달리 확대/축소·이동이 없는 고정 뷰이므로 한 번만 계산하면 됨)
+  function resizeMiniMapCanvas(){
+    const w = miniMapCanvasEl.clientWidth, h = miniMapCanvasEl.clientHeight;
+    if(w<=0 || h<=0) return;
+    if(miniMapCanvasEl.width===w && miniMapCanvasEl.height===h && miniMapScale!=null) return;
+    miniMapCanvasEl.width = w; miniMapCanvasEl.height = h;
+    const { minX, maxX, minY, maxY } = VILLAGE_MAP_BOUNDS;
+    const worldW = maxX-minX, worldH = maxY-minY;
+    miniMapScale = Math.min(w/worldW, h/worldH);
+    miniMapOffX = (w - worldW*miniMapScale)/2;
+    miniMapOffY = (h - worldH*miniMapScale)/2;
+  }
+
+  // 전체 지도보다 훨씬 작은 공간이라 아이콘/글자 없이 건물은 작은 점으로, 내 집과 현재 위치만 눈에 띄게 강조한다.
+  function drawMiniMap(){
+    resizeMiniMapCanvas();
+    const cw = miniMapCanvasEl.width, ch = miniMapCanvasEl.height;
+    if(cw===0 || ch===0 || miniMapScale==null) return;
+    const m = miniMapCtx;
+    const { minX, minY } = VILLAGE_MAP_BOUNDS;
+    const mx = wx => miniMapOffX + (wx-minX)*miniMapScale;
+    const my = wy => miniMapOffY + (wy-minY)*miniMapScale;
+
+    m.clearRect(0,0,cw,ch);
+    m.fillStyle = '#17301c'; m.fillRect(0,0,cw,ch);
+
+    VILLAGE_BUILDINGS.forEach(b=>{
+      const px = mx(b.cx), py = my(b.cy);
+      if(b.isPlayerHouse){
+        const pulse = 1+0.2*Math.sin(now_ms()/400);
+        m.fillStyle = 'rgba(255,224,140,0.4)';
+        m.beginPath(); m.arc(px, py, 8*pulse, 0, Math.PI*2); m.fill();
+        m.fillStyle = '#ffe08c';
+        m.beginPath(); m.arc(px, py, 3.4, 0, Math.PI*2); m.fill();
+      } else {
+        m.fillStyle = 'rgba(212,175,55,0.6)';
+        m.beginPath(); m.arc(px, py, 2.4, 0, Math.PI*2); m.fill();
+      }
+    });
+
+    // 플레이어 현재 위치
+    const ppx = mx(player.wx), ppy = my(player.wy);
+    const pulse = 1 + 0.25*Math.sin(now_ms()/300);
+    m.fillStyle = 'rgba(62,201,167,0.35)';
+    m.beginPath(); m.arc(ppx, ppy, 12*pulse, 0, Math.PI*2); m.fill();
+    m.strokeStyle = '#0f0d17'; m.lineWidth = 2;
+    m.beginPath(); m.arc(ppx, ppy, 6, 0, Math.PI*2); m.stroke();
+    m.fillStyle = '#3ec9a7';
+    m.beginPath(); m.arc(ppx, ppy, 6, 0, Math.PI*2); m.fill();
+
+    // 테두리(살짝 안쪽으로) - 배경이 어두운 필드 화면과 경계를 뚜렷하게 구분해준다
+    m.strokeStyle = 'rgba(255,255,255,0.15)'; m.lineWidth = 1;
+    m.strokeRect(0.5,0.5,cw-1,ch-1);
+  }
+
+  // 설정값 + 실내 여부에 따라 미니맵 표시를 갱신한다. 실내에서는 마을 좌표가 의미 없으므로 숨긴다.
+  function updateMiniMapVisibility(){
+    const shouldShow = !!settings.miniMap && !inHouse;
+    if(shouldShow===miniMapShown) return;
+    miniMapShown = shouldShow;
+    miniMapWrapEl.classList.toggle('show', shouldShow);
+    if(shouldShow) requestAnimationFrame(drawMiniMap);
+  }
+  // 미니맵을 탭하면(보스전 중이 아닐 때) 전체 마을 지도를 바로 연다
+  miniMapWrapEl.addEventListener('click', ()=>{ if(miniMapShown) openVillageMap(); });
+
+  // ── 마을 지도 확대/축소·드래그 이동 조작 ──
+  // 데스크톱: 마우스 휠로 확대/축소, 드래그로 이동. 모바일: 한 손가락 드래그로 이동, 두 손가락 핀치로 확대/축소.
+  villageMapCanvasEl.addEventListener('wheel', e=>{
+    e.preventDefault();
+    const rect = villageMapCanvasEl.getBoundingClientRect();
+    const sx0 = e.clientX-rect.left, sy0 = e.clientY-rect.top;
+    const factor = e.deltaY<0 ? 1.18 : 1/1.18;
+    zoomVillageMapAt(sx0, sy0, factor);
+  }, { passive:false });
+
+  const vmPointers = new Map();
+  let vmLastPanPoint = null, vmLastPinchDist = null;
+  function vmPinchDistance(){
+    const pts = Array.from(vmPointers.values());
+    return Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+  }
+  villageMapCanvasEl.addEventListener('pointerdown', e=>{
+    villageMapCanvasEl.setPointerCapture(e.pointerId);
+    vmPointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(vmPointers.size===1){ vmLastPanPoint = {x:e.clientX, y:e.clientY}; }
+    else if(vmPointers.size===2){ vmLastPinchDist = vmPinchDistance(); vmLastPanPoint = null; }
+  });
+  villageMapCanvasEl.addEventListener('pointermove', e=>{
+    if(!vmPointers.has(e.pointerId)) return;
+    vmPointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    const rect = villageMapCanvasEl.getBoundingClientRect();
+    if(vmPointers.size===1 && vmLastPanPoint){
+      const dx = e.clientX - vmLastPanPoint.x, dy = e.clientY - vmLastPanPoint.y;
+      villageMapOffX += dx; villageMapOffY += dy;
+      vmLastPanPoint = {x:e.clientX, y:e.clientY};
+      clampVillageMapView(villageMapCanvasEl.width, villageMapCanvasEl.height);
+    } else if(vmPointers.size===2){
+      const pts = Array.from(vmPointers.values());
+      const dist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+      const midX = (pts[0].x+pts[1].x)/2 - rect.left, midY = (pts[0].y+pts[1].y)/2 - rect.top;
+      if(vmLastPinchDist) zoomVillageMapAt(midX, midY, dist/vmLastPinchDist);
+      vmLastPinchDist = dist;
+    }
+  });
+  function vmEndPointer(e){
+    vmPointers.delete(e.pointerId);
+    if(vmPointers.size<2) vmLastPinchDist = null;
+    if(vmPointers.size===1) vmLastPanPoint = Array.from(vmPointers.values())[0];
+    else if(vmPointers.size===0) vmLastPanPoint = null;
+  }
+  villageMapCanvasEl.addEventListener('pointerup', vmEndPointer);
+  villageMapCanvasEl.addEventListener('pointercancel', vmEndPointer);
+  // 더블클릭/더블탭하면 다시 전체 지도가 보이도록 원래 배율로 되돌린다.
+  villageMapCanvasEl.addEventListener('dblclick', ()=>{
+    fitVillageMapView(villageMapCanvasEl.width, villageMapCanvasEl.height);
+  });
 
   // 마을 지도 버튼 활성/비활성 상태를 보스전 여부에 맞춰 갱신 (보스전 중엔 지도 자체 사용 불가)
   setInterval(()=>{
@@ -9978,20 +10882,20 @@
   }
 
 
-  // 닉네임 - 한 번 설정하면 다시 바꿀 수 없다. 이미 설정되어 있으면 클릭을 무시한다(버튼도 openSettings에서 비활성화됨).
+  // 닉네임 - 언제든 원하는 만큼 바꿀 수 있다(예전에는 최초 1회만 설정 가능하고 이후 영구히 잠겼으나,
+  // 채팅/랭킹 등에서 계속 쓰이는 이름이라 자유롭게 바꿀 수 있어야 한다는 피드백에 따라 잠금을 제거함).
   nameSaveBtnEl.addEventListener('click', ()=>{
-    if(settings.playerName) return;
     const v = nameInputEl.value.trim().slice(0,10);
     if(!v) return; // 빈 값 저장은 "설정 안 함" 상태이므로 무시 - 이후 랜덤 이름이 자동으로 부여된다
+    if(v===settings.playerName) return;
     settings.playerName = v;
-    nameInputEl.disabled = true;
-    nameSaveBtnEl.disabled = true;
-    nameLockNoteEl.textContent = `※ 닉네임은 "${v}"(으)로 설정되어 있으며, 이후에는 변경할 수 없습니다.`;
-    toast(`닉네임이 "${v}"(으)로 설정되었습니다.`, 'success', true);
+    nameLockNoteEl.textContent = '※ 닉네임은 언제든 다시 바꿀 수 있습니다. 채팅 등에서 이 이름으로 표시됩니다.';
+    toast(`닉네임이 "${v}"(으)로 변경되었습니다.`, 'success', true);
     updateHudText();
     updateRanking();
     saveGame();
   });
+
 
   // 알림 토글
   notifyToggleEl.addEventListener('change', e=>{ settings.notify = e.target.checked; });
@@ -10008,6 +10912,10 @@
   skipTitleScreenToggleEl.addEventListener('change', e=>{
     settings.skipTitleScreen = e.target.checked;
     writeCachedSkipTitleScreen(e.target.checked);
+  });
+  miniMapToggleEl.addEventListener('change', e=>{
+    settings.miniMap = e.target.checked;
+    updateMiniMapVisibility();
   });
 
   // ============ 배경음(BGM) / 효과음 볼륨 ============
@@ -10633,6 +11541,262 @@
 
   function userDataRef(){ return db.ref('users/' + currentUser.uid + '/save'); }
 
+  // ===== 채팅 (Firebase Realtime Database 공용 채팅방 - 차후 멀티플레이 도입 시 그대로 재사용) =====
+  // 지금은 다른 유저의 캐릭터가 필드에 보이지 않지만, 채팅 메시지 자체는 접속한 모든 유저에게
+  // 실시간으로 공유된다. 최근 50개만 불러와 화면에 표시하고(전체 로그는 DB에 계속 쌓임),
+  // 내가 보낸 메시지는 즉시 내 머리 위 말풍선으로도 띄운다.
+  const chatRef = db.ref('chat/messages');
+  const chatModalEl = $('chatModal'), chatMenuBtnEl = $('chatFloatBtn'), chatCloseBtnEl = $('chatCloseBtn');
+  const chatLogEl = $('chatLog'), chatInputEl = $('chatInput'), chatSendBtnEl = $('chatSendBtn');
+  const chatUnreadBadgeEl = $('chatUnreadBadge');
+  const CHAT_MAX_LEN = 60;
+  const CHAT_SEND_COOLDOWN = 1200; // 도배 방지: 최소 이 간격(ms) 이상 지나야 다음 메시지를 보낼 수 있음
+  const CHAT_SPAM_LIMIT = 15;      // 이 횟수만큼 연속으로 보내면 도배로 간주
+  const CHAT_SPAM_RESET_GAP = 10000; // 마지막 전송 후 이 시간(ms) 이상 텀이 생기면 "연속" 카운트를 리셋
+  const CHAT_BAN_MS = 5 * 60 * 1000; // 도배 감지 시 채팅 금지 시간(5분)
+  let chatUnreadCount = 0;
+  let lastChatSendAt = 0;
+  let chatSendStreak = 0;
+  let chatBanUntil = 0;
+  let chatBanTimer = null;
+  let chatListenerAttached = false;
+  let chatHasAnyMessage = false;
+  let chatSessionStartTs = null; // 이 세션이 시작된(로그인된) 시각. 이 시각 이후 메시지만 불러온다
+
+  function formatChatTime(ts){
+    const d = new Date(ts||Date.now());
+    const hh = String(d.getHours()).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
+    return `${hh}:${mm}`;
+  }
+  function appendChatRow(msg){
+    if(chatLogEl.querySelector('.chat-log-empty')) chatLogEl.innerHTML = '';
+    chatHasAnyMessage = true;
+    const row = document.createElement('div');
+    const mine = currentUser && msg.uid===currentUser.uid;
+    row.className = 'chat-row' + (mine ? ' mine' : '');
+    const bubble = document.createElement('div'); bubble.className = 'chat-bubble';
+    const nameEl = document.createElement('span'); nameEl.className='chat-row-name'; nameEl.textContent = msg.name||'???';
+    const textEl = document.createElement('span'); textEl.className='chat-row-text'; textEl.textContent = msg.text||'';
+    const timeEl = document.createElement('span'); timeEl.className='chat-row-time'; timeEl.textContent = formatChatTime(msg.ts);
+    bubble.append(nameEl, textEl, timeEl);
+    row.appendChild(bubble);
+    chatLogEl.appendChild(row);
+    chatLogEl.scrollTop = chatLogEl.scrollHeight;
+  }
+  function updateChatUnreadBadge(){
+    const show = chatUnreadCount>0 && !chatModalEl.classList.contains('show');
+    chatUnreadBadgeEl.classList.toggle('hide', !show);
+    if(show) chatUnreadBadgeEl.textContent = chatUnreadCount>99 ? '99+' : String(chatUnreadCount);
+  }
+  // 새 메시지가 도착했을 때 채팅 이모지 버튼을 잠깐 튀어오르게 해서 눈에 띄게 한다.
+  function pingChatFloatBtn(){
+    chatMenuBtnEl.classList.remove('chat-ping');
+    void chatMenuBtnEl.offsetWidth; // 리플로우를 강제해 같은 애니메이션을 연달아 다시 재생할 수 있게 함
+    chatMenuBtnEl.classList.add('chat-ping');
+  }
+  chatMenuBtnEl.addEventListener('animationend', ()=> chatMenuBtnEl.classList.remove('chat-ping'));
+  // 채팅 리스너는 로그인 이후(currentUser 확정 후) 한 번만 붙인다.
+  // 이전 대화 기록(과거에 쌓인 메시지)은 불러오지 않고, 이 세션이 시작된 시점(chatSessionStartTs) 이후에
+  // 새로 올라오는 메시지만 받는다 — "나갔다 들어오면 이전 기록은 사라지고 그때부터의 채팅만 받는다"는 요청 반영.
+  function attachChatListenerOnce(){
+    if(chatListenerAttached) return;
+    chatListenerAttached = true;
+    chatSessionStartTs = Date.now();
+    chatRef.orderByChild('ts').startAt(chatSessionStartTs).on('child_added', snap=>{
+      const msg = snap.val();
+      if(!msg) return;
+      appendChatRow(msg);
+      const isMine = currentUser && msg.uid===currentUser.uid;
+      if(!isMine && !chatModalEl.classList.contains('show')){
+        chatUnreadCount++;
+        updateChatUnreadBadge();
+      }
+      if(!isMine) pingChatFloatBtn(); // 새 메시지가 오면 채팅 이모지에 알림 표시(모달이 열려있어도 살짝 표시)
+    }, err=> console.error('채팅 불러오기 실패:', err));
+  }
+  function openChat(){
+    chatModalEl.classList.add('show');
+    chatUnreadCount = 0;
+    updateChatUnreadBadge();
+    if(!chatHasAnyMessage && !chatListenerAttached) chatLogEl.innerHTML = '<div class="chat-log-empty">아직 대화가 없습니다. 첫 인사를 건네보세요!</div>';
+    requestAnimationFrame(()=>{ chatLogEl.scrollTop = chatLogEl.scrollHeight; chatInputEl.focus(); });
+  }
+  function closeChat(){ chatModalEl.classList.remove('show'); }
+  chatMenuBtnEl.addEventListener('click', openChat);
+  chatCloseBtnEl.addEventListener('click', closeChat);
+  chatModalEl.addEventListener('click', e=>{ if(e.target===chatModalEl) closeChat(); });
+  // 도배 금지 기록은 Firebase(users/{uid}/chatBan)에도 저장해서, 새로고침해도 금지가 풀리지 않게 한다.
+  function chatBanRef(){ return db.ref('users/' + currentUser.uid + '/chatBan'); }
+  // 실제로 입력창/버튼을 잠그고 카운트다운을 도는 부분(로컬 상태만 다룸)
+  function lockChatUI(untilTs){
+    chatBanUntil = untilTs;
+    chatInputEl.disabled = true;
+    chatSendBtnEl.disabled = true;
+    updateChatBanNotice();
+    if(chatBanTimer) clearInterval(chatBanTimer);
+    chatBanTimer = setInterval(()=>{
+      if(Date.now() >= chatBanUntil){
+        clearInterval(chatBanTimer); chatBanTimer = null;
+        chatInputEl.disabled = false;
+        chatSendBtnEl.disabled = false;
+        chatInputEl.placeholder = '메시지를 입력하세요';
+      } else {
+        updateChatBanNotice();
+      }
+    }, 1000);
+  }
+  // 도배로 판단되면(연속 CHAT_SPAM_LIMIT회 전송) 새 금지 기록을 만들어 잠그고 서버에도 저장한다.
+  function applyChatBan(){
+    const until = Date.now() + CHAT_BAN_MS;
+    chatSendStreak = 0;
+    lockChatUI(until);
+    if(currentUser) chatBanRef().set(until).catch(err=> console.error('채팅 금지 저장 실패:', err));
+  }
+  // 로그인/접속 시점에 서버에 아직 유효한 금지 기록이 남아있으면 그대로 이어서 잠근다.
+  function restoreChatBanIfAny(){
+    if(!currentUser) return;
+    chatBanRef().get().then(snap=>{
+      const until = snap.exists() ? snap.val() : 0;
+      if(until && until > Date.now()){
+        lockChatUI(until);
+      } else if(until){
+        chatBanRef().remove().catch(()=>{});
+      }
+    }).catch(err=> console.error('채팅 금지 정보 불러오기 실패:', err));
+  }
+  function updateChatBanNotice(){
+    const remainSec = Math.max(0, Math.ceil((chatBanUntil - Date.now())/1000));
+    const mm = String(Math.floor(remainSec/60)).padStart(2,'0'), ss = String(remainSec%60).padStart(2,'0');
+    chatInputEl.placeholder = `도배 감지: ${mm}:${ss} 후 다시 채팅할 수 있습니다`;
+  }
+  function sendChatMessage(){
+    const text = chatInputEl.value.trim().slice(0, CHAT_MAX_LEN);
+    if(!text) return;
+    if(!currentUser){ toast('로그인 후 이용할 수 있습니다.', 'fail', true); return; }
+    const nowT = Date.now();
+    if(nowT < chatBanUntil){ updateChatBanNotice(); return; } // 도배 금지 중에는 전송 자체를 막는다
+    if(nowT - lastChatSendAt < CHAT_SEND_COOLDOWN) return; // 너무 빠른 연속 전송 무시 (도배 방지)
+    // 마지막 전송으로부터 시간이 꽤 지났다면 "연속 전송"이 아니므로 스트릭을 리셋
+    if(nowT - lastChatSendAt > CHAT_SPAM_RESET_GAP) chatSendStreak = 0;
+    lastChatSendAt = nowT;
+    chatSendStreak++;
+    chatInputEl.value = '';
+    // 머리 위 말풍선은 네트워크 왕복을 기다리지 않고 즉시 띄운다 (전송 체감 속도를 위해).
+    player.chatBubble = { text, expireAt: now_ms()+4000 };
+    chatRef.push({
+      uid: currentUser.uid,
+      name: settings.playerName || '이름없는 모험가',
+      text,
+      ts: firebase.database.ServerValue.TIMESTAMP,
+    }).catch(err=> console.error('채팅 전송 실패:', err));
+    if(chatSendStreak >= CHAT_SPAM_LIMIT){
+      toast('도배가 감지되어 5분간 채팅이 제한됩니다.', 'fail', true);
+      applyChatBan();
+    }
+  }
+  chatSendBtnEl.addEventListener('click', sendChatMessage);
+  chatInputEl.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); sendChatMessage(); } });
+
+  // ===== 월드 프레즌스 (같은 스테이지에 있는 다른 유저와 실시간으로 만나기) =====
+  // 스폰/전투는 지금처럼 각자 로컬에서 계산하고, 여기서는 "위치/직업/장비 등급"만 실시간으로
+  // 공유해서 서로 화면에 보이게 한다. world/{stage}/players/{uid} 경로를 스테이지별로 나눠 써서,
+  // 같은 스테이지에 있는 사람끼리만 서로 보이게 한다(전체 유저를 다 구독하지 않아 트래픽도 절약).
+  let otherPlayers = {}; // uid -> {name, job, wx, wy, fx, fy, grade, lv, renderX, renderY, ts}
+  let myWorldStage = null; // 현재 프레즌스를 등록해둔 스테이지 번호 (null이면 미등록/실내)
+  let worldPlayersListenRef = null; // 현재 구독 중인 world/{stage}/players ref (구독 해제용)
+  let lastPresenceSendAt = 0, lastSentWx = null, lastSentWy = null;
+  const PRESENCE_SEND_INTERVAL = 150; // ms — 이 간격보다 자주는 위치를 보내지 않는다(대역폭 절약, 수신 쪽은 그대로 실시간)
+  const PRESENCE_MOVE_THRESHOLD = 6; // px — 이만큼 움직이지 않았으면 전송을 건너뜀
+
+  function detachWorldPlayersListener(){
+    if(worldPlayersListenRef){ worldPlayersListenRef.off(); worldPlayersListenRef = null; }
+    otherPlayers = {};
+  }
+  function attachWorldPlayersListener(stageNum){
+    detachWorldPlayersListener();
+    const ref = db.ref('world/'+stageNum+'/players');
+    worldPlayersListenRef = ref;
+    ref.on('child_added', snap=>{
+      if(currentUser && snap.key===currentUser.uid) return;
+      const v = snap.val(); if(!v) return;
+      otherPlayers[snap.key] = Object.assign({renderX:v.wx, renderY:v.wy}, v);
+    });
+    ref.on('child_changed', snap=>{
+      if(currentUser && snap.key===currentUser.uid) return;
+      const v = snap.val(); if(!v) return;
+      const prev = otherPlayers[snap.key];
+      otherPlayers[snap.key] = Object.assign({renderX: prev?prev.renderX:v.wx, renderY: prev?prev.renderY:v.wy}, v);
+    }, err=> console.error('다른 플레이어 정보 갱신 실패:', err));
+    ref.on('child_removed', snap=>{ delete otherPlayers[snap.key]; });
+  }
+  // 새 스테이지(또는 최초 진입)의 프레즌스로 갈아탄다. 이전 스테이지 기록은 지우고 새 경로에 등록한다.
+  function enterWorldPresence(stageNum){
+    if(!currentUser || inHouse) return;
+    if(myWorldStage !== stageNum){
+      leaveWorldPresence();
+      myWorldStage = stageNum;
+      attachWorldPlayersListener(stageNum);
+      db.ref('world/'+stageNum+'/players/'+currentUser.uid).onDisconnect().remove(); // 접속 끊기면 서버가 알아서 정리
+    }
+    lastSentWx = null; lastSentWy = null; // 즉시 한 번 전송되도록 강제
+    broadcastPresence(true);
+  }
+  function leaveWorldPresence(){
+    if(myWorldStage!=null && currentUser){
+      db.ref('world/'+myWorldStage+'/players/'+currentUser.uid).remove().catch(()=>{});
+    }
+    detachWorldPlayersListener();
+    myWorldStage = null;
+  }
+  // 매 프레임 호출되지만, 실제 전송은 스로틀링(간격+이동거리 조건)을 통과했을 때만 나간다.
+  function broadcastPresence(force){
+    if(!currentUser || myWorldStage==null || inHouse) return;
+    const nowT = Date.now();
+    if(!force){
+      if(nowT - lastPresenceSendAt < PRESENCE_SEND_INTERVAL) return;
+      const moved = lastSentWx==null || Math.hypot(player.wx-lastSentWx, player.wy-lastSentWy) > PRESENCE_MOVE_THRESHOLD;
+      if(!moved) return;
+    }
+    lastPresenceSendAt = nowT; lastSentWx = player.wx; lastSentWy = player.wy;
+    db.ref('world/'+myWorldStage+'/players/'+currentUser.uid).set({
+      name: settings.playerName || '이름없는 모험가',
+      job: state.job,
+      lv: state.level||1,
+      wx: Math.round(player.wx), wy: Math.round(player.wy),
+      fx: Math.round((player.facing.x||0)*100)/100, fy: Math.round((player.facing.y||0)*100)/100,
+      grade: equippedWeaponGrade() || null, // 장착 무기 등급 — 다른 유저 화면에 등급색 오라로 표시됨
+      ts: firebase.database.ServerValue.TIMESTAMP,
+    }).catch(err=> console.error('위치 동기화 실패:', err));
+  }
+  // 다른 플레이어를 캔버스에 그린다(render()의 필드 렌더링 구간에서 호출). 내 캐릭터와 같은 몸체 아트를 쓰되
+  // 살짝 다른 톤 + 이름표(직업 아이콘 포함) + 장착 무기 등급색 오라 링으로 구분한다.
+  function drawOtherPlayers(){
+    Object.keys(otherPlayers).forEach(uid=>{
+      const op = otherPlayers[uid];
+      if(op.renderX==null) op.renderX = op.wx;
+      if(op.renderY==null) op.renderY = op.wy;
+      op.renderX += (op.wx-op.renderX)*0.18; // 네트워크로 뚝뚝 끊겨 오는 좌표를 부드럽게 보간
+      op.renderY += (op.wy-op.renderY)*0.18;
+      const opx = sx(op.renderX), opy = sy(op.renderY);
+      ctx.save();
+      ctx.fillStyle='rgba(0,0,0,0.22)';
+      ctx.beginPath(); ctx.ellipse(opx, opy+3, 10,4,0,0,Math.PI*2); ctx.fill();
+      if(op.grade && GRADE_BY_KEY[op.grade]){
+        ctx.globalAlpha = 0.55;
+        ctx.strokeStyle = GRADE_BY_KEY[op.grade].color;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = GRADE_BY_KEY[op.grade].color; ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.arc(opx, opy, 15, 0, Math.PI*2); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      ctx.restore();
+      drawPixelArt(ctx, CHAR_ART, opx, opy, 2.8, null);
+      const jobDef = JOB_DEFS[op.job] || JOB_DEFS[JOB_KEYS[0]];
+      const label = 'Lv.'+(op.lv||1)+' '+(jobDef.icon||'')+' '+(op.name||'???');
+      drawNpcNameTag(opx, opy-(CHAR_ART.length*2.8)-6, label);
+    });
+  }
+
   function collectSaveData(){
     saveJobStats(); // 저장 직전, 현재 플레이 중인 직업의 레벨/스탯 진행치를 jobStats에 동기화해둔다
     // 저장 시점에 보스전(소환 연출 포함) 중이었다면 위치를 저장하지 않는다.
@@ -10727,6 +11891,7 @@
     // 이미 존재하는 모든 직업 버킷의 inv/equip도 각각 정규화해둔다(다른 직업으로 전환할 때 바로 안전하게 쓸 수 있도록).
     Object.keys(state.jobStats).forEach(jk=> normalizeInvEquip(state.jobStats[jk]));
     if(data.settings) Object.assign(settings, data.settings);
+    applyViewportScale();
     if(Array.isArray(data.usedCoupons)) data.usedCoupons.forEach(c=> usedCoupons.add(c));
     pendingPlayerPos = data.playerPos || null;
   }
@@ -10796,6 +11961,7 @@
   // 설정이 켜져 있어도 반드시 직업 선택 화면을 거쳐야 하므로 state.job 존재 여부를 함께 확인한다.)
   function beginGameOrPickJob(){
     hideLoadingScreen();
+    chatMenuBtnEl.classList.remove('hide'); // 실제 게임 화면(로딩 완료 후)에서만 채팅 버블 노출
     if(settings.skipJobSelect && state.job){
       startGameAfterAuth();
       return;
@@ -10809,6 +11975,8 @@
       dataLoaded = false;
       authErrorEl.textContent = '';
       authOverlayEl.classList.add('hide');
+      attachChatListenerOnce(); // 로그인 확정 즉시 채팅 리스너를 붙여, 게임 화면에 들어가기 전에도 대화가 쌓이기 시작한다
+      restoreChatBanIfAny(); // 새로고침 등으로 재접속했을 때도 서버에 남아있는 도배 금지가 있으면 이어서 적용
       if(titleStarted && !gameStarted) showLoadingScreen(); // 타이틀 화면을 넘어온 뒤 최초 진입이면 데이터를 불러오는 동안 로딩 화면 표시
       accountStatusEl.textContent = user.email || (user.displayName ? user.displayName+' (구글)' : '구글 계정');
       userDataRef().get().then(snap=>{
@@ -10834,6 +12002,8 @@
       currentUser = null;
       dataLoaded = false;
       hideLoadingScreen();
+      chatMenuBtnEl.classList.add('hide'); // 로그아웃 상태에서는 채팅 버블도 숨김
+      leaveWorldPresence(); // 로그아웃하면 다른 유저 화면에서도 사라지게
       if(titleStarted) authOverlayEl.classList.remove('hide');
       accountStatusEl.textContent = '게스트';
     }
