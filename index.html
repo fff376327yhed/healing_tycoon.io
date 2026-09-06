@@ -1864,6 +1864,7 @@
     <canvas id="villageMapCanvas"></canvas>
     <div class="village-map-note">📍 초록색 점이 현재 내 위치입니다. · 휠/핀치로 확대·축소, 드래그로 이동할 수 있어요.</div>
     <button id="villageMapGoHomeBtn" class="btn-upgrade" style="margin-top:12px;">🏡 내 집으로 돌아가기</button>
+    <button id="villageMapGoTrainingBtn" class="btn-upgrade" style="margin-top:8px;">🏋 훈련소로 이동</button>
   </div>
 </div>
 
@@ -2833,7 +2834,7 @@
     inHouse = false; currentHouse = null;
     player.wx = door.x; player.wy = door.y + player.r + 16;
     player.moving = false;
-    enterWorldPresence(state.stage); // 필드로 나왔으니 다시 다른 유저에게 보이게 함
+    enterWorldPresence(); // 필드로 나왔으니 다시 다른 유저에게 보이게 함
     if(typeof attackBtn!=='undefined') attackBtn.style.display = 'flex';
     nearbyTalkNPC = null;
     if(typeof npcTalkBtnEl!=='undefined') npcTalkBtnEl.classList.remove('show');
@@ -5514,7 +5515,7 @@
     mobs = []; boss=null; bossActive=false; bossIncoming=false; spawnTimer=0;
     player.poisons = []; player.defShredActive = false; // 최종보스(30) 전용 독/방어력감소 디버프 초기화
     resetHuntTarget();
-    if(!inHouse) enterWorldPresence(state.stage); // 스테이지가 바뀔 때마다 그 스테이지의 프레즌스로 갈아탐
+    if(!inHouse) enterWorldPresence(); // 프레즌스가 꺼져 있었으면 다시 켠다 (이미 켜져 있으면 위치만 갱신)
     updateHudText();
   }
 
@@ -10825,6 +10826,21 @@
   }
   villageMapGoHomeBtnEl.addEventListener('click', goHomeFromVillageMap);
 
+  // ── 마을 지도에서 "훈련소로 이동" : 걸어가지 않아도 바로 훈련소 입구 앞으로 순간이동한다.
+  const villageMapGoTrainingBtnEl = $('villageMapGoTrainingBtn');
+  function goToTrainingCampFromVillageMap(){
+    if(isVillageMapLocked()) return;
+    const camp = VILLAGE_BUILDINGS.find(b=>b.type==='trainingcamp');
+    if(!camp) return;
+    closeVillageMap();
+    if(inHouse){ inHouse = false; currentHouse = null; enterWorldPresence(); } // 실내에 있었다면 밖으로 나온 것으로 처리
+    player.wx = camp.cx; player.wy = camp.cy + camp.halfH + 20; // 남쪽 입구 바로 앞
+    player.moving = false;
+    updateCamera();
+    toast('🏋 훈련소 앞으로 이동했습니다.', 'success', true);
+  }
+  villageMapGoTrainingBtnEl.addEventListener('click', goToTrainingCampFromVillageMap);
+
   // ============ 랭킹(명예의 전당): 직업별 · 부문별(전투력/스테이지) TOP 3, Firebase 실시간 반영 ============
   const rankingBtnEl = $('rankingBtn'), rankingModalEl = $('rankingModal'), rankingCloseBtnEl = $('rankingCloseBtn');
   const rankingJobTabsEl = $('rankingJobTabs'), rankingListEl = $('rankingList');
@@ -11771,11 +11787,15 @@
 
   // ===== 월드 프레즌스 (같은 스테이지에 있는 다른 유저와 실시간으로 만나기) =====
   // 스폰/전투는 지금처럼 각자 로컬에서 계산하고, 여기서는 "위치/직업/장비 등급"만 실시간으로
-  // 공유해서 서로 화면에 보이게 한다. world/{stage}/players/{uid} 경로를 스테이지별로 나눠 써서,
-  // 같은 스테이지에 있는 사람끼리만 서로 보이게 한다(전체 유저를 다 구독하지 않아 트래픽도 절약).
+  // 공유해서 서로 화면에 보이게 한다.
+  // 주의: state.stage는 "몬스터 난이도(진행도)"일 뿐 실제 지도가 스테이지별로 나뉘어 있는 게 아니라
+  // 마을/필드가 전부 하나로 이어진 같은 좌표계(world.wx, world.wy)이다. 예전엔 world/{stage}/players
+  // 처럼 스테이지 번호로 경로를 나눠서, 같은 자리에 서 있어도 서로 진행도(스테이지)가 다르면 안 보이는
+  // 버그가 있었다. 이제는 하나의 공용 경로(world/players)만 써서, 실제로 물리적으로 같은 곳에 있으면
+  // 스테이지가 달라도 항상 서로 보이게 한다.
   let otherPlayers = {}; // uid -> {name, job, wx, wy, fx, fy, grade, lv, renderX, renderY, ts}
-  let myWorldStage = null; // 현재 프레즌스를 등록해둔 스테이지 번호 (null이면 미등록/실내)
-  let worldPlayersListenRef = null; // 현재 구독 중인 world/{stage}/players ref (구독 해제용)
+  let worldPresenceActive = false; // 현재 프레즌스 등록/구독 중인지 (실내면 false)
+  let worldPlayersListenRef = null; // 현재 구독 중인 world/players ref (구독 해제용)
   let lastPresenceSendAt = 0, lastSentWx = null, lastSentWy = null;
   const PRESENCE_SEND_INTERVAL = 150; // ms — 이 간격보다 자주는 위치를 보내지 않는다(대역폭 절약, 수신 쪽은 그대로 실시간)
   const PRESENCE_MOVE_THRESHOLD = 6; // px — 이만큼 움직이지 않았으면 전송을 건너뜀
@@ -11784,9 +11804,9 @@
     if(worldPlayersListenRef){ worldPlayersListenRef.off(); worldPlayersListenRef = null; }
     otherPlayers = {};
   }
-  function attachWorldPlayersListener(stageNum){
-    detachWorldPlayersListener();
-    const ref = db.ref('world/'+stageNum+'/players');
+  function attachWorldPlayersListener(){
+    if(worldPlayersListenRef) return; // 이미 구독 중이면 다시 구독하지 않음
+    const ref = db.ref('world/players');
     worldPlayersListenRef = ref;
     ref.on('child_added', snap=>{
       if(currentUser && snap.key===currentUser.uid) return;
@@ -11801,28 +11821,27 @@
     }, err=> console.error('다른 플레이어 정보 갱신 실패:', err));
     ref.on('child_removed', snap=>{ delete otherPlayers[snap.key]; });
   }
-  // 새 스테이지(또는 최초 진입)의 프레즌스로 갈아탄다. 이전 스테이지 기록은 지우고 새 경로에 등록한다.
-  function enterWorldPresence(stageNum){
+  // 실외(마을/필드)로 나왔을 때 프레즌스를 켠다. 이미 켜져 있으면 재구독하지 않고 위치만 갱신해서 보낸다.
+  function enterWorldPresence(){
     if(!currentUser || inHouse) return;
-    if(myWorldStage !== stageNum){
-      leaveWorldPresence();
-      myWorldStage = stageNum;
-      attachWorldPlayersListener(stageNum);
-      db.ref('world/'+stageNum+'/players/'+currentUser.uid).onDisconnect().remove(); // 접속 끊기면 서버가 알아서 정리
+    if(!worldPresenceActive){
+      worldPresenceActive = true;
+      attachWorldPlayersListener();
+      db.ref('world/players/'+currentUser.uid).onDisconnect().remove(); // 접속 끊기면 서버가 알아서 정리
     }
     lastSentWx = null; lastSentWy = null; // 즉시 한 번 전송되도록 강제
     broadcastPresence(true);
   }
   function leaveWorldPresence(){
-    if(myWorldStage!=null && currentUser){
-      db.ref('world/'+myWorldStage+'/players/'+currentUser.uid).remove().catch(()=>{});
+    if(worldPresenceActive && currentUser){
+      db.ref('world/players/'+currentUser.uid).remove().catch(()=>{});
     }
     detachWorldPlayersListener();
-    myWorldStage = null;
+    worldPresenceActive = false;
   }
   // 매 프레임 호출되지만, 실제 전송은 스로틀링(간격+이동거리 조건)을 통과했을 때만 나간다.
   function broadcastPresence(force){
-    if(!currentUser || myWorldStage==null || inHouse) return;
+    if(!currentUser || !worldPresenceActive || inHouse) return;
     const nowT = Date.now();
     if(!force){
       if(nowT - lastPresenceSendAt < PRESENCE_SEND_INTERVAL) return;
@@ -11830,10 +11849,11 @@
       if(!moved) return;
     }
     lastPresenceSendAt = nowT; lastSentWx = player.wx; lastSentWy = player.wy;
-    db.ref('world/'+myWorldStage+'/players/'+currentUser.uid).set({
+    db.ref('world/players/'+currentUser.uid).set({
       name: settings.playerName || '이름없는 모험가',
       job: state.job,
       lv: state.level||1,
+      stage: state.stage, // 참고용(다른 유저 진행도 표시 등에 쓸 수 있음) — 프레즌스 경로 구분에는 더 이상 사용하지 않음
       wx: Math.round(player.wx), wy: Math.round(player.wy),
       fx: Math.round((player.facing.x||0)*100)/100, fy: Math.round((player.facing.y||0)*100)/100,
       grade: equippedWeaponGrade() || null, // 장착 무기 등급 — 다른 유저 화면에 등급색 오라로 표시됨
