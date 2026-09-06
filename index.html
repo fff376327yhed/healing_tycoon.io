@@ -606,7 +606,16 @@
     color:var(--text-dim); padding:0; opacity:0.85;
   }
   .auth-pw-toggle:hover{ opacity:1; }
-  .auth-pw-hint{ font-size:11px; color:var(--text-dim); text-align:left; margin:6px 0 10px; line-height:1.5; }
+  .auth-pw-hint{ display:flex; flex-direction:column; gap:5px; font-size:12px; text-align:left; margin:8px 0 10px; }
+  .pw-rule{ display:flex; align-items:center; gap:8px; }
+  .pw-rule-icon{
+    flex:0 0 auto; width:16px; height:16px; border-radius:4px; display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; line-height:1;
+  }
+  .pw-rule-icon.ok{ background:rgba(84,214,127,0.16); color:#54d67f; border:1px solid rgba(84,214,127,0.4); }
+  .pw-rule-icon.fail{ background:rgba(255,107,107,0.12); color:var(--fail); border:1px solid rgba(255,107,107,0.35); }
+  .pw-rule-label{ color:var(--text-dim); }
+  .pw-rule-label.fail{ color:var(--text); }
 
   /* ===== 로딩 화면 (게임 진입 전 대기 화면) ===== */
   #loadingScreen{
@@ -1509,7 +1518,7 @@
     <div class="auth-divider">또는 이메일로 계속하기</div>
     <input type="email" id="authEmail" placeholder="이메일" autocomplete="username">
     <div class="auth-pw-wrap">
-      <input type="password" id="authPassword" placeholder="비밀번호 (8~20자, 대/소문자·숫자·특수문자 포함)" autocomplete="current-password">
+      <input type="password" id="authPassword" placeholder="비밀번호" autocomplete="current-password">
       <button type="button" class="auth-pw-toggle" id="authPwToggleBtn" aria-label="비밀번호 표시/숨기기" title="비밀번호 표시/숨기기">👁</button>
     </div>
     <div class="auth-pw-hint" id="authPwHint"></div>
@@ -11540,12 +11549,15 @@
     return checkPasswordRules(pw).every(r => r.ok);
   }
 
-  // 비밀번호 입력창에 실시간으로 충족/미충족 조건을 보여준다
+  // 비밀번호 입력창에 실시간으로 충족/미충족 조건을 세로 체크리스트로 보여준다
   function refreshPwHint(){
     const pw = authPasswordEl.value;
-    if(!pw){ authPwHintEl.textContent = ''; return; }
-    const lines = checkPasswordRules(pw).map(r => (r.ok ? '✅ ' : '❌ ') + r.label);
-    authPwHintEl.textContent = lines.join('\n');
+    if(!pw){ authPwHintEl.innerHTML = ''; return; }
+    authPwHintEl.innerHTML = checkPasswordRules(pw).map(r=>{
+      const cls = r.ok ? 'ok' : 'fail';
+      const icon = r.ok ? '✔' : '✕';
+      return '<div class="pw-rule"><span class="pw-rule-icon ' + cls + '">' + icon + '</span><span class="pw-rule-label ' + cls + '">' + r.label + '</span></div>';
+    }).join('');
   }
   authPasswordEl.addEventListener('input', refreshPwHint);
   authPasswordEl.addEventListener('focus', refreshPwHint);
