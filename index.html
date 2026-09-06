@@ -5905,6 +5905,7 @@
   function isHuntTargetValid(t){
     if(!t) return false;
     if(t.kind==='boss'){ return !!boss && boss===t.ref && boss.dying===0; }
+    if(t.kind==='remoteMob'){ return !!t.ref && t.ref.hp>0 && remoteMobGhostList.indexOf(t.ref)!==-1; }
     return t.kind==='mob' && !t.ref.dead && t.ref.dying===0 && mobs.indexOf(t.ref)!==-1;
   }
   function findNearestHuntTarget(){
@@ -5914,6 +5915,15 @@
       const d = Math.hypot(mob.wx-player.wx, mob.wy-player.wy);
       if(d < AUTO_HUNT_SEARCH_RADIUS && d<bestD){ bestD=d; best={kind:'mob', ref:mob}; }
     });
+    // 다른 유저가 스폰한 몹(유령)도 근접 무기일 때는 자동 추격 대상에 포함한다 — 그래야 필드에 내 몹이
+    // 하나도 없고 남의 몹(유령)만 있을 때도 캐릭터가 실제로 다가가서 싸울 수 있다.
+    if(weaponProfile().type!=='ranged'){
+      remoteMobGhostList.forEach(mob=>{
+        if(mob.hp<=0) return;
+        const d = Math.hypot(mob.wx-player.wx, mob.wy-player.wy);
+        if(d < AUTO_HUNT_SEARCH_RADIUS && d<bestD){ bestD=d; best={kind:'remoteMob', ref:mob}; }
+      });
+    }
     if(boss && boss.dying===0){
       const d = Math.hypot(boss.wx-player.wx, boss.wy-player.wy);
       if(d < AUTO_HUNT_SEARCH_RADIUS && d<bestD){ bestD=d; best={kind:'boss', ref:boss}; }
