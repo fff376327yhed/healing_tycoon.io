@@ -5862,15 +5862,12 @@
       if(d < range+mob.r && inAttackArc(dx,dy,mob.r)) candidates.push({kind:'mob', ref:mob, d});
     });
     // 다른 유저가 스폰한 몹(유령)도 사거리 안에 들어오면 공격 후보에 포함한다 — 실제 스틸이 가능해지는 부분.
-    // ※ 지금 단계에서는 근접 공격만 지원한다: 원거리(화살/투사체/지팡이)는 충돌판정이 로컬 mobs 배열만 검사하므로
-    //   원격 몹을 조준해도 실제로 맞지 않는다 — 그래서 원거리 무기일 때는 아예 후보에서 제외해 헛발질을 막는다.
-    if(weaponProfile().type!=='ranged'){
-      remoteMobGhostList.forEach(mob=>{
-        if(mob.hp<=0) return;
-        const dx=mob.wx-player.wx, dy=mob.wy-player.wy, d=Math.hypot(dx,dy);
-        if(d < range+mob.r && inAttackArc(dx,dy,mob.r)) candidates.push({kind:'remoteMob', ref:mob, d});
-      });
-    }
+    // 근접/원거리 무기 모두 대상으로 포함한다(원거리는 updateProjectiles/staff 낙하 쪽에서 유령 몹 충돌판정을 처리한다).
+    remoteMobGhostList.forEach(mob=>{
+      if(mob.hp<=0) return;
+      const dx=mob.wx-player.wx, dy=mob.wy-player.wy, d=Math.hypot(dx,dy);
+      if(d < range+mob.r && inAttackArc(dx,dy,mob.r)) candidates.push({kind:'remoteMob', ref:mob, d});
+    });
     if(boss && boss.dying===0){
       const dx=boss.wx-player.wx, dy=boss.wy-player.wy, d=Math.hypot(dx,dy);
       if(d < range+boss.r && inAttackArc(dx,dy,boss.r)) candidates.push({kind:'boss', ref:boss, d});
@@ -5915,15 +5912,13 @@
       const d = Math.hypot(mob.wx-player.wx, mob.wy-player.wy);
       if(d < AUTO_HUNT_SEARCH_RADIUS && d<bestD){ bestD=d; best={kind:'mob', ref:mob}; }
     });
-    // 다른 유저가 스폰한 몹(유령)도 근접 무기일 때는 자동 추격 대상에 포함한다 — 그래야 필드에 내 몹이
-    // 하나도 없고 남의 몹(유령)만 있을 때도 캐릭터가 실제로 다가가서 싸울 수 있다.
-    if(weaponProfile().type!=='ranged'){
-      remoteMobGhostList.forEach(mob=>{
-        if(mob.hp<=0) return;
-        const d = Math.hypot(mob.wx-player.wx, mob.wy-player.wy);
-        if(d < AUTO_HUNT_SEARCH_RADIUS && d<bestD){ bestD=d; best={kind:'remoteMob', ref:mob}; }
-      });
-    }
+    // 다른 유저가 스폰한 몹(유령)도 자동 추격 대상에 포함한다 — 그래야 필드에 내 몹이
+    // 하나도 없고 남의 몹(유령)만 있을 때도 캐릭터가 실제로 다가가서 싸울 수 있다(근접/원거리 공통).
+    remoteMobGhostList.forEach(mob=>{
+      if(mob.hp<=0) return;
+      const d = Math.hypot(mob.wx-player.wx, mob.wy-player.wy);
+      if(d < AUTO_HUNT_SEARCH_RADIUS && d<bestD){ bestD=d; best={kind:'remoteMob', ref:mob}; }
+    });
     if(boss && boss.dying===0){
       const d = Math.hypot(boss.wx-player.wx, boss.wy-player.wy);
       if(d < AUTO_HUNT_SEARCH_RADIUS && d<bestD){ bestD=d; best={kind:'boss', ref:boss}; }
@@ -6029,6 +6024,11 @@
     // 무겁고 육중한 무기는 더 묵직하게, 빠른 무기는 더 짧고 경쾌하게, 낫은 360도를 다 돌아야 하니 가장 길게 스윙 애니메이션 길이가 달라진다
     player.attackDurMs = pStyle==='spin' ? 340+tier*12 : pStyle==='heavy' ? 260 : (pStyle==='fast'||pStyle==='dual'||pStyle==='cross') ? 130 : p.type==='ranged' ? 150 : 170;
     SFX.attackSwing();
+    // 다른 유저 화면에도 이 스윙 모션과 무기 색이 그대로 보이도록 즉시 공유한다(움직이지 않고 공격만 해도 전송되게 강제).
+    lastAtkBroadcastAt = Date.now(); lastAtkBroadcastDurMs = player.attackDurMs;
+    lastAtkBroadcastStyle = pStyle; lastAtkBroadcastType = p.type;
+    lastAtkBroadcastColor = p.color||null; lastAtkBroadcastColor2 = p.color2||p.color||null;
+    broadcastPresence(true);
     // 맞고 안 맞고와 무관하게, 무기를 뻗은 방향 끝에서 항상 스파크가 튀어 "허공을 갈라도" 손맛이 남는다
     const tipAng = Math.atan2(player.facing.y, player.facing.x);
     const tipDist = p.type==='ranged' ? 26 : effectiveAttackRange()*0.7;
@@ -6091,8 +6091,9 @@
       drop.elapsed += dt;
       if(drop.elapsed < drop.fallMs) return;
       drop.landed = true;
-      const ref = drop.targetKind==='mob' ? drop.target : boss;
+      const ref = drop.targetKind==='boss' ? boss : drop.target;
       const refValid = drop.targetKind==='mob' ? (ref && !ref.dead && ref.dying===0 && mobs.indexOf(ref)!==-1)
+        : drop.targetKind==='remoteMob' ? (ref && ref.hp>0 && remoteMobGhostList.indexOf(ref)!==-1)
         : (ref && ref===drop.target && ref.dying===0);
       if(!refValid) return; // 낙하가 끝나기 전에 대상이 이미 죽거나 사라졌다면 허공을 때리고 조용히 사라진다.
       const landX = ref.wx, landY = ref.wy;
@@ -6240,6 +6241,19 @@
           if(pr.aoeOnImpact) projectileExplode(pr);
           if(pr.weapon.pierce) pr.pierced.add(mob); else pr.dead = true;
           if(pr.dead) return;
+        }
+      }
+      if(!pr.dead){
+        for(let i=0;i<remoteMobGhostList.length;i++){
+          const ghost = remoteMobGhostList[i];
+          if(ghost.hp<=0 || pr.pierced.has(ghost)) continue;
+          if(Math.hypot(ghost.wx-pr.wx, ghost.wy-pr.wy) < ghost.r+7){
+            applyAttackDamage({kind:'remoteMob', ref:ghost}, pr.weapon);
+            spawnHitParticles(ghost.wx, ghost.wy-ghost.r);
+            if(pr.aoeOnImpact) projectileExplode(pr);
+            if(pr.weapon.pierce) pr.pierced.add(ghost); else pr.dead = true;
+            if(pr.dead) break;
+          }
         }
       }
       if(!pr.dead && boss && boss.dying===0 && !pr.pierced.has(boss)){
@@ -7230,6 +7244,7 @@
     }
     if(inHouse){ updateHouseInterior(dt); return; }
     refreshRemoteMobGhosts(); // 다른 유저가 스폰한 몹(유령)의 위치/체력을 이번 프레임 기준으로 갱신 — 렌더링/공격판정 양쪽에서 이 캐시를 읽는다
+    updateRemoteMobAttacksOnPlayer(dt); // 다른 유저의 몹(유령)도 나에게 접촉하면 실제로 피해를 준다(예고 후 판정 방식은 내 몹과 동일)
     updatePlayerPoison(dt); // 30스테이지 최종보스의 독 도트 피해는 보스 상태와 무관하게 항상 갱신된다
     // 플레이어 이동 (조이스틱 우선, 없으면 키보드)
     let vx=0, vy=0, analog=false;
@@ -8032,10 +8047,12 @@
         if(mob.isBossClone){
           ctx.fillStyle='#ffb3c6'; ctx.font='bold 10px sans-serif'; ctx.textAlign='center';
           ctx.fillText('분신', mx, by-4);
-        } else if(mob.isRemote){
-          // 다른 유저가 스폰한(그래서 스틸 가능한) 몹임을 알 수 있도록 소유자 이름표를 띄운다
-          ctx.fillStyle='#ffd54f'; ctx.font='bold 10px sans-serif'; ctx.textAlign='center';
-          ctx.fillText((mob.ownerName||'다른 모험가')+'의 몹', mx, by-4);
+        } else if(!mob.isRemote && mob.id!=null){
+          // 내가 스폰한 몹임을 살짝 표시(누구 몹인지 이름은 밝히지 않고, 그냥 "내 몹"이라는 것만 알 수 있는 작은 점 표시)
+          ctx.save();
+          ctx.fillStyle='#7dd3fc'; ctx.shadowColor='#7dd3fc'; ctx.shadowBlur=4;
+          ctx.beginPath(); ctx.arc(mx+bw/2+6, by+2, 2.6, 0, Math.PI*2); ctx.fill();
+          ctx.restore();
         }
       }
     });
@@ -10680,6 +10697,20 @@
       }
     });
 
+    // 다른 유저들의 실시간 위치 (작은 점 + 이름표) — 내 위치 핀보다 먼저 그려서 내 핀이 항상 위에 보이게 한다
+    Object.keys(otherPlayers).forEach(uid=>{
+      const op = otherPlayers[uid];
+      const opx = mx(op.wx), opy = my(op.wy);
+      m.fillStyle = 'rgba(255,214,102,0.9)';
+      m.beginPath(); m.arc(opx, opy, 6, 0, Math.PI*2); m.fill();
+      m.strokeStyle = '#0f0d17'; m.lineWidth = 1.5;
+      m.beginPath(); m.arc(opx, opy, 6, 0, Math.PI*2); m.stroke();
+      m.font = 'bold 9px "Noto Sans KR", sans-serif';
+      m.textAlign = 'center'; m.textBaseline = 'alphabetic';
+      m.fillStyle = '#ffe9ad';
+      m.fillText(op.name||'???', opx, opy-10);
+    });
+
     // 플레이어 현재 위치 (은은하게 맥동 + 눈에 잘 띄는 핀 모양 + 라벨)
     const ppx = mx(player.wx), ppy = my(player.wy);
     const pulse = 1 + 0.25*Math.sin(now_ms()/300);
@@ -10782,6 +10813,14 @@
         m.fillStyle = 'rgba(212,175,55,0.6)';
         m.beginPath(); m.arc(px, py, 2.4, 0, Math.PI*2); m.fill();
       }
+    });
+
+    // 다른 유저들의 실시간 위치 (작은 점) — 미니맵은 공간이 좁으므로 이름표 없이 점만 표시
+    Object.keys(otherPlayers).forEach(uid=>{
+      const op = otherPlayers[uid];
+      const opx = mx(op.wx), opy = my(op.wy);
+      m.fillStyle = '#ffd666';
+      m.beginPath(); m.arc(opx, opy, 3, 0, Math.PI*2); m.fill();
     });
 
     // 플레이어 현재 위치
@@ -11861,6 +11900,11 @@
   let lastPresenceSendAt = 0, lastSentWx = null, lastSentWy = null;
   const PRESENCE_SEND_INTERVAL = 150; // ms — 이 간격보다 자주는 위치를 보내지 않는다(대역폭 절약, 수신 쪽은 그대로 실시간)
   const PRESENCE_MOVE_THRESHOLD = 6; // px — 이만큼 움직이지 않았으면 전송을 건너뜀
+  // 공격 모션/무기 모습을 다른 유저에게도 보여주기 위한 캐시 — performAttack()이 공격할 때마다 갱신하고,
+  // broadcastPresence()가 이 값을 함께 실어 보낸다. 받는 쪽은 atkAt(공격 시작 시각)과 atkDur(스윙 길이)로
+  // 스윙 진행률을 스스로 계산해서 렌더링한다(네트워크 왕복 없이 로컬에서 보간).
+  let lastAtkBroadcastAt = 0, lastAtkBroadcastDurMs = 0, lastAtkBroadcastStyle = null, lastAtkBroadcastType = null;
+  let lastAtkBroadcastColor = null, lastAtkBroadcastColor2 = null;
 
   // ===== 몹 공유(다른 유저의 필드 몹을 서로의 화면에 보여주고, 스틸까지 가능하게 함) =====
   // state.stage는 난이도값일 뿐 실제 좌표계는 모두가 공유하는 하나의 필드이므로(위 주석 참고),
@@ -11877,13 +11921,20 @@
     if(worldPlayersListenRef){ worldPlayersListenRef.off(); worldPlayersListenRef = null; }
     otherPlayers = {};
   }
+  let worldPlayersListenerAttachedAt = 0; // 구독 시작 시각 — 접속 시 이미 있던 유저까지 "입장" 알림을 띄우는 것을 막는 기준
   function attachWorldPlayersListener(){
     if(worldPlayersListenRef) return; // 이미 구독 중이면 다시 구독하지 않음
     const ref = db.ref('world/players');
     worldPlayersListenRef = ref;
+    worldPlayersListenerAttachedAt = Date.now();
     ref.on('child_added', snap=>{
       if(currentUser && snap.key===currentUser.uid) return;
       const v = snap.val(); if(!v) return;
+      // 구독을 막 시작한 직후(약 1초 이내)에 몰려오는 child_added는 "이미 접속해 있던 유저들"이므로 알림을 띄우지 않는다.
+      // 그 이후에 새로 나타나는 유저만 "새로 입장"으로 간주한다.
+      if(Date.now()-worldPlayersListenerAttachedAt > 1000 && !otherPlayers[snap.key]){
+        toast(`🚶 ${v.name||'???'}님이 근처에 나타났어요`, 'success');
+      }
       otherPlayers[snap.key] = Object.assign({renderX:v.wx, renderY:v.wy}, v);
     });
     ref.on('child_changed', snap=>{
@@ -11974,6 +12025,41 @@
       });
     });
     remoteMobGhostList = list;
+  }
+
+  // 다른 유저가 스폰한 몹(유령)도 나와 접촉하면 나를 공격한다. 진짜 몹의 AI(추적/공격 판정)는 owner의
+  // 브라우저에서만 도는데, 여기서는 "내 화면에 보이는 유령의 좌표 기준으로 나에게" 별도로 접촉 판정을 돌린다.
+  // (owner 쪽에서도 자기 자신 기준으로 똑같이 이 몹과의 접촉을 계산하므로, 결과적으로 몹 하나가 여러 유저를
+  // 동시에 위협할 수 있다.) 실제 몬스터를 죽이거나 소유권을 바꾸지 않고, 오직 "나"에게 주는 피해만 계산한다.
+  function updateRemoteMobAttacksOnPlayer(dt){
+    remoteMobGhostList.forEach(g=>{
+      if(g.hp<=0) return;
+      if(g.atkTimer===undefined){ g.atkState='idle'; g.atkTimer=MOB_ATK_IDLE_GAP_MS+Math.random()*300; }
+      const distToPlayer = Math.hypot(player.wx-g.wx, player.wy-g.wy);
+      if(g.atkState==='idle'){
+        if(distToPlayer < MOB_ATK_RANGE+g.r){
+          g.atkTimer -= dt;
+          if(g.atkTimer<=0){
+            g.atkState='telegraph'; g.atkTimer=MOB_ATK_TELEGRAPH_MS;
+            g.atkTX=player.wx; g.atkTY=player.wy;
+          }
+        } else {
+          g.atkTimer = MOB_ATK_IDLE_GAP_MS;
+        }
+      } else if(g.atkState==='telegraph'){
+        g.atkTimer -= dt;
+        if(g.atkTimer<=0){
+          const hitR = MOB_ATK_HIT_RADIUS+player.r;
+          if(Math.hypot(player.wx-g.atkTX, player.wy-g.atkTY) < hitR){
+            playerTakeDamage(Math.round(MOB_CONTACT_DAMAGE*stageDmgMult()));
+          }
+          g.atkState='cooldown'; g.atkTimer=MOB_CONTACT_COOLDOWN;
+        }
+      } else if(g.atkState==='cooldown'){
+        g.atkTimer -= dt;
+        if(g.atkTimer<=0){ g.atkState='idle'; g.atkTimer=0; }
+      }
+    });
   }
 
   // ===== 원격 몹 공격 요청(스틸 포함) =====
@@ -12076,6 +12162,9 @@
       wx: Math.round(player.wx), wy: Math.round(player.wy),
       fx: Math.round((player.facing.x||0)*100)/100, fy: Math.round((player.facing.y||0)*100)/100,
       grade: equippedWeaponGrade() || null, // 장착 무기 등급 — 다른 유저 화면에 등급색 오라로 표시됨
+      atkAt: lastAtkBroadcastAt || null, atkDur: lastAtkBroadcastDurMs || null, // 마지막 공격 시각/스윙 길이 — 다른 유저 화면에서 공격 모션 재생에 사용
+      atkStyle: lastAtkBroadcastStyle || null, atkType: lastAtkBroadcastType || null,
+      atkColor: lastAtkBroadcastColor || null, atkColor2: lastAtkBroadcastColor2 || null,
       ts: firebase.database.ServerValue.TIMESTAMP,
     }).catch(err=> console.error('위치 동기화 실패:', err));
   }
@@ -12088,7 +12177,19 @@
       if(op.renderY==null) op.renderY = op.wy;
       op.renderX += (op.wx-op.renderX)*0.18; // 네트워크로 뚝뚝 끊겨 오는 좌표를 부드럽게 보간
       op.renderY += (op.wy-op.renderY)*0.18;
-      const opx = sx(op.renderX), opy = sy(op.renderY);
+      // 공격 모션: 마지막 공격 시각(atkAt)과 스윙 길이(atkDur)로 진행률을 로컬에서 스스로 계산해
+      // 내 캐릭터 스윙과 같은 방식(사인 곡선)으로 살짝 앞으로 튀어나가는 렁지 + 무기 색 참격을 재생한다.
+      let lungeX=0, lungeY=0, atkProg=-1;
+      if(op.atkAt && op.atkDur){
+        atkProg = (Date.now()-op.atkAt)/op.atkDur;
+        if(atkProg>=0 && atkProg<=1){
+          const style = op.job==='warrior' ? 'cross' : op.atkStyle;
+          const lungeAmt = style==='heavy'?10: op.atkType==='ranged'?2: style==='thrust'?9: style==='spin'?2: style==='cross'?5:6;
+          const swing = Math.sin(atkProg*Math.PI);
+          lungeX = (op.fx||0)*lungeAmt*swing; lungeY = (op.fy||0)*lungeAmt*swing;
+        } else atkProg = -1;
+      }
+      const opx = sx(op.renderX)+lungeX, opy = sy(op.renderY)+lungeY;
       ctx.save();
       ctx.fillStyle='rgba(0,0,0,0.22)';
       ctx.beginPath(); ctx.ellipse(opx, opy+3, 10,4,0,0,Math.PI*2); ctx.fill();
@@ -12101,6 +12202,20 @@
         ctx.globalAlpha = 1;
       }
       ctx.restore();
+      // 무기(장착 무기의 색)로 물든 참격 궤적 — 실제로 휘두르고 있는 동안(atkProg 0~1)에만 잠깐 나타나
+      // "저 사람이 지금 저 무기를 쓰고 있다"는 게 한눈에 보이게 한다.
+      if(atkProg>=0 && (op.atkColor||op.atkColor2)){
+        const tipAng = Math.atan2(op.fy||0, op.fx||1);
+        const arcSpan = op.atkType==='ranged' ? 0.5 : (op.atkStyle==='spin' ? Math.PI*2 : Math.PI*0.55);
+        const arcR = op.atkType==='ranged' ? 22 : 20;
+        ctx.save();
+        ctx.globalAlpha = 0.75*(1-Math.abs(atkProg-0.5)*2*0.5);
+        ctx.strokeStyle = op.atkColor2||op.atkColor;
+        ctx.lineWidth = 2.4;
+        ctx.shadowColor = op.atkColor2||op.atkColor; ctx.shadowBlur = 6;
+        ctx.beginPath(); ctx.arc(opx, opy, arcR, tipAng-arcSpan/2, tipAng+arcSpan/2); ctx.stroke();
+        ctx.restore();
+      }
       drawPixelArt(ctx, CHAR_ART, opx, opy, 2.8, null);
       const jobDef = JOB_DEFS[op.job] || JOB_DEFS[JOB_KEYS[0]];
       const label = 'Lv.'+(op.lv||1)+' '+(jobDef.icon||'')+' '+(op.name||'???');
