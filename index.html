@@ -5235,6 +5235,7 @@
   };
   const keys = {up:false,down:false,left:false,right:false};
   let mobs = [];
+  let mobIdSeq = 1; // 몹마다 고유 id를 부여 — 다른 유저에게 브로드캐스트/스틸 요청을 주고받을 때 이 id로 몹을 특정한다
   let boss = null;
   let bossActive = false;
   let bossIncoming = false;
@@ -5409,12 +5410,27 @@
     const wy = player.wy + Math.sin(ang)*dist;
     const theme = mobThemeForStage(state.stage);
     mobs.push({
+      id: ++mobIdSeq, // 다른 유저와 몹을 공유(브로드캐스트/스틸)하기 위한 고유 식별자
       type, wx, wy, hp, maxHp:hp, r: type==='goblin'||type==='skeleton'?11:9,
       wanderT: 0, wanderTX:wx, wanderTY:wy, contactCd:0, hitFlash:0, dying:0, dead:false,
       defPct: Math.min(35, idx*3), evaPct: Math.min(20, idx*1.5), // 방어관통(defPen)/회피감소(evaDown) 스탯이 작동할 대상
       bleed:null,
       tint: theme ? theme.tint : null, themeName: theme ? theme.name : null, // 스테이지 테마 외형/이름
     });
+  }
+
+  // 잡몹 어그로: 나와 화면에 보이는 다른 유저들(otherPlayers) 중 가장 가까운 쪽을 추적 대상으로 고른다.
+  // 실제 접촉피해 판정은 그 유저의 HP를 이 클라이언트가 알 수 없으므로 여전히 "나"에게만 적용되지만,
+  // 이동 방향(아그로)만큼은 진짜로 가장 가까운 플레이어 쪽을 향하게 해서 서로 몹을 유인/분산시킬 수 있다.
+  function findNearestChaseTarget(mob){
+    let bestX = player.wx, bestY = player.wy, bestD = Math.hypot(player.wx-mob.wx, player.wy-mob.wy);
+    for(const uid in otherPlayers){
+      const op = otherPlayers[uid];
+      if(op.wx==null || op.wy==null) continue;
+      const d = Math.hypot(op.wx-mob.wx, op.wy-mob.wy);
+      if(d < bestD){ bestD = d; bestX = op.wx; bestY = op.wy; }
+    }
+    return {wx:bestX, wy:bestY};
   }
 
   function spawnBoss(){
@@ -5560,7 +5576,7 @@
   }
 
   // ============ 전투 처리 ============
-  function damageMob(mob, amount, isCrit, isPoison){
+  function damageMob(mob, amount, isCrit, isPoison, attackerInfo){
     mob.hp -= amount;
     if(isPoison){
       // 독 틱은 넉백/타격 이펙트 없이 살짝 반짝이기만 해서 일반 타격과 구분되게 한다
@@ -5568,8 +5584,10 @@
     } else {
       mob.hitFlash = 1;
       mob.squashT = 1; // 맞는 순간 짜부러졌다가 펴지는 타격감 연출
-      // 피격 방향(플레이어 반대쪽)으로 살짝 튕겨나가는 넉백
-      const kdx = mob.wx-player.wx, kdy = mob.wy-player.wy, kd = Math.hypot(kdx,kdy)||1;
+      // 피격 방향(공격자 반대쪽)으로 살짝 튕겨나가는 넉백. 원격(다른 유저) 공격 요청이면 그 유저의 실제 위치를,
+      // 알 수 없으면(정보가 없거나 이미 화면에서 사라졌으면) 내 위치를 기준으로 계산한다.
+      const attackerPos = (attackerInfo && attackerInfo.uid && otherPlayers[attackerInfo.uid]) ? otherPlayers[attackerInfo.uid] : player;
+      const kdx = mob.wx-attackerPos.wx, kdy = mob.wy-attackerPos.wy, kd = Math.hypot(kdx,kdy)||1;
       const kPow = isCrit?3.4:1.9;
       mob.knockVX = (mob.knockVX||0) + (kdx/kd)*kPow;
       mob.knockVY = (mob.knockVY||0) + (kdy/kd)*kPow;
@@ -5581,18 +5599,29 @@
       mob.dying = 0.001;
       SFX.mobDeath(mob.type);
       spawnDeathParticles(mob.wx, mob.wy-8, isPoison?'#a855f7':'#ffd54f');
-      state.mobsKilled += 1;
-      state.stageProgress[state.stage] = state.mobsKilled; // 현재 스테이지의 잡몹 처치 진행도 기록
       const g = Math.floor(9+state.stage*2.6);
-      state.gold += g;
-      gainExp(Math.floor(4+state.stage*1.2));
+      const e = Math.floor(4+state.stage*1.2);
       // 잡몹 처치 시 낮은 확률로 소환석(뽑기 재화) 획득
       // 이미 한 번 클리어한 스테이지를 재파밍하는 경우(보상 인플레 방지)에는 확률을 3%로 낮춘다.
       const gemDropChance = (state.stage <= state.maxClearedStage) ? 0.03 : 0.05;
-      let gemMsg = '';
-      if(Math.random()<gemDropChance){ state.gems += 1; gemMsg = ', 소환석 +1💠'; }
-      if(settings.killMsg) toast(`${mobDisplayName(mob)} 처치! 골드 +${g}${gemMsg}`, 'gold');
-      updateHudText();
+      const gemDrop = Math.random()<gemDropChance ? 1 : 0;
+      // 스틸 판정: 마지막 타격자가 나(owner)와 다른 유저면, 이 몹의 보상은 내가 아니라 그 사람에게 간다.
+      const isStolen = attackerInfo && attackerInfo.uid && currentUser && attackerInfo.uid!==currentUser.uid;
+      if(!isStolen){
+        state.mobsKilled += 1;
+        state.stageProgress[state.stage] = state.mobsKilled; // 현재 스테이지의 잡몹 처치 진행도 기록
+        state.gold += g;
+        gainExp(e);
+        if(gemDrop) state.gems += 1;
+        if(settings.killMsg) toast(`${mobDisplayName(mob)} 처치! 골드 +${g}${gemDrop?', 소환석 +1💠':''}`, 'gold');
+        updateHudText();
+      } else {
+        db.ref('world/mobKillCredits/'+attackerInfo.uid).push({
+          gold:g, exp:e, gem:gemDrop, mobName: mobDisplayName(mob), from: settings.playerName||'이름없는 모험가',
+          ts: firebase.database.ServerValue.TIMESTAMP,
+        }).catch(err=> console.error('처치 보상 전달 실패:', err));
+        if(settings.killMsg) toast(`${mobDisplayName(mob)}을(를) ${attackerInfo.name||'다른 모험가'}에게 빼앗겼습니다!`, 'fail');
+      }
     }
   }
 
@@ -5832,6 +5861,16 @@
       const dx=mob.wx-player.wx, dy=mob.wy-player.wy, d=Math.hypot(dx,dy);
       if(d < range+mob.r && inAttackArc(dx,dy,mob.r)) candidates.push({kind:'mob', ref:mob, d});
     });
+    // 다른 유저가 스폰한 몹(유령)도 사거리 안에 들어오면 공격 후보에 포함한다 — 실제 스틸이 가능해지는 부분.
+    // ※ 지금 단계에서는 근접 공격만 지원한다: 원거리(화살/투사체/지팡이)는 충돌판정이 로컬 mobs 배열만 검사하므로
+    //   원격 몹을 조준해도 실제로 맞지 않는다 — 그래서 원거리 무기일 때는 아예 후보에서 제외해 헛발질을 막는다.
+    if(weaponProfile().type!=='ranged'){
+      remoteMobGhostList.forEach(mob=>{
+        if(mob.hp<=0) return;
+        const dx=mob.wx-player.wx, dy=mob.wy-player.wy, d=Math.hypot(dx,dy);
+        if(d < range+mob.r && inAttackArc(dx,dy,mob.r)) candidates.push({kind:'remoteMob', ref:mob, d});
+      });
+    }
     if(boss && boss.dying===0){
       const dx=boss.wx-player.wx, dy=boss.wy-player.wy, d=Math.hypot(dx,dy);
       if(d < range+boss.r && inAttackArc(dx,dy,boss.r)) candidates.push({kind:'boss', ref:boss, d});
@@ -5916,7 +5955,7 @@
   // 대상 하나에게 실제 피해 판정(치명타/방어관통/회피/출혈/무기 고유 효과)을 적용한다.
   // weapon(무기 프로필)을 넘기면 무기별 피해배율/출혈확률/기절확률이 함께 반영된다. (근접 휘두르기·원거리 투사체 명중 모두 이 함수를 재사용)
   function applyAttackDamage(target, weapon){
-    const ref = target.kind==='mob' ? target.ref : boss;
+    const ref = target.kind==='boss' ? boss : target.ref;
     if(!ref) return;
     let critChance = effectiveCritChance();
     // 검사 특성: 검 등급에 따른 확률(10~70%)로 이번 공격에 한해 치명타 확률을 추가로 부여(20~100%p, 등급이 높을수록 확률/부여량 모두 커짐)
@@ -5945,8 +5984,12 @@
       damageNumbers.push({wx:ref.wx, wy:ref.wy-(ref.r||20)*2.4, text:'회피!', vy:-0.6, alpha:1, color:'#8f88a8'});
       return;
     }
-    if(isCrit) applyBleed(ref, Math.round(dmg*0.2));
-    applyPoison(ref); // 크리티컬 여부와 무관하게 모든 적중마다 독 옵션 확률 판정
+    // 원격(다른 유저) 몹은 실제 체력이 owner 브라우저에만 있어 여기서 출혈/독 같은 지속 디버프를 걸어도
+    // 로컬에서 틱이 진행되지 않으므로(=효과 없이 죽은 상태값만 남음) 아예 걸지 않는다.
+    if(target.kind!=='remoteMob'){
+      if(isCrit) applyBleed(ref, Math.round(dmg*0.2));
+      applyPoison(ref); // 크리티컬 여부와 무관하게 모든 적중마다 독 옵션 확률 판정
+    }
     // 무기 고유 색으로 튀는 타격 스파크 - 어떤 무기로 맞혔는지 한눈에 느껴지도록
     if(weapon && weapon.color) spawnWeaponHitFx(ref.wx, ref.wy-(ref.r||16)*1.3, weapon.color, weapon.color2);
     // 등급 높은 무기(S 이상)는 타격 지점에서도 작은 확산 링이 함께 터진다. 크리티컬이면 흰 빛줄기까지 곁들여 한층 화려해진다.
@@ -5954,13 +5997,14 @@
     if(weapon && hitTier>=3) spawnImpactRing(ref.wx, ref.wy-(ref.r||16)*1.1, 4, 20+hitTier*3, weapon.color2||weapon.color, 260, 2);
     if(isCrit && hitTier>=2) spawnImpactRays(ref.wx, ref.wy-(ref.r||16)*1.1, 5, 18, '#ffffff', 220);
     // 무기 고유 효과: 도끼/낫 등은 추가 출혈, 철퇴/망치 등은 맞을 때 확률적으로 뒤로 튕겨나가는(기절 대체) 넉백을 준다.
-    if(weapon && weapon.bleedChance && Math.random()<weapon.bleedChance) applyBleed(ref, Math.round(dmg*0.35));
+    if(weapon && weapon.bleedChance && target.kind!=='remoteMob' && Math.random()<weapon.bleedChance) applyBleed(ref, Math.round(dmg*0.35));
     if(weapon && weapon.stunChance && target.kind==='mob' && Math.random()<weapon.stunChance){
       const kx=ref.wx-player.wx, ky=ref.wy-player.wy, kd=Math.hypot(kx,ky)||1;
       ref.knockVX = (ref.knockVX||0) + (kx/kd)*3.2;
       ref.knockVY = (ref.knockVY||0) + (ky/kd)*3.2;
     }
     if(target.kind==='mob') damageMob(target.ref, dmg, isCrit);
+    else if(target.kind==='remoteMob') sendRemoteMobHit(target.ref, dmg, isCrit);
     else damageBoss(dmg, isCrit);
   }
   // 근접무기 공격: 바라보는 방향 부채꼴(무기별로 각도가 다름, 낫은 360도 전방위), 주변 3칸(무기별 보너스 포함) 이내의 모든 대상을 한 번에 타격("무기를 휘두르는" 모션).
@@ -5988,7 +6032,7 @@
       spawnAttackFlourishFx(player.wx, player.wy, tipAng, 0.9, 34, p.color, p.color2, tier, pStyle, p.type);
     }
     if(!target) return;
-    const ref = target.kind==='mob' ? target.ref : boss;
+    const ref = target.kind==='boss' ? boss : target.ref; // 'remoteMob'도 target.ref(유령 몹)를 그대로 가리키게 일반화
     if(!ref) return;
     if(p.type==='ranged'){
       if(isStaffProfile(p)) fireStaffProjectiles(target, p);
@@ -6121,7 +6165,7 @@
     if(drop.tier>=5 && drop.leadFx) triggerScreenFlash(drop.color, 0.16, 220);
   }
   function fireProjectile(target, p){
-    const ref = target.kind==='mob' ? target.ref : boss;
+    const ref = target.kind==='boss' ? boss : target.ref;
     if(!ref) return;
     const dx=ref.wx-player.wx, dy=ref.wy-player.wy, d=Math.hypot(dx,dy)||1;
     // 지팡이는 무기 프로필의 고정값이 아니라 장착한 지팡이의 등급(STAFF_GRADE_CONFIG.aoe)에 따라 광역 여부가 갈린다(SSS만 광역, 나머지는 단일 대상).
@@ -6344,6 +6388,7 @@
     const dt = Math.min(32, now-lastTime); lastTime = now;
     update(dt);
     broadcastPresence(); // 다른 유저에게 내 위치/상태를 (스로틀링해서) 실시간으로 알림
+    broadcastMobs(); // 내 필드 잡몹 목록을 (스로틀링해서) 다른 유저에게 실시간으로 알림 — 서로의 몹이 화면에 보이고 스틸도 가능해짐
     render();
     if(villageMapModalEl.classList.contains('show')) drawVillageMap();
     updateMiniMapVisibility();
@@ -7174,6 +7219,7 @@
       if(state.gems < ADMIN_GOD_GEMS) state.gems = ADMIN_GOD_GEMS;
     }
     if(inHouse){ updateHouseInterior(dt); return; }
+    refreshRemoteMobGhosts(); // 다른 유저가 스폰한 몹(유령)의 위치/체력을 이번 프레임 기준으로 갱신 — 렌더링/공격판정 양쪽에서 이 캐시를 읽는다
     updatePlayerPoison(dt); // 30스테이지 최종보스의 독 도트 피해는 보스 상태와 무관하게 항상 갱신된다
     // 플레이어 이동 (조이스틱 우선, 없으면 키보드)
     let vx=0, vy=0, analog=false;
@@ -7296,10 +7342,12 @@
       // 보스 분신이 자신의 고유 스킬(예고/돌진)을 사용하는 동안에는 일반 잡몹 추적/접촉 로직을 건너뛰어
       // updateBossClonePatterns()가 이동과 판정을 전담하게 한다
       if(mob.isBossClone && (mob.specialState==='telegraph' || mob.specialState==='dash')) return;
-      const distToPlayer = Math.hypot(player.wx-mob.wx, player.wy-mob.wy);
-      // 잡몹은 항상 플레이어를 자동으로 추적한다. 필드에서는 나무/건물을 미리 감지해
-      // 우회하는 방향으로 스티어링하고, 보스전 아레나(장애물 없음)에서는 그냥 직선으로 쫓는다.
-      const tx=player.wx, ty=player.wy, speed=mob.spd||MOB_CHASE_SPEED;
+      const distToPlayer = Math.hypot(player.wx-mob.wx, player.wy-mob.wy); // 실제 피해 판정은 항상 "나"와의 거리 기준으로 별도 계산한다
+      // 잡몹은 자동으로 "가장 가까운 플레이어"를 추적한다 — 나뿐 아니라 근처의 다른 접속 유저도 어그로 대상이 된다.
+      // (보스/보스분신/쫄몹은 필드 공유 대상이 아니므로 기존처럼 항상 나를 추적한다)
+      const chaseTarget = (mob.isBossClone || mob.isTimeCutMinion || mob.isEliteArenaMinion) ? player : findNearestChaseTarget(mob);
+      // 필드에서는 나무/건물을 미리 감지해 우회하는 방향으로 스티어링하고, 보스전 아레나(장애물 없음)에서는 그냥 직선으로 쫓는다.
+      const tx=chaseTarget.wx, ty=chaseTarget.wy, speed=mob.spd||MOB_CHASE_SPEED;
       if(!bossActive && !bossIncoming){
         const dir = steerAroundObstacles(mob.wx, mob.wy, mob.r, tx, ty, 70);
         if(distToPlayer>3){ mob.wx += dir.x*speed*dt*10; mob.wy += dir.y*speed*dt*10; }
@@ -7587,7 +7635,7 @@
     if(settings.weaponFx){
       staffDrops.forEach(drop=>{
         if(drop.landed || !drop.eliteFx) return;
-        const ref = drop.targetKind==='mob' ? drop.target : boss;
+        const ref = drop.targetKind==='boss' ? boss : drop.target;
         if(!ref) return;
         const prog = Math.min(1, drop.elapsed/drop.fallMs);
         const popProg = Math.min(1, prog/0.3);
@@ -7917,8 +7965,8 @@
 
     drawOtherPlayers(); // 같은 스테이지에 있는 다른 유저들
 
-    // 잡몹
-    mobs.forEach(mob=>{
+    // 잡몹 (내 몹 + 다른 유저가 공유한 몹(유령) — 유령도 똑같이 그려서 실제로 존재하는 것처럼 보이고 스틸 대상임을 알 수 있게 한다)
+    mobs.concat(remoteMobGhostList).forEach(mob=>{
       const mx=sx(mob.wx), my=sy(mob.wy);
       // 몹 공격 예고(텔레그래프) 표시 — 판정 반경(MOB_ATK_HIT_RADIUS)과 정확히 같은 크기로 그려서
       // "이 링 안에 있으면 맞는다"가 눈에 보이는 그대로 성립하도록 한다.
@@ -7970,10 +8018,14 @@
         const bw=mob.isBossClone?46:30, ratio=Math.max(0,mob.hp/mob.maxHp);
         const by = my-MONSTER_ART[mob.type].length*scale-8;
         ctx.fillStyle='#100c1c'; ctx.fillRect(mx-bw/2, by, bw, 4);
-        ctx.fillStyle= mob.isBossClone?'#ff3b6b':'#ff6b5b'; ctx.fillRect(mx-bw/2, by, bw*ratio, 4);
+        ctx.fillStyle= mob.isBossClone?'#ff3b6b':(mob.isRemote?'#ffd54f':'#ff6b5b'); ctx.fillRect(mx-bw/2, by, bw*ratio, 4);
         if(mob.isBossClone){
           ctx.fillStyle='#ffb3c6'; ctx.font='bold 10px sans-serif'; ctx.textAlign='center';
           ctx.fillText('분신', mx, by-4);
+        } else if(mob.isRemote){
+          // 다른 유저가 스폰한(그래서 스틸 가능한) 몹임을 알 수 있도록 소유자 이름표를 띄운다
+          ctx.fillStyle='#ffd54f'; ctx.font='bold 10px sans-serif'; ctx.textAlign='center';
+          ctx.fillText((mob.ownerName||'다른 모험가')+'의 몹', mx, by-4);
         }
       }
     });
@@ -11800,6 +11852,17 @@
   const PRESENCE_SEND_INTERVAL = 150; // ms — 이 간격보다 자주는 위치를 보내지 않는다(대역폭 절약, 수신 쪽은 그대로 실시간)
   const PRESENCE_MOVE_THRESHOLD = 6; // px — 이만큼 움직이지 않았으면 전송을 건너뜀
 
+  // ===== 몹 공유(다른 유저의 필드 몹을 서로의 화면에 보여주고, 스틸까지 가능하게 함) =====
+  // state.stage는 난이도값일 뿐 실제 좌표계는 모두가 공유하는 하나의 필드이므로(위 주석 참고),
+  // 스테이지(진행도)가 서로 달라도 같은 자리에 있으면 몹을 공유/스틸할 수 있다.
+  let worldMobsListenRef = null; // 현재 구독 중인 world/mobBroadcast ref
+  let remoteMobBroadcast = {}; // ownerUid -> 그 유저가 보낸 몹 스냅샷 배열 [{id,type,wx,wy,hp,maxHp,r,scale,tint,themeName}, ...]
+  let remoteMobOwnerNames = {}; // ownerUid -> 표시용 닉네임(유령 몹 이름표에 사용)
+  let remoteMobGhosts = {}; // "ownerUid:id" -> 보간/렌더용 유령 몹 캐시 객체
+  let remoteMobGhostList = []; // 이번 프레임에 렌더링/공격판정에 사용할 유령 몹 배열 (refreshRemoteMobGhosts()가 매 프레임 갱신)
+  let lastMobBroadcastAt = 0;
+  const MOB_BROADCAST_INTERVAL = 220; // ms — 내 몹 목록을 보내는 간격(대역폭 절약)
+
   function detachWorldPlayersListener(){
     if(worldPlayersListenRef){ worldPlayersListenRef.off(); worldPlayersListenRef = null; }
     otherPlayers = {};
@@ -11821,22 +11884,168 @@
     }, err=> console.error('다른 플레이어 정보 갱신 실패:', err));
     ref.on('child_removed', snap=>{ delete otherPlayers[snap.key]; });
   }
+  // 다른 유저들이 브로드캐스트하는 몹 목록을 구독한다. world/mobBroadcast/{ownerUid} = {ownerName, mobs:[...], ts}
+  function attachWorldMobsListener(){
+    if(worldMobsListenRef) return; // 이미 구독 중이면 다시 구독하지 않음
+    const ref = db.ref('world/mobBroadcast');
+    worldMobsListenRef = ref;
+    const applySnap = snap=>{
+      if(currentUser && snap.key===currentUser.uid) return; // 내가 보낸 브로드캐스트는 무시(내 mobs 배열이 이미 진짜 원본)
+      const v = snap.val();
+      if(!v || !Array.isArray(v.mobs)){ delete remoteMobBroadcast[snap.key]; delete remoteMobOwnerNames[snap.key]; return; }
+      remoteMobBroadcast[snap.key] = v.mobs;
+      remoteMobOwnerNames[snap.key] = v.ownerName || '다른 모험가';
+    };
+    ref.on('child_added', applySnap);
+    ref.on('child_changed', applySnap, err=> console.error('다른 유저 몹 정보 갱신 실패:', err));
+    ref.on('child_removed', snap=>{
+      delete remoteMobBroadcast[snap.key];
+      delete remoteMobOwnerNames[snap.key];
+      // 그 유저가 브로드캐스트를 끊었으면(로그아웃/실내 진입 등) 화면에 남아있던 유령 몹도 함께 정리
+      Object.keys(remoteMobGhosts).forEach(k=>{ if(k.indexOf(snap.key+':')===0) delete remoteMobGhosts[k]; });
+    });
+  }
+  function detachWorldMobsListener(){
+    if(worldMobsListenRef){ worldMobsListenRef.off(); worldMobsListenRef = null; }
+    remoteMobBroadcast = {}; remoteMobOwnerNames = {}; remoteMobGhosts = {}; remoteMobGhostList = [];
+  }
+  // 내 필드 잡몹 목록을 다른 유저들이 볼 수 있도록 실시간으로 내보낸다. 보스전 중인 몹(분신/쫄몹 등)은
+  // 나만의 인스턴스 전투이므로 공유하지 않는다 — 필드를 돌아다니는 일반 잡몹만 공유 대상이다.
+  function broadcastMobs(){
+    if(!currentUser || !worldPresenceActive || inHouse) return;
+    const nowT = Date.now();
+    if(nowT - lastMobBroadcastAt < MOB_BROADCAST_INTERVAL) return;
+    lastMobBroadcastAt = nowT;
+    const list = (bossActive || bossIncoming) ? [] : mobs
+      .filter(m=> m.dying===0 && !m.dead && !m.isBossClone && !m.isTimeCutMinion && !m.isEliteArenaMinion && m.id!=null)
+      .map(m=>({
+        id:m.id, type:m.type, wx:Math.round(m.wx), wy:Math.round(m.wy),
+        hp:Math.max(0,Math.round(m.hp)), maxHp:Math.round(m.maxHp), r:m.r, scale:m.scale||null,
+        tint:m.tint||null, themeName:m.themeName||null,
+      }));
+    db.ref('world/mobBroadcast/'+currentUser.uid).set({
+      ownerName: settings.playerName || '이름없는 모험가',
+      mobs: list,
+      ts: firebase.database.ServerValue.TIMESTAMP,
+    }).catch(err=> console.error('몹 브로드캐스트 실패:', err));
+  }
+  // 매 프레임(update 시작부에서) 한 번만 호출: 다른 유저들이 보낸 몹 스냅샷을 화면에 그리거나 공격 후보로
+  // 쓸 수 있는 형태(유령 몹)로 변환하고 좌표를 부드럽게 보간해 remoteMobGhostList에 캐시해둔다.
+  function refreshRemoteMobGhosts(){
+    const list = [];
+    Object.keys(remoteMobBroadcast).forEach(ownerUid=>{
+      const arr = remoteMobBroadcast[ownerUid];
+      if(!arr) return;
+      const seenIds = {};
+      arr.forEach(m=>{
+        const key = ownerUid+':'+m.id;
+        seenIds[key] = true;
+        let g = remoteMobGhosts[key];
+        if(!g){
+          g = remoteMobGhosts[key] = {
+            renderX:m.wx, renderY:m.wy,
+            dying:0, hitFlash:0, squashT:0, atkState:'idle',
+            animPhase: Math.random()*1000, knockVX:0, knockVY:0,
+            isRemote:true, ownerUid, id:m.id,
+          };
+        }
+        g.type=m.type; g.hp=m.hp; g.maxHp=m.maxHp; g.r=m.r; g.scale=m.scale;
+        g.tint=m.tint; g.themeName=m.themeName; g.ownerName=remoteMobOwnerNames[ownerUid]||'다른 모험가';
+        g.renderX += (m.wx-g.renderX)*0.18; // 네트워크로 끊겨 오는 좌표를 부드럽게 보간
+        g.renderY += (m.wy-g.renderY)*0.18;
+        g.wx = g.renderX; g.wy = g.renderY; // 기존 렌더/공격판정 로직이 mob.wx/wy를 그대로 읽으므로 보간된 값을 넣어준다
+        if(g.hitFlash>0) g.hitFlash = Math.max(0, g.hitFlash-16/150); // 낙관적 타격 플래시 감쇠(약 1프레임분 가정)
+        if(g.squashT>0) g.squashT = Math.max(0, g.squashT-16/220);
+        if(m.hp>0) list.push(g); // 체력이 0 이하로 내려간(처치된) 유령은 그리지 않음
+      });
+      // 이 유저의 브로드캐스트에서 사라진(처치/제거된) 몹의 유령은 정리
+      Object.keys(remoteMobGhosts).forEach(k=>{
+        if(k.indexOf(ownerUid+':')===0 && !seenIds[k]) delete remoteMobGhosts[k];
+      });
+    });
+    remoteMobGhostList = list;
+  }
+
+  // ===== 원격 몹 공격 요청(스틸 포함) =====
+  // 몹의 진짜 체력은 그 몹을 스폰한 사람(owner)의 브라우저에만 있으므로, 내가 남의 몹을 때리면
+  // 여기서 직접 체력을 깎지 않고 owner에게 "이만큼 때렸다"는 요청만 보낸다. owner 쪽에서 실제 damageMob()이
+  // 실행되고, 그 결과 처치되면 마지막 타격자(=나일 수도, 원래 owner일 수도)에게 보상이 돌아간다(스틸 성립).
+  // 몹이 세거나 약하거나 상관없이(체력/등급 무관) 동일하게 적용된다.
+  function sendRemoteMobHit(ghost, amount, isCrit){
+    if(!currentUser || !ghost || !ghost.ownerUid) return;
+    db.ref('world/mobHitRequests/'+ghost.ownerUid).push({
+      mobId: ghost.id, amount: Math.max(1, Math.round(amount)), isCrit: !!isCrit,
+      attackerUid: currentUser.uid, attackerName: settings.playerName || '이름없는 모험가',
+      ts: firebase.database.ServerValue.TIMESTAMP,
+    }).catch(err=> console.error('몹 공격 요청 전송 실패:', err));
+    // 응답을 기다리지 않고 즉시 타격감을 보여준다(낙관적 갱신). 실제 정확한 체력은 owner 쪽 브로드캐스트로 곧 덮어써진다.
+    ghost.hp = Math.max(0, (ghost.hp||0) - Math.round(amount));
+    ghost.hitFlash = 1; ghost.squashT = 1;
+    spawnHitParticles(ghost.wx, ghost.wy-ghost.r*1.4);
+    SFX.mobHit(ghost.type);
+    damageNumbers.push({wx:ghost.wx, wy:ghost.wy-ghost.r*3, text:(isCrit?'치명타! -':'-')+formatBigNum(Math.round(amount)), vy:-0.6, alpha:1, color: isCrit?'#ff4d4d':'#ffd54f'});
+  }
+
+  // owner 입장에서 다른 유저가 보낸 공격 요청을 처리한다. 로그인 직후부터 계속 구독하며(집 안에 있어도
+  // 요청 자체는 안전하게 받아 처리), 실제로 존재하는 내 몹일 때만 damageMob에 attackerInfo와 함께 반영한다.
+  let mobHitListenerAttached = false;
+  function attachMobHitListenerOnce(){
+    if(mobHitListenerAttached || !currentUser) return;
+    mobHitListenerAttached = true;
+    const ref = db.ref('world/mobHitRequests/'+currentUser.uid);
+    ref.on('child_added', snap=>{
+      const req = snap.val();
+      snap.ref.remove().catch(()=>{}); // 중복 처리 방지를 위해 처리 즉시 큐에서 제거
+      if(!req || !req.mobId || req.attackerUid===currentUser.uid) return;
+      const mob = mobs.find(m=> m.id===req.mobId && m.dying===0 && !m.dead);
+      if(!mob) return; // 이미 죽었거나(다른 사람이 먼저 마무리) 사라진 몹이면 조용히 무시
+      damageMob(mob, req.amount||0, !!req.isCrit, false, {uid:req.attackerUid, name:req.attackerName});
+    }, err=> console.error('몹 공격 요청 수신 실패:', err));
+  }
+
+  // 스틸당했을 때(내가 owner인데 남이 마지막 타격) 처치 보상을 그 사람에게 전달하기 위해 쓰는 채널.
+  // 반대로 내가 스틸에 성공했을 때는 이 채널로 내가 보상을 받는다.
+  let mobKillCreditListenerAttached = false;
+  function attachMobKillCreditListenerOnce(){
+    if(mobKillCreditListenerAttached || !currentUser) return;
+    mobKillCreditListenerAttached = true;
+    const ref = db.ref('world/mobKillCredits/'+currentUser.uid);
+    ref.on('child_added', snap=>{
+      const credit = snap.val();
+      snap.ref.remove().catch(()=>{});
+      if(!credit) return;
+      state.gold += (credit.gold||0);
+      state.mobsKilled += 1;
+      state.stageProgress[state.stage] = state.mobsKilled;
+      gainExp(credit.exp||0); // gainExp 안에서 내 경험치 증가(%) 옵션이 그대로 적용됨
+      if(credit.gem) state.gems += 1;
+      if(settings.killMsg) toast(`🗡 ${credit.mobName||'몬스터'} 스틸 성공! (원래 주인: ${credit.from||'???'}) 골드 +${credit.gold||0}${credit.gem?', 소환석 +1💠':''}`, 'gold');
+      updateHudText();
+    }, err=> console.error('처치 보상 수신 실패:', err));
+  }
+
   // 실외(마을/필드)로 나왔을 때 프레즌스를 켠다. 이미 켜져 있으면 재구독하지 않고 위치만 갱신해서 보낸다.
   function enterWorldPresence(){
     if(!currentUser || inHouse) return;
     if(!worldPresenceActive){
       worldPresenceActive = true;
       attachWorldPlayersListener();
+      attachWorldMobsListener(); // 다른 유저의 몹도 함께 구독 시작
       db.ref('world/players/'+currentUser.uid).onDisconnect().remove(); // 접속 끊기면 서버가 알아서 정리
+      db.ref('world/mobBroadcast/'+currentUser.uid).onDisconnect().remove(); // 내 몹 브로드캐스트도 접속 끊기면 자동 정리
     }
     lastSentWx = null; lastSentWy = null; // 즉시 한 번 전송되도록 강제
+    lastMobBroadcastAt = 0; // 몹 브로드캐스트도 즉시 한 번 전송되도록 강제
     broadcastPresence(true);
+    broadcastMobs();
   }
   function leaveWorldPresence(){
     if(worldPresenceActive && currentUser){
       db.ref('world/players/'+currentUser.uid).remove().catch(()=>{});
+      db.ref('world/mobBroadcast/'+currentUser.uid).remove().catch(()=>{}); // 실내로 들어가는 등 프레즌스를 끌 때 몹 브로드캐스트도 같이 지움
     }
     detachWorldPlayersListener();
+    detachWorldMobsListener();
     worldPresenceActive = false;
   }
   // 매 프레임 호출되지만, 실제 전송은 스로틀링(간격+이동거리 조건)을 통과했을 때만 나간다.
@@ -12068,6 +12277,8 @@
       authErrorEl.textContent = '';
       authOverlayEl.classList.add('hide');
       attachChatListenerOnce(); // 로그인 확정 즉시 채팅 리스너를 붙여, 게임 화면에 들어가기 전에도 대화가 쌓이기 시작한다
+      attachMobHitListenerOnce(); // 다른 유저가 내 몹을 공격(스틸 시도)하는 요청을 로그인 즉시부터 받을 수 있게 구독
+      attachMobKillCreditListenerOnce(); // 내가 스틸에 성공했을 때(또는 스틸당했을 때) 오갈 처치 보상 채널 구독
       restoreChatBanIfAny(); // 새로고침 등으로 재접속했을 때도 서버에 남아있는 도배 금지가 있으면 이어서 적용
       if(titleStarted && !gameStarted) showLoadingScreen(); // 타이틀 화면을 넘어온 뒤 최초 진입이면 데이터를 불러오는 동안 로딩 화면 표시
       accountStatusEl.textContent = user.email || (user.displayName ? user.displayName+' (구글)' : '구글 계정');
