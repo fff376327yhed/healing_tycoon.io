@@ -596,7 +596,17 @@
   .btn-auth-primary:hover:not(:disabled){ filter:brightness(1.1); }
   .btn-auth-secondary{ background:var(--bg-panel-2); color:var(--text); border:1px solid var(--line); }
   .btn-auth-secondary:hover:not(:disabled){ background:#2c2340; }
-  .auth-error{ font-size:12px; color:var(--fail); min-height:16px; margin-top:14px; }
+  .auth-error{ font-size:12px; color:var(--fail); min-height:16px; margin-top:14px; text-align:left; white-space:pre-line; }
+  .auth-pw-wrap{ position:relative; margin-bottom:10px; }
+  .auth-pw-wrap input{ padding-right:40px; margin-bottom:0; }
+  .auth-pw-toggle{
+    position:absolute; right:4px; top:50%; transform:translateY(-50%);
+    width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+    background:transparent; border:none; cursor:pointer; font-size:16px; line-height:1;
+    color:var(--text-dim); padding:0; opacity:0.85;
+  }
+  .auth-pw-toggle:hover{ opacity:1; }
+  .auth-pw-hint{ font-size:11px; color:var(--text-dim); text-align:left; margin:6px 0 10px; line-height:1.5; }
 
   /* ===== 로딩 화면 (게임 진입 전 대기 화면) ===== */
   #loadingScreen{
@@ -1498,7 +1508,11 @@
     <button type="button" class="btn-auth-google" id="authGoogleBtn">구글 계정으로 로그인</button>
     <div class="auth-divider">또는 이메일로 계속하기</div>
     <input type="email" id="authEmail" placeholder="이메일" autocomplete="username">
-    <input type="password" id="authPassword" placeholder="비밀번호 (6자 이상)" autocomplete="current-password">
+    <div class="auth-pw-wrap">
+      <input type="password" id="authPassword" placeholder="비밀번호 (6자 이상)" autocomplete="current-password">
+      <button type="button" class="auth-pw-toggle" id="authPwToggleBtn" aria-label="비밀번호 표시/숨기기" title="비밀번호 표시/숨기기">👁</button>
+    </div>
+    <div class="auth-pw-hint" id="authPwHint"></div>
     <div class="auth-btn-row">
       <button type="button" class="btn-auth-secondary" id="authSignupBtn">회원가입</button>
       <button type="button" class="btn-auth-primary" id="authLoginBtn">로그인</button>
@@ -11421,6 +11435,7 @@
   const authEmailEl=$('authEmail'), authPasswordEl=$('authPassword');
   const authGoogleBtnEl=$('authGoogleBtn'), authLoginBtnEl=$('authLoginBtn'), authSignupBtnEl=$('authSignupBtn');
   const authErrorEl=$('authError');
+  const authPwToggleBtnEl=$('authPwToggleBtn'), authPwHintEl=$('authPwHint');
 
   // ===== 로딩 화면 (게임 진입 전, 데이터 불러오는 대기 구간 등에서 사용) =====
   const loadingScreenEl = $('loadingScreen');
@@ -11499,12 +11514,63 @@
     'auth/invalid-credential':'이메일 또는 비밀번호가 올바르지 않습니다.',
     'auth/email-already-in-use':'이미 가입된 이메일입니다.',
     'auth/weak-password':'비밀번호는 6자 이상이어야 합니다.',
+    'auth/password-does-not-meet-requirements':'비밀번호가 보안 조건을 만족하지 않습니다. 아래 조건을 확인해주세요.',
     'auth/too-many-requests':'시도가 너무 많습니다. 잠시 후 다시 시도해주세요.',
     'auth/popup-closed-by-user':'로그인 창이 닫혔습니다.',
     'auth/network-request-failed':'네트워크 오류입니다. 연결 상태를 확인해주세요.',
   };
-  function authErrMsg(err){ return AUTH_ERROR_MSG[err && err.code] || ('오류: ' + (err && err.message ? err.message : '알 수 없는 오류')); }
+  // Firebase 콘솔에서 "비밀번호 정책"(대/소문자, 숫자, 특수문자, 길이 등)을 켜둔 경우,
+  // auth.validatePassword()로 어떤 조건이 부족한지 미리 확인해서 한글로 안내한다.
+  function passwordRequirementLines(status){
+    const opts = (status && status.passwordPolicy && status.passwordPolicy.customStrengthOptions) || {};
+    const lines = [];
+    if(opts.minPasswordLength){
+      lines.push((status.meetsMinPasswordLength ? '✅' : '❌') + ' 최소 ' + opts.minPasswordLength + '자 이상');
+    }
+    if(opts.maxPasswordLength){
+      lines.push((status.meetsMaxPasswordLength ? '✅' : '❌') + ' 최대 ' + opts.maxPasswordLength + '자 이하');
+    }
+    if(opts.containsLowercaseLetter){
+      lines.push((status.containsLowercaseLetter ? '✅' : '❌') + ' 영문 소문자 포함 (a-z)');
+    }
+    if(opts.containsUppercaseLetter){
+      lines.push((status.containsUppercaseLetter ? '✅' : '❌') + ' 영문 대문자 포함 (A-Z)');
+    }
+    if(opts.containsNumericCharacter){
+      lines.push((status.containsNumericCharacter ? '✅' : '❌') + ' 숫자 포함 (0-9)');
+    }
+    if(opts.containsNonAlphanumericCharacter){
+      lines.push((status.containsNonAlphanumericCharacter ? '✅' : '❌') + ' 특수문자 포함 (!@#$ 등)');
+    }
+    return lines;
+  }
+  function authErrMsg(err){
+    return AUTH_ERROR_MSG[err && err.code] || ('오류: ' + (err && err.message ? err.message : '알 수 없는 오류'));
+  }
   function setAuthBusy(busy){ [authGoogleBtnEl, authLoginBtnEl, authSignupBtnEl].forEach(b=> b.disabled = busy); }
+
+  // 비밀번호 입력창에 실시간으로 "충족/미충족 조건"을 보여준다 (프로젝트에 비밀번호 정책이 설정된 경우에만 표시됨)
+  let pwHintTimer = null;
+  function refreshPwHint(){
+    if(!auth.validatePassword){ authPwHintEl.textContent = ''; return; }
+    const pw = authPasswordEl.value;
+    if(!pw){ authPwHintEl.textContent = ''; return; }
+    auth.validatePassword(pw).then(status=>{
+      const lines = passwordRequirementLines(status);
+      authPwHintEl.textContent = lines.length ? lines.join('\n') : '';
+    }).catch(()=>{ authPwHintEl.textContent = ''; });
+  }
+  authPasswordEl.addEventListener('input', ()=>{
+    clearTimeout(pwHintTimer);
+    pwHintTimer = setTimeout(refreshPwHint, 250);
+  });
+
+  authPwToggleBtnEl.addEventListener('click', ()=>{
+    const showing = authPasswordEl.type === 'text';
+    authPasswordEl.type = showing ? 'password' : 'text';
+    authPwToggleBtnEl.textContent = showing ? '👁' : '🙈';
+    authPasswordEl.focus();
+  });
 
   authGoogleBtnEl.addEventListener('click', ()=>{
     authErrorEl.textContent = '';
@@ -11529,9 +11595,24 @@
     if(pw.length<6){ authErrorEl.textContent = '비밀번호는 6자 이상이어야 합니다.'; return; }
     authErrorEl.textContent = '';
     setAuthBusy(true);
-    auth.createUserWithEmailAndPassword(email, pw)
+    const doSignup = ()=> auth.createUserWithEmailAndPassword(email, pw)
       .catch(err=>{ authErrorEl.textContent = authErrMsg(err); })
       .finally(()=> setAuthBusy(false));
+    // 비밀번호 정책 기능이 있으면(SDK가 지원하면) 미리 검증해서, 영어 원문 에러 대신
+    // 한글로 어떤 조건이 부족한지 바로 보여준다.
+    if(auth.validatePassword){
+      auth.validatePassword(pw).then(status=>{
+        if(!status.isValid){
+          const lines = passwordRequirementLines(status).filter(l=> l.startsWith('❌'));
+          authErrorEl.textContent = '비밀번호가 다음 조건을 만족해야 합니다:\n' + lines.join('\n');
+          setAuthBusy(false);
+        } else {
+          doSignup();
+        }
+      }).catch(()=> doSignup());
+    } else {
+      doSignup();
+    }
   });
   [authEmailEl, authPasswordEl].forEach(el=>{
     el.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); authLoginBtnEl.click(); } });
