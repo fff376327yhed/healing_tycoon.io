@@ -85,6 +85,26 @@
     white-space:nowrap; font-family:monospace;
   }
   #aspectRatioDebug.hide{ display:none; }
+  /* 모바일 기기가 세로 방향일 때 화면 전체를 덮어 플레이를 막고 회전을 유도하는 안내 화면.
+     #viewportScaler 밖(=body 직속)에 둬서 스케일 transform의 영향을 받지 않고 항상
+     실제 화면 전체를 그대로 덮도록 한다. */
+  #rotateDeviceOverlay{
+    position:fixed; inset:0; z-index:99999;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:12px; padding:24px; text-align:center;
+    background:var(--bg-void); color:var(--text);
+  }
+  #rotateDeviceOverlay.hide{ display:none; }
+  #rotateDeviceOverlay .rotate-icon{
+    font-size:46px; display:inline-block;
+    animation: rotateDeviceHint 1.6s ease-in-out infinite;
+  }
+  @keyframes rotateDeviceHint{
+    0%,100%{ transform:rotate(0deg); }
+    50%{ transform:rotate(90deg); }
+  }
+  #rotateDeviceOverlay .rotate-text{ font-size:16px; font-weight:800; color:var(--gold); }
+  #rotateDeviceOverlay .rotate-sub{ font-size:12.5px; color:var(--text-dim); max-width:280px; line-height:1.5; }
   #app{
     display:flex; flex-direction:column;
     height:100%; width:100%; overflow:hidden;
@@ -425,7 +445,7 @@
   }
   .modal-overlay.show{ display:flex; }
   .modal-panel{
-    width:100%; max-width:480px; max-height:774px; overflow-y:auto;
+    width:100%; max-width:480px; max-height:min(774px, 92%); overflow-y:auto;
     background:var(--bg-panel); border:1px solid var(--line); border-bottom:none;
     border-radius:18px 18px 0 0; padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));
     animation:modalUp 0.22s ease;
@@ -434,7 +454,7 @@
      기준 최대폭(480px)에 묶여 화면에 비해 작아 보이므로, 더 넓게+화면 중앙에 뜨도록 바꾼다. */
   body.layout-wide .modal-overlay{ align-items:center; padding-bottom:0; }
   body.layout-wide .modal-panel{
-    max-width:720px; max-height:738px; border-radius:18px; border-bottom:1px solid var(--line);
+    max-width:720px; max-height:min(738px, 92%); border-radius:18px; border-bottom:1px solid var(--line);
     padding-bottom:20px;
   }
   body.layout-wide .gacha-result-panel, body.layout-wide .gacha-detail-panel{ max-width:640px; width:560px; }
@@ -550,6 +570,7 @@
   #jobSelectOverlay{
     position:fixed; inset:0; z-index:320; display:flex; align-items:center; justify-content:center;
     padding:20px; padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));
+    overflow-y:auto; /* 모바일 가로모드처럼 세로 공간이 짧을 때 잘리지 않고 스크롤되도록 */
     background:
       radial-gradient(circle at 20% -10%, rgba(124,92,255,0.18), transparent 45%),
       radial-gradient(circle at 90% 10%, rgba(212,175,55,0.08), transparent 45%),
@@ -577,10 +598,28 @@
   .job-card .jc-level.jc-not-started{ color:var(--text-dim); font-weight:700; }
   .job-change-note{ font-size:11px; color:var(--text-dim); margin-bottom:4px; }
 
+  /* 모바일 가로모드처럼 화면 세로 길이가 짧을 때, 직업 선택 화면의 카드 4개 + 설명이
+     화면 높이를 넘어서는 경우가 있어 여백/글자/설명을 줄인 컴팩트 레이아웃으로 바꾼다.
+     (overflow-y:auto로 스크롤은 항상 가능하지만, 짧은 화면에서는 스크롤 없이도
+     한 눈에 들어오는 편이 좋다) */
+  @media (max-height: 480px){
+    #jobSelectOverlay{ padding-top:10px; padding-bottom:10px; }
+    .job-select-panel h1{ font-size:16px; margin-bottom:2px; }
+    #jobSelectOverlay .auth-sub{ margin-bottom:0; font-size:10.5px; }
+    .job-card-grid{ gap:6px; margin-top:8px; }
+    .job-card{ padding:8px 8px; gap:1px; }
+    .job-card .jc-icon{ font-size:18px; }
+    .job-card .jc-name{ font-size:12px; }
+    .job-card .jc-stat{ font-size:9.5px; }
+    .job-card .jc-desc{ display:none; } /* 설명 문구는 공간이 부족하면 과감히 숨겨서 높이를 확보 */
+    .job-card .jc-level{ font-size:10px; margin-top:3px; padding:2px 6px; }
+  }
+
   /* ===== 로그인 화면 ===== */
   #authOverlay{
     position:fixed; inset:0; z-index:300; display:flex; align-items:center; justify-content:center;
     padding:20px; padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));
+    overflow-y:auto;
     background:
       radial-gradient(circle at 20% -10%, rgba(124,92,255,0.18), transparent 45%),
       radial-gradient(circle at 90% 10%, rgba(212,175,55,0.08), transparent 45%),
@@ -631,6 +670,7 @@
   #loadingScreen{
     position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center;
     padding:20px; padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));
+    overflow-y:auto;
     background:
       radial-gradient(circle at 20% -10%, rgba(124,92,255,0.18), transparent 45%),
       radial-gradient(circle at 90% 10%, rgba(212,175,55,0.1), transparent 45%),
@@ -680,6 +720,7 @@
   #titleScreenOverlay{
     position:fixed; inset:0; z-index:600; display:flex; align-items:center; justify-content:center;
     padding:20px; padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));
+    overflow-y:auto;
     background:
       radial-gradient(circle at 20% -10%, rgba(124,92,255,0.2), transparent 45%),
       radial-gradient(circle at 85% 8%, rgba(212,175,55,0.12), transparent 45%),
@@ -1393,6 +1434,11 @@
 </style>
 </head>
 <body>
+<div id="rotateDeviceOverlay" class="hide">
+  <div class="rotate-icon">📱</div>
+  <div class="rotate-text">기기를 가로로 돌려주세요</div>
+  <div class="rotate-sub">이 게임은 모바일에서 가로 화면으로만 플레이할 수 있습니다.</div>
+</div>
 <div id="viewportScaler">
 <div id="aspectRatioDebug" class="hide"></div>
 <div id="titleScreenOverlay">
@@ -2401,14 +2447,31 @@
   // 그대로 써서 상하좌우 여백(레터박스) 없이 완전히 꽉 채운다. 아래 ASPECT_CLAMP는 정말
   // 극단적으로 이상한 값(0에 가깝거나 무한대에 가까운 비율)만 막기 위한 안전장치일 뿐,
   // 실제 존재하는 기기 범위에서는 사실상 항상 실제 비율 그대로 적용된다.
-  const BASE_H = 900;
+  const BASE_H_DEFAULT = 900;
+  // 모바일 가로모드(폰을 눕혀서 플레이)에서는 실제 기기의 세로 길이가 900px보다 훨씬 짧아서,
+  // 세로 기준을 그대로 쓰면(= scale = 기기높이/900) UI 전체가 큰 폭으로 축소되어 너무 작고
+  // 뭉개져 보인다. 그래서 모바일 가로모드에서만 "기준 높이" 자체를 기기의 실제 세로 길이에
+  // 맞춰(합리적인 범위로 clamp) 잡아, scale이 1에 가깝게 유지되고 버튼/글자가 설계한
+  // 실제 크기 그대로 보이게 한다. 대신 비율 clamp는 흔한 폰 가로 비율(약 4:3~21:9) 안으로
+  // 제한해서 극단적으로 옆으로 길게 늘어나는 것을 막는다.
+  const MOBILE_LANDSCAPE_H_MIN = 340, MOBILE_LANDSCAPE_H_MAX = 520;
   const ASPECT_CLAMP = {
-    mobile: { min: 0.2,   max: 0.999 },
-    pc:     { min: 1.001, max: 5     }
+    mobile:          { min: 0.2,   max: 0.999 },
+    mobileLandscape: { min: 1.15,  max: 2.6    },
+    pc:              { min: 1.001, max: 5      }
   };
+  let BASE_H = BASE_H_DEFAULT;
   let BASE_W = 420;
   const viewportScalerEl = document.getElementById('viewportScaler');
   const aspectRatioDebugEl = document.getElementById('aspectRatioDebug');
+  const rotateDeviceOverlayEl = document.getElementById('rotateDeviceOverlay');
+  // 실제 "모바일 기기"인지 판별(단순히 화면 비율만으로 판단하면, 창을 옆으로 넓게 늘린
+  // PC 브라우저도 모바일로 오인해서 회전 안내가 뜨거나 레이아웃이 잘못 바뀔 수 있다).
+  // 대표적인 폰 UA 문자열 + (보조 판별로) 터치 입력 기기이면서 짧은 변이 태블릿보다 작은
+  // 경우까지만 모바일로 인정한다(아이패드 등 태블릿은 제외 → 기존 PC형 레이아웃 유지).
+  const IS_MOBILE_DEVICE = /Android|iPhone|iPod|Windows Phone/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && matchMedia('(pointer:coarse)').matches &&
+     Math.min(window.screen.width, window.screen.height) < 700);
   // 설정 > "현재 화면비율 표시"가 켜져 있을 때만, 지금 적용된 게임 화면비율(가로x세로 및
   // 소수 비율값)과 실제 기기 화면비율을 좌상단에 작게 보여준다. 기본값은 off.
   function updateAspectRatioDebug(){
@@ -2425,29 +2488,43 @@
     const rawAspect = window.innerWidth / window.innerHeight;
     aspectRatioDebugEl.textContent = `${BASE_W}×${BASE_H} (${(BASE_W/BASE_H).toFixed(3)}) / 실제 ${rawAspect.toFixed(3)}`;
   }
+  // 모바일 기기가 세로 방향이면 화면을 덮어 회전을 유도하고(가로 전용 플레이), 그 외에는
+  // 숨긴다. PC/태블릿은 세로/가로 상관없이 그대로 플레이 가능.
+  function updateOrientationGate(){
+    if(!rotateDeviceOverlayEl) return;
+    const blocked = IS_MOBILE_DEVICE && window.innerWidth < window.innerHeight;
+    rotateDeviceOverlayEl.classList.toggle('hide', !blocked);
+  }
   // 참고: 랭킹/PvP가 있는 게임이라 화면 비율에 따라 유저마다 보이는 필드 범위가 달라지는
   // 편차는 남아있다. 완전히 동일한 시야를 보장하려면 화면 꽉 채우기 대신 고정 비율(레터박스)
   // 방식으로 되돌려야 한다.
   function detectDeviceType(){
+    if(IS_MOBILE_DEVICE) return 'mobile';
     return (window.innerWidth / window.innerHeight) < 1 ? 'mobile' : 'pc';
   }
   function applyViewportScale(){
     if(!viewportScalerEl) return;
     const rawAspect = window.innerWidth / window.innerHeight;
     const deviceType = detectDeviceType();
-    const clamp = ASPECT_CLAMP[deviceType === 'mobile' ? 'mobile' : 'pc'];
+    const isMobileLandscape = IS_MOBILE_DEVICE && rawAspect >= 1;
+    const clampKey = isMobileLandscape ? 'mobileLandscape' : (deviceType === 'mobile' ? 'mobile' : 'pc');
+    const clamp = ASPECT_CLAMP[clampKey];
     const aspect = Math.min(Math.max(rawAspect, clamp.min), clamp.max);
-    document.body.dataset.deviceType = deviceType;
+    document.body.dataset.deviceType = isMobileLandscape ? 'mobile-landscape' : deviceType;
+    BASE_H = isMobileLandscape
+      ? Math.round(Math.min(Math.max(window.innerHeight, MOBILE_LANDSCAPE_H_MIN), MOBILE_LANDSCAPE_H_MAX))
+      : BASE_H_DEFAULT;
     BASE_W = Math.round(BASE_H * aspect);
     viewportScalerEl.style.width = BASE_W + 'px';
     viewportScalerEl.style.height = BASE_H + 'px';
-    // 가로가 넓은(태블릿 가로/노트북/PC) 레이아웃일 때는 모달 등 일부 UI가 모바일 세로 기준
-    // 최대폭(480px 등)에 묶여 화면에 비해 작아 보이므로, 이 경우 body에 클래스를 달아 CSS에서
-    // 더 넓은 최대폭을 쓸 수 있게 한다.
+    // 가로가 넓은(태블릿 가로/노트북/PC/모바일 가로) 레이아웃일 때는 모달 등 일부 UI가
+    // 모바일 세로 기준 최대폭(480px 등)에 묶여 화면에 비해 작아 보이므로, 이 경우 body에
+    // 클래스를 달아 CSS에서 더 넓은 최대폭을 쓸 수 있게 한다.
     document.body.classList.toggle('layout-wide', (BASE_W / BASE_H) >= 0.95);
     const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
     viewportScalerEl.style.transform = `translate(-50%, -50%) scale(${scale})`;
     updateAspectRatioDebug();
+    updateOrientationGate();
   }
   function resizeCanvas(){
     const rect = gameView.getBoundingClientRect();
