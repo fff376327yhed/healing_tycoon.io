@@ -75,6 +75,16 @@
     transform-origin:center center; background:var(--bg-void);
     box-shadow:0 0 60px rgba(0,0,0,0.7); overflow:hidden;
   }
+  /* 설정 > 화면 비율에서 켤 수 있는 디버그용 화면비율 표시. #viewportScaler가 fixed 자식의
+     기준(containing block)이 되므로, 게임이 어떤 비율로 스케일되어 보이든 항상 화면 안쪽
+     같은 위치(좌상단)에 고정되어 보인다. */
+  #aspectRatioDebug{
+    position:fixed; top:6px; left:6px; z-index:9999; pointer-events:none;
+    background:rgba(0,0,0,0.55); border:1px solid var(--line); border-radius:6px;
+    padding:3px 7px; font-size:10.5px; font-weight:700; color:var(--gold);
+    white-space:nowrap; font-family:monospace;
+  }
+  #aspectRatioDebug.hide{ display:none; }
   #app{
     display:flex; flex-direction:column;
     height:100%; width:100%; overflow:hidden;
@@ -1384,6 +1394,7 @@
 </head>
 <body>
 <div id="viewportScaler">
+<div id="aspectRatioDebug" class="hide"></div>
 <div id="titleScreenOverlay">
   <div class="title-panel">
     <div class="title-logo">🌿 지나가던 힐링게임 🌿</div>
@@ -1698,6 +1709,15 @@
         <span>스킬 효과음</span>
         <label class="switch"><input type="checkbox" id="skillSoundToggle" checked><span class="slider"></span></label>
       </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>📐 화면 비율</h3>
+      <div class="settings-toggle-row">
+        <span>현재 화면비율 표시</span>
+        <label class="switch"><input type="checkbox" id="aspectRatioToggle"><span class="slider"></span></label>
+      </div>
+      <div class="settings-note">※ 화면 왼쪽 위에 현재 적용된 화면비율(가로x세로, 비율값)을 작게 표시합니다. 기기별 화면 확인용입니다.</div>
     </div>
 
     <div class="settings-section">
@@ -2388,6 +2408,23 @@
   };
   let BASE_W = 420;
   const viewportScalerEl = document.getElementById('viewportScaler');
+  const aspectRatioDebugEl = document.getElementById('aspectRatioDebug');
+  // 설정 > "현재 화면비율 표시"가 켜져 있을 때만, 지금 적용된 게임 화면비율(가로x세로 및
+  // 소수 비율값)과 실제 기기 화면비율을 좌상단에 작게 보여준다. 기본값은 off.
+  function updateAspectRatioDebug(){
+    if(!aspectRatioDebugEl) return;
+    // applyViewportScale()은 스크립트 로드 직후(첫 화면 세팅) 시점에도 한 번 호출되는데,
+    // 그때는 아직 settings 변수가 선언되기 전이라 여기서 곧바로 참조하면
+    // "Cannot access 'settings' before initialization" 에러가 난다. try/catch로 감싸
+    // 아직 준비되지 않았으면 조용히 숨김 상태로 두고, settings가 로드된 이후
+    // (applyLoadedData → applyViewportScale 재호출) 정상적으로 갱신되게 한다.
+    let show = false;
+    try { show = !!settings.showAspectRatio; } catch(e) { show = false; }
+    if(!show){ aspectRatioDebugEl.classList.add('hide'); return; }
+    aspectRatioDebugEl.classList.remove('hide');
+    const rawAspect = window.innerWidth / window.innerHeight;
+    aspectRatioDebugEl.textContent = `${BASE_W}×${BASE_H} (${(BASE_W/BASE_H).toFixed(3)}) / 실제 ${rawAspect.toFixed(3)}`;
+  }
   // 참고: 랭킹/PvP가 있는 게임이라 화면 비율에 따라 유저마다 보이는 필드 범위가 달라지는
   // 편차는 남아있다. 완전히 동일한 시야를 보장하려면 화면 꽉 채우기 대신 고정 비율(레터박스)
   // 방식으로 되돌려야 한다.
@@ -2410,6 +2447,7 @@
     document.body.classList.toggle('layout-wide', (BASE_W / BASE_H) >= 0.95);
     const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
     viewportScalerEl.style.transform = `translate(-50%, -50%) scale(${scale})`;
+    updateAspectRatioDebug();
   }
   function resizeCanvas(){
     const rect = gameView.getBoundingClientRect();
@@ -4347,7 +4385,7 @@
 
 
   // ===== 설정 =====
-  let settings = { sfxVolume:70, bgmVolume:50, bgmTrack:'1', notify:true, killMsg:true, playerName:'', monsterChase:true, noAutoEnterHouse:false, weaponFx:true, screenFlash:true, skillSound:true, hitboxDebug:false, skipJobSelect:false, skipTitleScreen:false, miniMap:true };
+  let settings = { sfxVolume:70, bgmVolume:50, bgmTrack:'1', notify:true, killMsg:true, playerName:'', monsterChase:true, noAutoEnterHouse:false, weaponFx:true, screenFlash:true, skillSound:true, hitboxDebug:false, skipJobSelect:false, skipTitleScreen:false, miniMap:true, showAspectRatio:false };
   let adminUnlocked = false;
   let adminSkipMobRequirement = false; // 관리자: 모든 스테이지에서 잡몹 처치 없이 즉시 보스 소환 허용
   let adminAllStagesCleared = false; // 관리자: 비밀번호 입력 시 모든 스테이지를 클리어한 것으로 판정
@@ -10407,6 +10445,7 @@
   const skipJobSelectToggleEl=$('skipJobSelectToggle');
   const skipTitleScreenToggleEl=$('skipTitleScreenToggle');
   const miniMapToggleEl=$('miniMapToggle');
+  const aspectRatioToggleEl=$('aspectRatioToggle');
   const couponInputEl=$('couponInput'), couponBtnEl=$('couponBtn');
   const adminLoginRowEl=$('adminLoginRow'), adminPanelEl=$('adminPanel'), adminPwInputEl=$('adminPwInput'), adminPwBtnEl=$('adminPwBtn');
   const adminGoldInputEl=$('adminGoldInput'), adminGemsInputEl=$('adminGemsInput');
@@ -10505,6 +10544,7 @@
     skipJobSelectToggleEl.checked = settings.skipJobSelect;
     skipTitleScreenToggleEl.checked = settings.skipTitleScreen;
     miniMapToggleEl.checked = settings.miniMap;
+    aspectRatioToggleEl.checked = settings.showAspectRatio;
     const jobLabelEl = document.getElementById('currentJobLabel');
     if(jobLabelEl) jobLabelEl.textContent = `${currentJobDef().icon} ${currentJobDef().label}`;
     if(adminUnlocked) fillAdminInputs();
@@ -11046,6 +11086,7 @@
   screenFlashToggleEl.addEventListener('change', e=>{ settings.screenFlash = e.target.checked; });
   skillSoundToggleEl.addEventListener('change', e=>{ settings.skillSound = e.target.checked; });
   hitboxToggleEl.addEventListener('change', e=>{ settings.hitboxDebug = e.target.checked; });
+  aspectRatioToggleEl.addEventListener('change', e=>{ settings.showAspectRatio = e.target.checked; updateAspectRatioDebug(); });
   skipJobSelectToggleEl.addEventListener('change', e=>{ settings.skipJobSelect = e.target.checked; });
   // "게임시작 화면 건너뛰기" 설정은 타이틀 화면 자체를 건너뛰는 것이라 즉시 반영해도 의미가 없다(이미 지나온 화면이므로).
   // 다음 접속부터 적용되도록 값만 저장해두고, 깜빡임 없이 스킵되도록 브라우저 캐시에도 함께 기록해둔다.
