@@ -1792,7 +1792,6 @@
       <h3>🏷 버전 정보</h3>
       <div class="settings-row">현재 버전: <b style="color:var(--text)" id="gameVersionLabel">-</b></div>
       <div class="settings-row">빌드 번호: <b style="color:var(--text)" id="gameBuildLabel">-</b></div>
-      <div class="settings-note">※ 빌드 번호는 배포 시각(연월일시분)을 의미합니다.</div>
     </div>
 
     <div class="settings-section">
@@ -2275,7 +2274,7 @@
   // GAME_VERSION: 사람이 읽는 버전 번호 (예: 1.0.0 -> 1.0.1, 1.1.0 등 SemVer 스타일)
   // GAME_BUILD:   배포 시각을 YYYYMMDDHHmm 형식 숫자 문자열로 기록 (예: 202609120612 = 2026년 9월 12일 06시 12분)
   const GAME_VERSION = '1.0.0';
-  const GAME_BUILD = '202609120612';
+  const GAME_BUILD = '202609120654';
 
   // ============ PWA 설치 강제 게이트 (안드로이드 전용) ============
   // 안드로이드에서 "설치" 없이 그냥 브라우저로 열었을 때는 #pwaInstallGate로 화면 전체를 덮어
@@ -2755,6 +2754,10 @@
   // 극단적으로 이상한 값(0에 가깝거나 무한대에 가까운 비율)만 막기 위한 안전장치일 뿐,
   // 실제 존재하는 기기 범위에서는 사실상 항상 실제 비율 그대로 적용된다.
   const BASE_H_DEFAULT = 900;
+  // 모바일 세로모드(휴대폰을 세워서 플레이) 전용 기준 높이. PC와 같은 900을 쓰면 화면이 너무
+  // 확대되어 보인다는 피드백에 따라, 모바일 세로모드에서만 기준 높이를 키워(=scale을 더 줄여)
+  // 체감상 화면이 더 축소되어(더 넓은 시야로) 보이도록 한다. PC 레이아웃에는 영향 없음.
+  const MOBILE_PORTRAIT_H_DEFAULT = 1080;
   // 모바일 가로모드(폰을 눕혀서 플레이)에서는 실제 기기의 세로 길이가 900px보다 훨씬 짧아서,
   // 세로 기준을 그대로 쓰면(= scale = 기기높이/900) UI 전체가 큰 폭으로 축소되어 너무 작고
   // 뭉개져 보인다. 그래서 모바일 가로모드에서만 "기준 높이" 자체를 기기의 실제 세로 길이에
@@ -2918,7 +2921,7 @@
       const aspect = Math.min(Math.max(rawAspect, clamp.min), clamp.max);
       BASE_H = isMobileLandscape
         ? Math.round(Math.min(Math.max(window.innerHeight, MOBILE_LANDSCAPE_H_MIN), MOBILE_LANDSCAPE_H_MAX))
-        : BASE_H_DEFAULT;
+        : (deviceType === 'mobile' ? MOBILE_PORTRAIT_H_DEFAULT : BASE_H_DEFAULT);
       BASE_W = Math.round(BASE_H * aspect);
     }
     viewportScalerEl.style.width = BASE_W + 'px';
