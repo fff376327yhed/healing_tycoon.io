@@ -105,6 +105,8 @@
   }
   #rotateDeviceOverlay .rotate-text{ font-size:16px; font-weight:800; color:var(--gold); }
   #rotateDeviceOverlay .rotate-sub{ font-size:12.5px; color:var(--text-dim); max-width:280px; line-height:1.5; }
+  #rotateNowBtn{ width:auto; padding:12px 30px; margin-top:4px; }
+  #rotateNowFailHint.hide{ display:none; }
   /* ===== PWA 설치 강제 게이트 (안드로이드 전용) =====
      안드로이드에서 "설치"하지 않고 그냥 브라우저로 열었을 때, 홈 화면 앱으로 설치하기 전까지
      게임 진입 자체를 막고 설치를 유도하는 전체 화면 안내. #rotateDeviceOverlay보다 z-index를
@@ -200,6 +202,9 @@
   .hud-main-row{ display:flex; align-items:center; gap:6px; flex:1 1 auto; min-width:0; flex-wrap:nowrap; }
   #atkStatChip{ display:none; }
   .hud-menu-wrap{ position:relative; flex:0 0 auto; }
+  /* 가로모드에서는 이 HUD ☰ 버튼 대신 화면 오른쪽 가장자리의 #sidePanelToggleBtn을 쓰므로 숨긴다
+     (스테이지/랭킹/마을지도/설정 버튼은 JS가 #sidePanel 안으로 옮겨 그대로 사용할 수 있다). */
+  body[data-device-type="mobile-landscape"] .hud-menu-wrap{ display:none; }
   #hudMenuBtn{ width:34px; height:34px; padding:0; border-radius:8px; font-size:15px; justify-content:center; }
   #hudMenuPopover{
     position:fixed; z-index:999; overflow:hidden; /* 화면 좌표 기준 고정 배치(JS에서 top/right 계산) - #hud의 stacking/overflow 영향을 받지 않아 항상 완전히 보인다 */
@@ -363,7 +368,12 @@
   .grow-btn{width:148px; flex-shrink:0; margin:0;}
 
   /* ===== 장비(탭 뷰) ===== */
-  #equipView{ display:none; flex:1 1 auto; overflow-y:auto; padding:18px 16px 24px; }
+  /* 버그 수정: JS가 이 화면을 보여줄 때 style.display='flex'로 바꾸는데, flex-direction을
+     지정하지 않으면 기본값(row)이 적용되어 무기/보물/장비 슬롯 카드와 최종 능력치 패널이
+     전부 가로 한 줄로 욱여넣어져 아이콘이 뭉개지고 최종 능력치 패널이 화면 오른쪽 밖으로
+     밀려나가는 문제가 있었다(스크린샷 재현). flex-direction:column을 명시해 세로로
+     정상적으로 쌓이게 한다. */
+  #equipView{ display:none; flex:1 1 auto; flex-direction:column; overflow-y:auto; padding:18px 16px 24px; }
   .equip-card{ max-width:440px; margin:0 auto 14px; }
   .equip-section-title{
     font-size:12.5px; font-weight:800; color:var(--text-dim); letter-spacing:0.5px;
@@ -499,46 +509,62 @@
   body[data-device-type="mobile-landscape"] .hud-stage-progress{
     overflow:hidden; text-overflow:ellipsis; min-width:0; /* 자리가 부족할 때의 최후 안전장치 */
   }
-  /* --- 2) 하단 네비게이션 → 왼쪽 가장자리 세로 아이콘 스트립 --- */
-  body[data-device-type="mobile-landscape"] #navbar{
-    position:absolute; left:6px; top:calc(46px + env(safe-area-inset-top,0px)); bottom:auto;
-    flex-direction:column; width:46px; height:auto;
-    background:rgba(26,22,38,0.88); border:1px solid var(--line); border-top:1px solid var(--line);
-    border-radius:12px; padding:4px; gap:4px; z-index:15;
-    box-shadow:0 4px 14px rgba(0,0,0,0.4);
+  /* --- 2) 하단 네비게이션 → 오른쪽 토글 패널 ---
+     기존에는 #navbar를 왼쪽 가장자리 세로 스트립으로 바꿨는데, 메뉴(☰) 팝오버가 그 스트립
+     맨 아래 버튼 기준으로 열려 화면 밖으로 잘려 나가는 문제가 있었다. 그래서 가로모드에서는
+     #navbar를 아예 숨기고(버튼들은 JS가 #sidePanel 안으로 옮김), 대신 오른쪽 가장자리의
+     토글 버튼(#sidePanelToggleBtn)을 눌러 여닫는 오른쪽 슬라이드 패널(#sidePanel) 하나에
+     필드/장비/뽑기/채팅/스테이지/랭킹/마을지도/설정을 전부 모아둔다. */
+  body[data-device-type="mobile-landscape"] #navbar{ display:none; }
+  #sidePanelToggleBtn{
+    display:none; position:fixed; top:50%; right:0; transform:translateY(-50%);
+    width:28px; height:58px; border:1px solid var(--line); border-right:none;
+    border-radius:10px 0 0 10px; background:rgba(26,22,38,0.92); color:var(--text);
+    font-size:16px; z-index:21; box-shadow:-2px 0 10px rgba(0,0,0,0.35);
+    align-items:center; justify-content:center; padding:0;
   }
-  body[data-device-type="mobile-landscape"] .navBtn{
+  body[data-device-type="mobile-landscape"] #sidePanelToggleBtn{ display:flex; }
+  #sidePanel{
+    position:fixed; top:0; right:0; bottom:0; width:104px; max-width:34vw;
+    background:rgba(20,17,30,0.97); border-left:1px solid var(--line);
+    padding:calc(8px + env(safe-area-inset-top,0px)) 5px calc(8px + env(safe-area-inset-bottom,0px));
+    display:flex; flex-direction:column; overflow-y:auto;
+    transform:translateX(100%); transition:transform 0.22s ease; z-index:20;
+    box-shadow:-4px 0 16px rgba(0,0,0,0.45);
+  }
+  #sidePanel.open{ transform:translateX(0); }
+  #sidePanelInner{ display:flex; flex-direction:column; gap:4px; flex:1 1 auto; }
+  .side-panel-divider{ height:1px; background:var(--line); margin:5px 2px; flex:0 0 auto; }
+  #sidePanelInner .navBtn{
     flex:0 0 auto; width:100%; padding:9px 0 8px; border-top:none; min-height:40px;
     border-left:2px solid transparent; border-radius:8px;
   }
-  body[data-device-type="mobile-landscape"] .navBtn.active{
-    border-top-color:transparent; border-left-color:var(--gold);
-  }
-  body[data-device-type="mobile-landscape"] .navBtn .ic{ font-size:16px; }
-  body[data-device-type="mobile-landscape"] .navBtn .lbl{ font-size:8.5px; }
-  /* 네비게이션이 왼쪽 가장자리로 옮겨간 만큼, 장비/뽑기 탭 콘텐츠가 그 밑에 가리지 않도록
-     왼쪽 여백을 넉넉히 확보한다(가운데 정렬된 카드들이 자연스럽게 오른쪽으로 밀려난다). */
-  body[data-device-type="mobile-landscape"] #equipView,
-  body[data-device-type="mobile-landscape"] #gachaView{ padding-left:60px; }
-  /* --- 3) 채팅 버블 / ☰ 메뉴 버튼을 좌측 세로 스트립(#navbar) 안으로 편입 ---
-     원래 채팅 버튼(position:fixed, left:14px/bottom:90px)은 화면 왼쪽 아래에 독립적으로 떠 있어서,
-     가로모드에서 #navbar가 화면 왼쪽 가장자리의 세로 스트립으로 바뀌면 그 위에 겹쳐 보이는 문제가
-     있었다. dockLeftFloatingControls()(JS)가 가로모드일 때 이 버튼과 ☰ 메뉴(.hud-menu-wrap)를
-     실제로 #navbar의 자식으로 옮겨 붙이므로, 여기서는 #navbar 안에 들어왔을 때의 모양만
-     다른 탭 버튼(.navBtn)과 어울리게 다시 정의한다. */
-  body[data-device-type="mobile-landscape"] #navbar .chat-float-btn{
+  #sidePanelInner .navBtn.active{ border-top-color:transparent; border-left-color:var(--gold); background:var(--bg-panel-2); }
+  #sidePanelInner .navBtn .ic{ font-size:16px; }
+  #sidePanelInner .navBtn .lbl{ font-size:8.5px; }
+  #sidePanelInner .chat-float-btn{
     position:relative; left:auto; bottom:auto; z-index:auto;
     width:100%; height:auto; min-height:40px; border-radius:8px;
     background:none; border:none; box-shadow:none; font-size:17px;
     flex:0 0 auto;
   }
-  body[data-device-type="mobile-landscape"] #navbar .chat-float-btn:active{ background:var(--bg-panel-2); }
-  body[data-device-type="mobile-landscape"] #navbar .hud-menu-wrap{ width:100%; flex:0 0 auto; }
-  body[data-device-type="mobile-landscape"] #navbar #hudMenuBtn{
-    width:100%; height:auto; min-height:40px; border-radius:8px;
-    background:none; border:none; color:var(--text-dim); font-size:16px;
+  #sidePanelInner .chat-float-btn:active{ background:var(--bg-panel-2); }
+  #sidePanelInner #stageSelectBtn,
+  #sidePanelInner #rankingBtn,
+  #sidePanelInner #villageMapBtn,
+  #sidePanelInner #settingsBtn{
+    width:100%; margin-left:0; text-align:center; background:none; border:0; color:var(--text-dim);
+    font-size:10.5px; font-weight:700; padding:9px 3px; border-radius:8px; cursor:pointer;
+    border-left:2px solid transparent; min-height:38px; flex:0 0 auto; white-space:normal; line-height:1.25;
   }
-  body[data-device-type="mobile-landscape"] #navbar #hudMenuBtn:active{ background:var(--bg-panel-2); }
+  #sidePanelInner #stageSelectBtn:active,
+  #sidePanelInner #rankingBtn:active,
+  #sidePanelInner #villageMapBtn:active,
+  #sidePanelInner #settingsBtn:active{ background:var(--bg-panel-2); border-left-color:var(--gold); }
+  /* 가로모드에서 더 이상 왼쪽 가장자리에 네비게이션이 뜨지 않으므로, 장비/뽑기 화면의
+     왼쪽 여백 보정(패딩)은 필요 없어졌다. */
+  /* --- 3) 채팅 버블 / ☰ 메뉴는 이제 #sidePanel 안으로 옮겨져(JS: dockRightSidePanel) 위의
+     #sidePanelInner 관련 규칙으로 스타일링된다. 별도 도킹 스타일이 더 필요 없어졌다. */
 
   /* ===== 설정 모달 ===== */
   #settingsBtn{ margin-left:auto; width:auto; padding:5px 10px; font-size:14px; }
@@ -934,7 +960,7 @@
   .stage-select-note{ font-size:11px; color:var(--text-dim); margin-top:10px; }
 
   /* ===== 뽑기(가챠) 화면 ===== */
-  #gachaView{ display:none; flex:1 1 auto; overflow-y:auto; padding:18px 16px 24px; }
+  #gachaView{ display:none; flex:1 1 auto; flex-direction:column; overflow-y:auto; padding:18px 16px 24px; }
   .gacha-subtabs{ max-width:440px; margin:0 auto 14px; display:flex; gap:8px; }
   .gachaSubBtn{
     flex:1; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-dim);
@@ -1520,6 +1546,31 @@
   }
   .gacha-result-list{ display:none; flex-direction:column; gap:8px; max-height:504px; overflow-y:auto; margin-top:12px; }
   .gacha-result-list.show{ display:flex; }
+  /* ===== 모바일 가로모드: 뽑기 결과 카드를 세로 스택 대신 가로형으로 ===== */
+  /* 기존엔 아이콘→등급칩→이름이 위아래로 쌓이는 세로 카드(min-height 320px)라 세로 공간이
+     짧은 가로모드 화면에서는 버튼까지 합쳐 화면 밖으로 넘치기 쉬웠다. 가로모드에서는
+     아이콘 | 등급칩 | 이름이 한 줄로 나란히 놓이는 가로형 카드로 바꾸고, 카드 높이와
+     버튼 줄 높이도 줄여 짧은 세로 공간에 맞춘다. */
+  body[data-device-type="mobile-landscape"] .gacha-result-card{ min-height:0; margin-bottom:10px; }
+  body[data-device-type="mobile-landscape"] .gacha-result-card .gacha-result-item-big{
+    flex-direction:row; align-items:center; text-align:left; padding:14px 18px; gap:14px;
+  }
+  body[data-device-type="mobile-landscape"] .gacha-result-card .gacha-result-item-big .gr-icon{
+    width:58px; height:58px; padding:8px; flex:0 0 auto;
+  }
+  body[data-device-type="mobile-landscape"] .gacha-result-card .gacha-result-item-big .grade-tag{
+    flex:0 0 auto; width:auto; height:auto; padding:3px 12px; font-size:12px;
+  }
+  body[data-device-type="mobile-landscape"] .gacha-result-card .gacha-result-item-big .gr-info{ text-align:left; }
+  body[data-device-type="mobile-landscape"] .gacha-result-card .gacha-result-item-big .gr-name{ font-size:15px; }
+  body[data-device-type="mobile-landscape"] .gacha-result-progress{ margin-bottom:6px; }
+  body[data-device-type="mobile-landscape"] .gacha-result-btn-row{ flex-direction:row; gap:8px; }
+  body[data-device-type="mobile-landscape"] .gacha-result-btn-row .gacha-result-next-btn{ min-height:42px; }
+  body[data-device-type="mobile-landscape"] .gacha-result-skip-btn{ min-height:42px; }
+  /* 결과 목록 전체보기(gacha-result-list)도 짧은 세로 공간에 맞춰 최대 높이를 줄인다 */
+  body[data-device-type="mobile-landscape"] .gacha-result-list{ max-height:38vh; }
+  /* 모달 자체도 세로 공간이 짧으므로 화면 높이 대비 최대 높이를 넉넉히 늘려(스크롤은 유지) 잘림을 방지 */
+  body[data-device-type="mobile-landscape"] .modal-panel{ max-height:94%; }
   .gacha-summary-row{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:4px; }
   .gacha-summary-chip{
     font-size:11px; font-weight:900; color:#0f0d17; padding:4px 9px; border-radius:20px;
@@ -1541,6 +1592,10 @@
   <div class="rotate-icon">📱</div>
   <div class="rotate-text">기기를 가로로 돌려주세요</div>
   <div class="rotate-sub">이 게임은 모바일에서 가로 화면으로만 플레이할 수 있습니다.</div>
+  <button type="button" class="btn-title-start" id="rotateNowBtn">🔄 가로로 돌리기</button>
+  <div class="rotate-sub hide" id="rotateNowFailHint">
+    자동 회전이 지원되지 않는 브라우저예요. 기기를 직접 옆으로 돌려주세요.
+  </div>
 </div>
 <div id="pwaInstallGate" class="hide">
   <div class="rotate-icon">📲</div>
@@ -1677,6 +1732,11 @@
     <button class="navBtn" data-tab="gacha" title="뽑기"><span class="ic">🎴</span><span class="lbl">뽑기</span></button>
   </nav>
 
+  <button type="button" id="sidePanelToggleBtn" aria-label="메뉴 열기">☰</button>
+  <div id="sidePanel">
+    <div id="sidePanelInner"></div>
+  </div>
+
 </div>
 <div id="toastLayer"></div>
 
@@ -1735,6 +1795,16 @@
         <button class="btn-settings-mini" id="logoutBtn">로그아웃</button>
       </div>
       <div class="settings-note">※ 진행 상황(골드·레벨·설정 등)은 로그인 계정에 자동으로 저장됩니다.</div>
+    </div>
+
+    <div class="settings-section">
+      <h3>📱 화면 / 설치</h3>
+      <div class="settings-row">앱 설치 상태: <b style="color:var(--text)" id="pwaInstallStatusLabel">확인 중...</b></div>
+      <div class="settings-btn-row">
+        <button class="btn-settings-mini" id="settingsInstallBtn">📥 앱 설치하기</button>
+        <button class="btn-settings-mini" id="settingsRotateBtn">🔄 가로 화면으로 전환</button>
+      </div>
+      <div class="settings-note" id="settingsInstallNote">※ 앱으로 설치하면 가로 화면 고정이 더 안정적으로 동작합니다. 설치 버튼이 반응하지 않으면 브라우저 우측 상단 메뉴(⋮)에서 "앱 설치" 또는 "홈 화면에 추가"를 눌러주세요.</div>
     </div>
 
     <div class="settings-section">
@@ -2238,6 +2308,58 @@
   // 설치 후 홈 화면 아이콘으로 다시 열거나, 탭을 다시 활성화할 때마다 standalone 여부를 재확인한다.
   document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') updatePwaGateVisibility(); });
   updatePwaGateVisibility();
+
+  // ============ 설정 > 앱 설치 / 가로 화면 전환 ============
+  // pwaInstallGate(안드로이드 강제 게이트)와 별도로, 설정 화면에서도 언제든 설치를 시도하거나
+  // 가로 화면 전환을 다시 시도할 수 있게 한다(iOS/PC에서 열었다가 다시 시도하고 싶을 때 등).
+  const pwaInstallStatusLabelEl = document.getElementById('pwaInstallStatusLabel');
+  const settingsInstallBtnEl = document.getElementById('settingsInstallBtn');
+  function updatePwaInstallStatusLabel(){
+    if(!pwaInstallStatusLabelEl) return;
+    pwaInstallStatusLabelEl.textContent = isRunningStandalonePwa() ? '설치됨 (앱으로 실행 중)' : '미설치 (브라우저로 실행 중)';
+  }
+  async function runInstallFlow(){
+    if(deferredInstallPrompt){
+      deferredInstallPrompt.prompt();
+      try{ await deferredInstallPrompt.userChoice; }catch(e){}
+      deferredInstallPrompt = null;
+    } else if(pwaManualHintEl){
+      pwaManualHintEl.classList.remove('hide');
+      try { toast('브라우저 우측 상단 메뉴(⋮)에서 "앱 설치" 또는 "홈 화면에 추가"를 눌러주세요.', 'success', true); } catch(e) {}
+    }
+    updatePwaInstallStatusLabel();
+  }
+  if(settingsInstallBtnEl) settingsInstallBtnEl.addEventListener('click', runInstallFlow);
+  window.addEventListener('appinstalled', updatePwaInstallStatusLabel);
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') updatePwaInstallStatusLabel(); });
+  updatePwaInstallStatusLabel();
+
+  // 화면 방향을 실제로 가로에 "고정"하려면 대부분의 모바일 브라우저에서 전체화면 상태여야 한다.
+  // 그래서 (1) 전체화면 요청 → (2) Screen Orientation API로 landscape 잠금 순서로 시도하고,
+  // 둘 중 하나라도 지원되지 않거나 실패하면(구형 브라우저, 권한 거부 등) 조용히 실패 안내만 보여주고
+  // 기존처럼 사용자가 손으로 기기를 돌리는 방법은 항상 그대로 유효하다.
+  const rotateNowBtnEl = document.getElementById('rotateNowBtn');
+  const rotateNowFailHintEl = document.getElementById('rotateNowFailHint');
+  const settingsRotateBtnEl = document.getElementById('settingsRotateBtn');
+  async function attemptForceLandscape(){
+    try{
+      const el = document.documentElement;
+      if(!document.fullscreenElement && el.requestFullscreen){
+        await el.requestFullscreen().catch(()=>{});
+      }
+      if(screen.orientation && screen.orientation.lock){
+        await screen.orientation.lock('landscape');
+      } else {
+        throw new Error('orientation lock unsupported');
+      }
+      if(rotateNowFailHintEl) rotateNowFailHintEl.classList.add('hide');
+    } catch(e){
+      if(rotateNowFailHintEl) rotateNowFailHintEl.classList.remove('hide');
+      try { toast('이 브라우저는 자동 가로 전환을 지원하지 않아요. 기기를 직접 옆으로 돌려주세요.', 'success', true); } catch(err) {}
+    }
+  }
+  if(rotateNowBtnEl) rotateNowBtnEl.addEventListener('click', attemptForceLandscape);
+  if(settingsRotateBtnEl) settingsRotateBtnEl.addEventListener('click', attemptForceLandscape);
   // ============ 팔레트 & 픽셀아트 ============
   const PAL = {
     'k':'#1a1a1a','S':'#f2c9a0','H':'#5b3a21','B':'#3a5fcc','b':'#2a4499',
@@ -2625,7 +2747,10 @@
   // 맞춰(합리적인 범위로 clamp) 잡아, scale이 1에 가깝게 유지되고 버튼/글자가 설계한
   // 실제 크기 그대로 보이게 한다. 대신 비율 clamp는 흔한 폰 가로 비율(약 4:3~21:9) 안으로
   // 제한해서 극단적으로 옆으로 길게 늘어나는 것을 막는다.
-  const MOBILE_LANDSCAPE_H_MIN = 340, MOBILE_LANDSCAPE_H_MAX = 520;
+  // 필드가 너무 확대되어 보인다는 피드백에 따라 기준 높이를 기존(340~520)보다 넓혀, 실제 화면
+  // 물리 픽셀 대비 더 많은 월드 영역이 보이도록(=체감상 살짝 축소되도록) 조정했다. UI(버튼/글자)는
+  // scale이 그만큼 살짝 줄어들며 자동으로 비율을 맞춰 계속 화면에 꽉 차게 나온다.
+  const MOBILE_LANDSCAPE_H_MIN = 400, MOBILE_LANDSCAPE_H_MAX = 600;
   const ASPECT_CLAMP = {
     mobile:          { min: 0.2,   max: 0.999 },
     mobileLandscape: { min: 1.15,  max: 2.6    },
@@ -2692,36 +2817,71 @@
     if(IS_MOBILE_DEVICE) return 'mobile';
     return (window.innerWidth / window.innerHeight) < 1 ? 'mobile' : 'pc';
   }
-  // 모바일 가로모드에서는 #navbar가 화면 왼쪽 가장자리의 세로 아이콘 스트립으로 바뀌는데,
-  // 채팅 버블(#chatFloatBtn)과 ☰ 메뉴(.hud-menu-wrap)는 원래 위치(fixed 좌하단 / 상단 HUD)에
-  // 그대로 있어 그 스트립과 겹쳐 보이는 문제가 있었다. 가로모드일 때는 이 둘을 실제로
-  // #navbar의 자식으로 옮겨 다른 탭 버튼들과 나란히 세로로 쌓이게 하고(겹침 해소 + 메뉴를
-  // 한 곳에 모음), 가로모드가 아니면 원래 있던 자리로 되돌린다. 두 요소는 나중에 다른
-  // 스크립트 블록(const chatMenuBtnEl 등)에서 참조되므로, 여기서는 그 변수들이 아직 선언되기
-  // 전이라도 안전하도록 항상 document.getElementById로 새로 찾는다.
-  function dockLeftFloatingControls(){
+  // 모바일 가로모드에서는 하단 네비게이션 대신 화면 오른쪽 가장자리의 토글 버튼(#sidePanelToggleBtn)으로
+  // 여닫는 슬라이드 패널(#sidePanel) 하나에 필드/장비/뽑기/채팅/스테이지/랭킹/마을지도/설정을 전부 모은다.
+  // 버튼들은 실제 DOM 노드를 그대로 옮기기만 하므로(요소를 새로 만들지 않음) id와 클릭 핸들러가 그대로 유지된다.
+  // 가로모드가 아니면 원래 있던 자리(#navbar, body 직속, #hudMenuPopover 안)로 정확히 되돌린다.
+  function openSidePanel(){
+    const p = document.getElementById('sidePanel'), t = document.getElementById('sidePanelToggleBtn');
+    if(p) p.classList.add('open');
+    if(t) t.textContent = '✕';
+  }
+  function closeSidePanel(){
+    const p = document.getElementById('sidePanel'), t = document.getElementById('sidePanelToggleBtn');
+    if(p) p.classList.remove('open');
+    if(t) t.textContent = '☰';
+  }
+  function toggleSidePanel(){
+    const p = document.getElementById('sidePanel');
+    if(!p) return;
+    p.classList.contains('open') ? closeSidePanel() : openSidePanel();
+  }
+  function dockRightSidePanel(){
+    const sidePanelInnerEl = document.getElementById('sidePanelInner');
     const navbarEl = document.getElementById('navbar');
     const chatBtnEl = document.getElementById('chatFloatBtn');
-    const menuWrapEl = document.querySelector('.hud-menu-wrap');
-    if(!navbarEl || !chatBtnEl || !menuWrapEl) return;
+    const hudMenuPopoverEl = document.getElementById('hudMenuPopover');
+    const navBtnEls = document.querySelectorAll('.navBtn');
+    const stageBtnEl = document.getElementById('stageSelectBtn');
+    const rankBtnEl = document.getElementById('rankingBtn');
+    const villageBtnEl = document.getElementById('villageMapBtn');
+    const menuSettingsBtnEl = document.getElementById('settingsBtn');
+    if(!sidePanelInnerEl) return;
     const isLandscape = document.body.dataset.deviceType === 'mobile-landscape';
     if(isLandscape){
-      if(chatBtnEl.parentNode !== navbarEl) navbarEl.appendChild(chatBtnEl);
-      if(menuWrapEl.parentNode !== navbarEl) navbarEl.appendChild(menuWrapEl);
+      navBtnEls.forEach(b=> sidePanelInnerEl.appendChild(b));
+      if(chatBtnEl) sidePanelInnerEl.appendChild(chatBtnEl);
+      let divider = document.getElementById('sidePanelDivider');
+      if(!divider){
+        divider = document.createElement('div');
+        divider.id = 'sidePanelDivider';
+        divider.className = 'side-panel-divider';
+      }
+      sidePanelInnerEl.appendChild(divider);
+      [stageBtnEl, rankBtnEl, villageBtnEl, menuSettingsBtnEl].forEach(b=>{ if(b) sidePanelInnerEl.appendChild(b); });
     } else {
-      // 원래 자리로 복귀: 채팅 버튼은 채팅 모달 바로 앞(body 최상위), 메뉴는 HUD의
-      // 스테이지 정보(#stageName) 바로 앞(원래 마크업 순서)로 되돌린다.
-      if(chatBtnEl.parentNode === navbarEl){
+      if(navbarEl) navBtnEls.forEach(b=> navbarEl.appendChild(b));
+      if(chatBtnEl && chatBtnEl.parentNode === sidePanelInnerEl){
         const chatModalEl = document.getElementById('chatModal');
         if(chatModalEl && chatModalEl.parentNode) chatModalEl.parentNode.insertBefore(chatBtnEl, chatModalEl);
         else document.body.appendChild(chatBtnEl);
       }
-      if(menuWrapEl.parentNode === navbarEl){
-        const stageNameEl = document.getElementById('stageName');
-        if(stageNameEl && stageNameEl.parentNode) stageNameEl.parentNode.insertBefore(menuWrapEl, stageNameEl);
+      if(hudMenuPopoverEl){
+        [stageBtnEl, rankBtnEl, villageBtnEl, menuSettingsBtnEl].forEach(b=>{ if(b) hudMenuPopoverEl.appendChild(b); });
       }
+      closeSidePanel();
     }
   }
+  (function setupSidePanelToggle(){
+    const toggleBtnEl = document.getElementById('sidePanelToggleBtn');
+    const panelEl = document.getElementById('sidePanel');
+    if(!toggleBtnEl || !panelEl) return;
+    toggleBtnEl.addEventListener('click', e=>{ e.stopPropagation(); toggleSidePanel(); });
+    panelEl.addEventListener('click', e=>{ if(e.target.closest('button')) closeSidePanel(); });
+    document.addEventListener('click', e=>{
+      if(panelEl.classList.contains('open') && !panelEl.contains(e.target) && e.target!==toggleBtnEl) closeSidePanel();
+    });
+  })();
   function applyViewportScale(){
     if(!viewportScalerEl) return;
     const rawAspect = window.innerWidth / window.innerHeight;
@@ -2761,7 +2921,7 @@
     updateAspectRatioDebug();
     updateOrientationGate();
     maybeShowInAppBrowserTip();
-    dockLeftFloatingControls();
+    dockRightSidePanel();
   }
   function resizeCanvas(){
     const rect = gameView.getBoundingClientRect();
@@ -2772,6 +2932,29 @@
   window.addEventListener('resize', handleViewportResize);
   window.addEventListener('orientationchange', ()=>setTimeout(handleViewportResize,150));
   handleViewportResize();
+
+  // ============ 모바일 진입 시 자동 가로 고정 ============
+  // 브라우저 보안 정책상 전체화면/화면방향 잠금(Fullscreen/Screen Orientation API)은 대부분
+  // "사용자 제스처(탭/클릭)" 도중에 호출해야만 허용된다. 그래서 페이지가 열리자마자 코드만으로
+  // 강제로 가로 전환을 할 수는 없고(브라우저가 조용히 거부함), 대신:
+  //   1) 이미 홈 화면 앱(설치된 PWA, standalone)으로 실행 중이면 제스처 없이도 허용되는 경우가
+  //      많아 로드 직후 바로 한 번 시도한다.
+  //   2) 일반 브라우저 탭에서는 사용자의 "첫 탭/클릭"(타이틀 화면의 게임 시작 버튼 등)을
+  //      감지해 그 순간 자동으로 시도한다 — 이게 바로 "앱을 열면 바로 가로로 바뀌는" 흔한
+  //      모바일 게임들의 동작 방식이다(사용자가 버튼을 따로 누르지 않아도 자연스럽게 가로로 바뀜).
+  //   3) 탭을 다시 활성화(백그라운드→포그라운드)할 때도 재시도해, 잠금이 풀린 경우 복구한다.
+  // 그래도 실패하면(구형 브라우저 등) 기존 #rotateDeviceOverlay 안내 + 수동 버튼이 항상 그대로
+  // 동작하므로 최소한 "가로로 돌려주세요" 안내는 계속 유지된다.
+  if(IS_MOBILE_DEVICE){
+    if(isRunningStandalonePwa()) attemptForceLandscape().catch(()=>{});
+    document.addEventListener('pointerdown', function autoLandscapeOnFirstTap(){
+      document.removeEventListener('pointerdown', autoLandscapeOnFirstTap);
+      attemptForceLandscape().catch(()=>{});
+    }, { once:true, passive:true });
+    document.addEventListener('visibilitychange', ()=>{
+      if(document.visibilityState==='visible') attemptForceLandscape().catch(()=>{});
+    });
+  }
 
   // ============ 무한 필드 카메라 ============
   const camera = {x:0, y:0};
