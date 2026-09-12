@@ -268,6 +268,16 @@
     background:radial-gradient(circle at 35% 30%, #9c85ff, #5a3fd6);
     box-shadow:0 0 10px rgba(124,92,255,0.6); pointer-events:none;
   }
+  /* 고정 조이스틱 모드: 화면 왼쪽 아래 한 곳에만 조작 영역을 두고, 조이스틱 원은 그 자리에
+     항상 표시해둔다(터치를 떼도 사라지지 않음). #joystickBase의 left/top은 JS가 아니라
+     이 CSS가 고정으로 잡아준다. */
+  #joystickZone.joystick-fixed{
+    left:16px; top:auto; bottom:calc(16px + env(safe-area-inset-bottom,0px));
+    width:130px; height:130px;
+  }
+  #joystickZone.joystick-fixed #joystickBase{
+    left:10px; top:10px;
+  }
 
   /* ===== 미니맵 (필드 화면 우상단에 마을 지도를 작게 상시 표시) ===== */
   #miniMapWrap{
@@ -1882,6 +1892,15 @@
     </div>
 
     <div class="settings-section">
+      <h3>🕹 조작 방식</h3>
+      <div class="settings-toggle-row">
+        <span>고정 조이스틱으로 이동</span>
+        <label class="switch"><input type="checkbox" id="fixedJoystickToggle"><span class="slider"></span></label>
+      </div>
+      <div class="settings-note">※ 켜면 화면 왼쪽 아래에 조이스틱이 항상 표시되고, 그 안에서만 눌러 움직입니다. 끄면(기본값) 지금처럼 화면 왼쪽 아무 곳이나 눌러서 자유롭게 드래그해 움직일 수 있습니다.</div>
+    </div>
+
+    <div class="settings-section">
       <h3>🔔 알림</h3>
       <div class="settings-toggle-row">
         <span>게임 알림 표시</span>
@@ -2274,7 +2293,7 @@
   // GAME_VERSION: 사람이 읽는 버전 번호 (예: 1.0.0 -> 1.0.1, 1.1.0 등 SemVer 스타일)
   // GAME_BUILD:   배포 시각을 YYYYMMDDHHmm 형식 숫자 문자열로 기록 (예: 202609120612 = 2026년 9월 12일 06시 12분)
   const GAME_VERSION = '1.0.0';
-  const GAME_BUILD = '202609120654';
+  const GAME_BUILD = '202609120612';
 
   // ============ PWA 설치 강제 게이트 (안드로이드 전용) ============
   // 안드로이드에서 "설치" 없이 그냥 브라우저로 열었을 때는 #pwaInstallGate로 화면 전체를 덮어
@@ -4897,7 +4916,7 @@
 
 
   // ===== 설정 =====
-  let settings = { sfxVolume:70, bgmVolume:50, bgmTrack:'1', notify:true, killMsg:true, playerName:'', monsterChase:true, noAutoEnterHouse:false, weaponFx:true, screenFlash:true, skillSound:true, hitboxDebug:false, skipJobSelect:false, skipTitleScreen:false, miniMap:true, showAspectRatio:false, customRatioEnabled:false, customRatioW:16, customRatioH:9 };
+  let settings = { sfxVolume:70, bgmVolume:50, bgmTrack:'1', notify:true, killMsg:true, playerName:'', monsterChase:true, noAutoEnterHouse:false, weaponFx:true, screenFlash:true, skillSound:true, hitboxDebug:false, skipJobSelect:false, skipTitleScreen:false, miniMap:true, showAspectRatio:false, customRatioEnabled:false, customRatioW:16, customRatioH:9, fixedJoystick:false };
   let adminUnlocked = false;
   let adminSkipMobRequirement = false; // 관리자: 모든 스테이지에서 잡몹 처치 없이 즉시 보스 소환 허용
   let adminAllStagesCleared = false; // 관리자: 비밀번호 입력 시 모든 스테이지를 클리어한 것으로 판정
@@ -6908,12 +6927,24 @@
     e.preventDefault();
     if(joy.active) return;
     const rect = gameView.getBoundingClientRect();
-    const x = e.clientX-rect.left, y = e.clientY-rect.top;
+    const fixedMode = !!settings.fixedJoystick;
+    let x, y;
+    if(fixedMode){
+      // 고정 모드에서는 어디를 누르든 조이스틱의 중심(항상 그 자리에 그려져 있는 원의 중앙)을
+      // 기준점으로 삼는다. 즉 원 안 어디를 눌러도 그 순간 핸들이 중심에서 시작한다.
+      const baseRect = joystickBase.getBoundingClientRect();
+      x = baseRect.left + baseRect.width/2 - rect.left;
+      y = baseRect.top + baseRect.height/2 - rect.top;
+    } else {
+      x = e.clientX-rect.left; y = e.clientY-rect.top;
+    }
     joy.active = true; joy.pointerId = e.pointerId;
     joy.originX = x; joy.originY = y; joy.vx=0; joy.vy=0;
-    joystickBase.style.left = (x-55)+'px';
-    joystickBase.style.top = (y-55)+'px';
-    joystickBase.style.display = 'block';
+    if(!fixedMode){
+      joystickBase.style.left = (x-55)+'px';
+      joystickBase.style.top = (y-55)+'px';
+      joystickBase.style.display = 'block';
+    }
     joystickHandle.style.transform = 'translate(0px,0px)';
     try{ joystickZone.setPointerCapture(e.pointerId); }catch(err){}
   }
@@ -6930,7 +6961,8 @@
   function joyEnd(e){
     if(!joy.active || (joy.pointerId!==null && e.pointerId!==joy.pointerId)) return;
     joy.active = false; joy.vx=0; joy.vy=0; joy.pointerId=null;
-    joystickBase.style.display = 'none';
+    joystickHandle.style.transform = 'translate(0px,0px)';
+    if(!settings.fixedJoystick) joystickBase.style.display = 'none';
   }
   joystickZone.addEventListener('pointerdown', joyStart);
   joystickZone.addEventListener('pointermove', joyMove);
@@ -6941,10 +6973,22 @@
   // 창 포커스를 잃거나 탭이 숨겨질 때 조이스틱 입력도 함께 강제로 해제한다.
   function releaseJoystick(){
     joy.active = false; joy.vx = 0; joy.vy = 0; joy.pointerId = null;
-    joystickBase.style.display = 'none';
+    joystickHandle.style.transform = 'translate(0px,0px)';
+    if(!settings.fixedJoystick) joystickBase.style.display = 'none';
   }
   window.addEventListener('blur', releaseJoystick);
   document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') releaseJoystick(); });
+
+  // 설정 > "고정 조이스틱으로 이동"에 따라 조이스틱 영역/모양을 전환한다.
+  // 고정 모드: 왼쪽 아래에 조이스틱이 항상 보이고 그 원 안에서만 조작.
+  // 자유 모드(기본): 화면 왼쪽 절반 아무 곳이나 눌러 드래그하면 그 자리에 조이스틱이 나타남.
+  function applyControlMode(){
+    const fixedMode = !!settings.fixedJoystick;
+    joystickZone.classList.toggle('joystick-fixed', fixedMode);
+    joystickBase.style.display = fixedMode ? 'block' : 'none';
+    joystickHandle.style.transform = 'translate(0px,0px)';
+  }
+  applyControlMode();
 
   // ============ 업데이트 ============
   // 로딩 화면/타이틀 화면 등 "아직 실제 게임이 시작되지 않은" 동안에는 update()가 절대 호출되지 않도록
@@ -10951,6 +10995,7 @@
   const bgmVolumeEl=$('bgmVolume'), bgmVolumeLabelEl=$('bgmVolumeLabel');
   const bgmHeaderEl=$('bgmHeader'), bgmCollapseEl=$('bgmCollapse');
   const notifyToggleEl=$('notifyToggle'), killMsgToggleEl=$('killMsgToggle'), monsterChaseToggleEl=$('monsterChaseToggle');
+  const fixedJoystickToggleEl=$('fixedJoystickToggle');
   const noAutoEnterHouseToggleEl=$('noAutoEnterHouseToggle');
   const weaponFxToggleEl=$('weaponFxToggle'), screenFlashToggleEl=$('screenFlashToggle'), skillSoundToggleEl=$('skillSoundToggle'), hitboxToggleEl=$('hitboxToggle');
   const skipJobSelectToggleEl=$('skipJobSelectToggle');
@@ -11049,6 +11094,8 @@
     notifyToggleEl.checked = settings.notify;
     killMsgToggleEl.checked = settings.killMsg;
     monsterChaseToggleEl.checked = settings.monsterChase;
+    fixedJoystickToggleEl.checked = settings.fixedJoystick;
+    applyControlMode();
     noAutoEnterHouseToggleEl.checked = settings.noAutoEnterHouse;
     weaponFxToggleEl.checked = settings.weaponFx;
     screenFlashToggleEl.checked = settings.screenFlash;
@@ -11594,6 +11641,7 @@
   notifyToggleEl.addEventListener('change', e=>{ settings.notify = e.target.checked; });
   killMsgToggleEl.addEventListener('change', e=>{ settings.killMsg = e.target.checked; });
   monsterChaseToggleEl.addEventListener('change', e=>{ settings.monsterChase = e.target.checked; });
+  fixedJoystickToggleEl.addEventListener('change', e=>{ settings.fixedJoystick = e.target.checked; applyControlMode(); });
   noAutoEnterHouseToggleEl.addEventListener('change', e=>{ settings.noAutoEnterHouse = e.target.checked; });
   weaponFxToggleEl.addEventListener('change', e=>{ settings.weaponFx = e.target.checked; });
   screenFlashToggleEl.addEventListener('change', e=>{ settings.screenFlash = e.target.checked; });
