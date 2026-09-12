@@ -247,16 +247,6 @@
     box-shadow:0 0 10px rgba(124,92,255,0.6); pointer-events:none;
   }
 
-  #attackBtn{
-    position:absolute; right:20px; bottom:calc(20px + env(safe-area-inset-bottom,0px));
-    width:62px; height:62px; border-radius:50%;
-    background:radial-gradient(circle at 35% 30%, #ff8c78, #b23327);
-    border:3px solid rgba(255,255,255,0.35); color:#fff; font-size:22px; font-weight:900;
-    box-shadow:0 6px 16px rgba(0,0,0,0.45); touch-action:none; user-select:none;
-    display:flex; align-items:center; justify-content:center;
-  }
-  #attackBtn:active{ transform:scale(0.92); filter:brightness(1.1); }
-
   /* ===== 미니맵 (필드 화면 우상단에 마을 지도를 작게 상시 표시) ===== */
   #miniMapWrap{
     position:absolute; right:10px; top:calc(10px + env(safe-area-inset-top,0px));
@@ -513,6 +503,25 @@
      왼쪽 여백을 넉넉히 확보한다(가운데 정렬된 카드들이 자연스럽게 오른쪽으로 밀려난다). */
   body[data-device-type="mobile-landscape"] #equipView,
   body[data-device-type="mobile-landscape"] #gachaView{ padding-left:60px; }
+  /* --- 3) 채팅 버블 / ☰ 메뉴 버튼을 좌측 세로 스트립(#navbar) 안으로 편입 ---
+     원래 채팅 버튼(position:fixed, left:14px/bottom:90px)은 화면 왼쪽 아래에 독립적으로 떠 있어서,
+     가로모드에서 #navbar가 화면 왼쪽 가장자리의 세로 스트립으로 바뀌면 그 위에 겹쳐 보이는 문제가
+     있었다. dockLeftFloatingControls()(JS)가 가로모드일 때 이 버튼과 ☰ 메뉴(.hud-menu-wrap)를
+     실제로 #navbar의 자식으로 옮겨 붙이므로, 여기서는 #navbar 안에 들어왔을 때의 모양만
+     다른 탭 버튼(.navBtn)과 어울리게 다시 정의한다. */
+  body[data-device-type="mobile-landscape"] #navbar .chat-float-btn{
+    position:relative; left:auto; bottom:auto; z-index:auto;
+    width:100%; height:auto; min-height:40px; border-radius:8px;
+    background:none; border:none; box-shadow:none; font-size:17px;
+    flex:0 0 auto;
+  }
+  body[data-device-type="mobile-landscape"] #navbar .chat-float-btn:active{ background:var(--bg-panel-2); }
+  body[data-device-type="mobile-landscape"] #navbar .hud-menu-wrap{ width:100%; flex:0 0 auto; }
+  body[data-device-type="mobile-landscape"] #navbar #hudMenuBtn{
+    width:100%; height:auto; min-height:40px; border-radius:8px;
+    background:none; border:none; color:var(--text-dim); font-size:16px;
+  }
+  body[data-device-type="mobile-landscape"] #navbar #hudMenuBtn:active{ background:var(--bg-panel-2); }
 
   /* ===== 설정 모달 ===== */
   #settingsBtn{ margin-left:auto; width:auto; padding:5px 10px; font-size:14px; }
@@ -1574,7 +1583,6 @@
       <div id="joystickBase"><div id="joystickHandle"></div></div>
     </div>
     <div id="miniMapWrap"><canvas id="miniMapCanvas"></canvas></div>
-    <button id="attackBtn">⚔</button>
     <button id="summonBossBtn">⚠ 보스 소환</button>
     <button id="giveUpBossBtn">🏳 보스 포기</button>
     <button id="npcTalkBtn">🗨 말 걸기</button>
@@ -2611,6 +2619,36 @@
     if(IS_MOBILE_DEVICE) return 'mobile';
     return (window.innerWidth / window.innerHeight) < 1 ? 'mobile' : 'pc';
   }
+  // 모바일 가로모드에서는 #navbar가 화면 왼쪽 가장자리의 세로 아이콘 스트립으로 바뀌는데,
+  // 채팅 버블(#chatFloatBtn)과 ☰ 메뉴(.hud-menu-wrap)는 원래 위치(fixed 좌하단 / 상단 HUD)에
+  // 그대로 있어 그 스트립과 겹쳐 보이는 문제가 있었다. 가로모드일 때는 이 둘을 실제로
+  // #navbar의 자식으로 옮겨 다른 탭 버튼들과 나란히 세로로 쌓이게 하고(겹침 해소 + 메뉴를
+  // 한 곳에 모음), 가로모드가 아니면 원래 있던 자리로 되돌린다. 두 요소는 나중에 다른
+  // 스크립트 블록(const chatMenuBtnEl 등)에서 참조되므로, 여기서는 그 변수들이 아직 선언되기
+  // 전이라도 안전하도록 항상 document.getElementById로 새로 찾는다.
+  function dockLeftFloatingControls(){
+    const navbarEl = document.getElementById('navbar');
+    const chatBtnEl = document.getElementById('chatFloatBtn');
+    const menuWrapEl = document.querySelector('.hud-menu-wrap');
+    if(!navbarEl || !chatBtnEl || !menuWrapEl) return;
+    const isLandscape = document.body.dataset.deviceType === 'mobile-landscape';
+    if(isLandscape){
+      if(chatBtnEl.parentNode !== navbarEl) navbarEl.appendChild(chatBtnEl);
+      if(menuWrapEl.parentNode !== navbarEl) navbarEl.appendChild(menuWrapEl);
+    } else {
+      // 원래 자리로 복귀: 채팅 버튼은 채팅 모달 바로 앞(body 최상위), 메뉴는 HUD의
+      // 스테이지 정보(#stageName) 바로 앞(원래 마크업 순서)로 되돌린다.
+      if(chatBtnEl.parentNode === navbarEl){
+        const chatModalEl = document.getElementById('chatModal');
+        if(chatModalEl && chatModalEl.parentNode) chatModalEl.parentNode.insertBefore(chatBtnEl, chatModalEl);
+        else document.body.appendChild(chatBtnEl);
+      }
+      if(menuWrapEl.parentNode === navbarEl){
+        const stageNameEl = document.getElementById('stageName');
+        if(stageNameEl && stageNameEl.parentNode) stageNameEl.parentNode.insertBefore(menuWrapEl, stageNameEl);
+      }
+    }
+  }
   function applyViewportScale(){
     if(!viewportScalerEl) return;
     const rawAspect = window.innerWidth / window.innerHeight;
@@ -2650,6 +2688,7 @@
     updateAspectRatioDebug();
     updateOrientationGate();
     maybeShowInAppBrowserTip();
+    dockLeftFloatingControls();
   }
   function resizeCanvas(){
     const rect = gameView.getBoundingClientRect();
@@ -3057,7 +3096,6 @@
       player.wx = 0; player.wy = ROOM_H/2 - 40;
     }
     player.moving = false;
-    if(typeof attackBtn!=='undefined') attackBtn.style.display = 'none';
     if(typeof summonBossBtnEl!=='undefined') summonBossBtnEl.classList.remove('show'); // 건물 안에서는 보스 소환 불가
     nearbyTalkNPC = null; // 새 실내에 들어왔으니 말 걸기 대상은 이번 프레임에 새로 계산한다
     if(typeof npcTalkBtnEl!=='undefined') npcTalkBtnEl.classList.remove('show');
@@ -3075,7 +3113,6 @@
     player.wx = door.x; player.wy = door.y + player.r + 16;
     player.moving = false;
     enterWorldPresence(); // 필드로 나왔으니 다시 다른 유저에게 보이게 함
-    if(typeof attackBtn!=='undefined') attackBtn.style.display = 'flex';
     nearbyTalkNPC = null;
     if(typeof npcTalkBtnEl!=='undefined') npcTalkBtnEl.classList.remove('show');
     updateCamera();
@@ -6635,10 +6672,6 @@
   }
   window.addEventListener('blur', releaseJoystick);
   document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') releaseJoystick(); });
-
-  // ============ 입력: 공격 버튼 ============
-  const attackBtn = document.getElementById('attackBtn');
-  attackBtn.addEventListener('pointerdown', e=>{ e.preventDefault(); manualAttack(); });
 
   // ============ 업데이트 ============
   // 로딩 화면/타이틀 화면 등 "아직 실제 게임이 시작되지 않은" 동안에는 update()가 절대 호출되지 않도록
