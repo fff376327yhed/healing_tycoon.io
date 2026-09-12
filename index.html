@@ -116,7 +116,7 @@
   body[data-height-tier="tiny"] #hud{ padding:4px 8px; gap:5px; }
   body[data-height-tier="tiny"] .hud-chip{ padding:3px 7px; font-size:11px; }
   body[data-height-tier="tiny"] #hudMenuBtn{ width:28px; height:28px; font-size:13px; }
-  body[data-height-tier="tiny"] #app > .hud-stage{ padding:2px 8px !important; }
+  body[data-height-tier="tiny"] #hud .hud-stage{ padding-top:2px !important; margin-top:2px !important; }
   body[data-height-tier="tiny"] .hud-stage-progress{ font-size:10.5px; }
   body[data-height-tier="tiny"] .hud-stage-name{ font-size:10px; padding:1px 6px; }
   body[data-height-tier="tiny"] #expBarWrap{ height:9px; }
@@ -126,7 +126,7 @@
   body[data-height-tier="tiny"] .navBtn .ic{ font-size:15px; }
   body[data-height-tier="compact"] #hud{ padding:6px 9px; }
   body[data-height-tier="compact"] .hud-chip{ padding:4px 8px; font-size:11.5px; }
-  body[data-height-tier="compact"] #app > .hud-stage{ padding:3px 9px !important; }
+  body[data-height-tier="compact"] #hud .hud-stage{ padding-top:3px !important; margin-top:3px !important; }
   body[data-height-tier="compact"] #expBarWrap{ height:11px; }
   body[data-height-tier="compact"] .navBtn{ padding:8px 0 7px; }
   #app{
@@ -153,9 +153,15 @@
      flex-wrap 시 버튼 하나가 줄 전체 너비를 차지해 세로로 쭉 늘어서 보이는 문제가 있었다.
      HUD 칩은 내용 크기만큼만 차지해야 하므로 명시적으로 width를 되돌린다. */
   button.hud-chip{ width:auto; flex:0 0 auto; }
+  /* #stageName(.hud-stage)은 이제 #hud 안의 세 번째 flex 아이템이다(칩 줄, 메뉴 다음).
+     기본값(flex-basis:100%)은 이 아이템이 항상 자기 혼자 새 줄을 차지하게 만들어, 기존과 동일하게
+     "칩 줄 + 메뉴" 아래에 스테이지 정보가 둘째 줄로 줄바꿈되어 보인다(포트레이트/PC/일반 모바일 가로 전부 동일).
+     모바일 가로모드(아래 body[data-device-type="mobile-landscape"] 규칙)에서만 flex-basis를 auto로
+     되돌려 첫 줄에 나란히 붙게 하여 세로 줄 하나를 통째로 절약한다. */
   .hud-stage{
-    flex:1 1 160px; font-size:12px; color:var(--gold); font-weight:700; min-width:120px;
+    flex:1 1 100%; font-size:12px; color:var(--gold); font-weight:700; min-width:120px;
     display:flex; align-items:center; justify-content:flex-end; gap:10px; /* 이름/스테이지/처치수를 전부 오른쪽으로 정렬 */
+    padding-top:4px; margin-top:4px; border-top:1px solid var(--line);
   }
   .hud-stage-left{ display:flex; align-items:center; gap:6px; min-width:0; }
   .hud-stage-name{
@@ -166,12 +172,6 @@
   .hud-stage-num{ color:var(--gold); white-space:nowrap; flex:0 0 auto; }
   .hud-stage-progress{ color:var(--text-dim); font-size:11.5px; font-weight:700; white-space:nowrap; flex:0 0 auto; }
   .hud-stage-progress.boss{ color:var(--destroy); }
-  /* HUD 정리 후 #stageName이 #hud 밖으로 나와 독립된 한 줄이 되었으므로,
-     상단 패널과 이어져 보이도록 같은 배경/여백을 준다. */
-  #app > .hud-stage{
-    flex:0 0 auto; background:var(--bg-panel); border-bottom:1px solid var(--line);
-    padding:4px 10px !important; margin-top:-1px;
-  }
   .hud-hp{ display:flex; align-items:center; gap:6px; }
   .hpbar-wrap{width:90px; height:9px; background:#100c1c; border-radius:5px; overflow:hidden; border:1px solid var(--line);}
   .hpbar-fill{height:100%; background:linear-gradient(90deg,#3ec9a7,#5be0bd); transition:width 0.15s;}
@@ -459,7 +459,60 @@
     display:flex; flex-direction:column; align-items:center; gap:2px; border-radius:0;
   }
   .navBtn .ic{font-size:18px;}
+  .navBtn .lbl{ white-space:nowrap; }
   .navBtn.active{ color:var(--gold); border-top-color:var(--gold); background:var(--bg-panel-2); }
+
+  /* ============================================================================
+     ===== 모바일 가로모드 전용 레이아웃 (위/아래 대신 좌/우 사용) =====
+     휴대폰을 눕혀서 플레이하면 세로 공간(BASE_H, 보통 340~520px)이 매우 좁아, 기존처럼
+     상단 HUD 2줄(칩 줄 + 스테이지 줄) + 하단 네비게이션 바(아이콘+글자)까지 위아래로 쌓으면
+     정작 게임 필드가 눌려서 너무 작아 보인다는 피드백에 따라, applyViewportScale()이 이미
+     설정해주는 body[data-device-type="mobile-landscape"] 상태에서만:
+       1) 스테이지 정보(.hud-stage)를 별도 줄로 줄바꿈하지 않고 상단 칩 줄과 한 줄로 합친다.
+       2) 하단 네비게이션(#navbar)을 화면 전체 폭을 쓰는 가로 바 대신, 화면 왼쪽 가장자리에
+          떠 있는 세로 아이콘 스트립으로 바꿔 하단 바가 차지하던 세로 공간을 통째로 되돌려준다
+          (position:absolute로 정상 흐름에서 빼면 #app의 flex:1 자식들이 그 공간을 자동으로 채운다).
+     PC/태블릿/모바일 세로모드는 이 블록의 영향을 받지 않고 기존 레이아웃을 그대로 유지한다.
+     ============================================================================ */
+  /* --- 1) 상단 HUD: 칩 줄 + 스테이지 정보를 한 줄로 --- */
+  body[data-device-type="mobile-landscape"] #hud{ flex-wrap:nowrap; gap:6px; }
+  body[data-device-type="mobile-landscape"] .hud-main-row{ flex:0 1 auto; gap:5px; }
+  body[data-device-type="mobile-landscape"] .hud-hp{ gap:4px; }
+  body[data-device-type="mobile-landscape"] .hpbar-wrap{ width:52px; }
+  body[data-device-type="mobile-landscape"] .hud-stage{
+    flex:1 1 auto; min-width:0; flex-basis:auto; /* 기본값(100%)을 되돌려 줄바꿈을 막고 같은 줄에 붙인다 */
+    justify-content:flex-end; gap:6px;
+  }
+  /* tiny/compact 세로 압축 모드가 #hud .hud-stage에 !important로 padding-top/margin-top을 주기
+     때문에(위쪽 규칙 참고), 가로모드에서 그 여백이 살짝 어긋나 보이지 않도록 동일한 우선순위로
+     되돌린다. */
+  body[data-device-type="mobile-landscape"] #hud .hud-stage{
+    padding-top:0 !important; margin-top:0 !important; border-top:none !important;
+  }
+  body[data-device-type="mobile-landscape"] .hud-stage-progress{
+    overflow:hidden; text-overflow:ellipsis; min-width:0; /* 자리가 부족할 때의 최후 안전장치 */
+  }
+  /* --- 2) 하단 네비게이션 → 왼쪽 가장자리 세로 아이콘 스트립 --- */
+  body[data-device-type="mobile-landscape"] #navbar{
+    position:absolute; left:6px; top:calc(46px + env(safe-area-inset-top,0px)); bottom:auto;
+    flex-direction:column; width:46px; height:auto;
+    background:rgba(26,22,38,0.88); border:1px solid var(--line); border-top:1px solid var(--line);
+    border-radius:12px; padding:4px; gap:4px; z-index:15;
+    box-shadow:0 4px 14px rgba(0,0,0,0.4);
+  }
+  body[data-device-type="mobile-landscape"] .navBtn{
+    flex:0 0 auto; width:100%; padding:9px 0 8px; border-top:none; min-height:40px;
+    border-left:2px solid transparent; border-radius:8px;
+  }
+  body[data-device-type="mobile-landscape"] .navBtn.active{
+    border-top-color:transparent; border-left-color:var(--gold);
+  }
+  body[data-device-type="mobile-landscape"] .navBtn .ic{ font-size:16px; }
+  body[data-device-type="mobile-landscape"] .navBtn .lbl{ font-size:8.5px; }
+  /* 네비게이션이 왼쪽 가장자리로 옮겨간 만큼, 장비/뽑기 탭 콘텐츠가 그 밑에 가리지 않도록
+     왼쪽 여백을 넉넉히 확보한다(가운데 정렬된 카드들이 자연스럽게 오른쪽으로 밀려난다). */
+  body[data-device-type="mobile-landscape"] #equipView,
+  body[data-device-type="mobile-landscape"] #gachaView{ padding-left:60px; }
 
   /* ===== 설정 모달 ===== */
   #settingsBtn{ margin-left:auto; width:auto; padding:5px 10px; font-size:14px; }
@@ -1501,13 +1554,14 @@
         <button type="button" id="settingsBtn">⚙ 설정</button>
       </div>
     </div>
-  </div>
-  <div class="hud-stage" id="stageName">
-    <div class="hud-stage-left">
-      <span class="hud-stage-name" id="stageNameLabel" style="display:none;"></span>
-      <span class="hud-stage-num" id="stageNumLabel">1-1</span>
+    <!-- 모바일 가로모드에서는 이 줄(스테이지 정보)이 따로 줄을 차지하지 않고 바로 위 칩 줄과 같은 한 줄에 붙도록(#hud 안으로 이동) 세로 줄을 하나 절약한다. 포트레이트/PC에서는 기존처럼 아래 줄로 줄바꿈이 유지된다(.hud-stage의 flex-basis:100% 기본값 때문). -->
+    <div class="hud-stage" id="stageName">
+      <div class="hud-stage-left">
+        <span class="hud-stage-name" id="stageNameLabel" style="display:none;"></span>
+        <span class="hud-stage-num" id="stageNumLabel">1-1</span>
+      </div>
+      <span class="hud-stage-progress" id="stageProgressLabel">잡몹 처치 0/5</span>
     </div>
-    <span class="hud-stage-progress" id="stageProgressLabel">잡몹 처치 0/5</span>
   </div>
   <div id="expBarWrap">
     <div class="expbar-fill" id="expBarFill" style="width:0%"></div>
@@ -1583,9 +1637,9 @@
   </div>
 
   <nav id="navbar">
-    <button class="navBtn active" data-tab="field"><span class="ic">⚔</span>필드</button>
-    <button class="navBtn" data-tab="equip"><span class="ic">🛡</span>장비</button>
-    <button class="navBtn" data-tab="gacha"><span class="ic">🎴</span>뽑기</button>
+    <button class="navBtn active" data-tab="field" title="필드"><span class="ic">⚔</span><span class="lbl">필드</span></button>
+    <button class="navBtn" data-tab="equip" title="장비"><span class="ic">🛡</span><span class="lbl">장비</span></button>
+    <button class="navBtn" data-tab="gacha" title="뽑기"><span class="ic">🎴</span><span class="lbl">뽑기</span></button>
   </nav>
 
 </div>
