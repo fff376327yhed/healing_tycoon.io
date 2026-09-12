@@ -105,6 +105,30 @@
   }
   #rotateDeviceOverlay .rotate-text{ font-size:16px; font-weight:800; color:var(--gold); }
   #rotateDeviceOverlay .rotate-sub{ font-size:12.5px; color:var(--text-dim); max-width:280px; line-height:1.5; }
+  /* ===== 세로 공간이 극단적으로 좁은 기기/인앱브라우저 대응: 압축 HUD 모드 =====
+     카카오톡 등 인앱 브라우저는 자체 상단바가 화면 높이를 크게 잡아먹어, 기기를 가로로
+     눕혀도 실제 페이지에 남는 세로 공간(BASE_H)이 아주 좁아질 수 있다(예: 340px).
+     이때 HUD/하단 네비게이션이 평소 크기 그대로면 이 좁은 세로 공간을 너무 많이 차지해
+     정작 게임 화면(#gameView)이 과도하게 눌리고 전체 UI가 상대적으로 더 작아 보인다.
+     applyViewportScale()이 BASE_H 크기에 따라 body[data-height-tier]를 설정하면,
+     아래 규칙이 HUD류의 padding/font-size를 단계적으로 줄여 게임 화면에 세로 공간을
+     더 돌려준다. */
+  body[data-height-tier="tiny"] #hud{ padding:4px 8px; gap:5px; }
+  body[data-height-tier="tiny"] .hud-chip{ padding:3px 7px; font-size:11px; }
+  body[data-height-tier="tiny"] #hudMenuBtn{ width:28px; height:28px; font-size:13px; }
+  body[data-height-tier="tiny"] #app > .hud-stage{ padding:2px 8px !important; }
+  body[data-height-tier="tiny"] .hud-stage-progress{ font-size:10.5px; }
+  body[data-height-tier="tiny"] .hud-stage-name{ font-size:10px; padding:1px 6px; }
+  body[data-height-tier="tiny"] #expBarWrap{ height:9px; }
+  body[data-height-tier="tiny"] .expbar-text{ font-size:7.5px; }
+  body[data-height-tier="tiny"] #navbar{ padding-top:0; }
+  body[data-height-tier="tiny"] .navBtn{ padding:5px 0 4px; gap:1px; font-size:10.5px; }
+  body[data-height-tier="tiny"] .navBtn .ic{ font-size:15px; }
+  body[data-height-tier="compact"] #hud{ padding:6px 9px; }
+  body[data-height-tier="compact"] .hud-chip{ padding:4px 8px; font-size:11.5px; }
+  body[data-height-tier="compact"] #app > .hud-stage{ padding:3px 9px !important; }
+  body[data-height-tier="compact"] #expBarWrap{ height:11px; }
+  body[data-height-tier="compact"] .navBtn{ padding:8px 0 7px; }
   #app{
     display:flex; flex-direction:column;
     height:100%; width:100%; overflow:hidden;
@@ -1805,6 +1829,18 @@
           <div class="admin-field"><label>이동속도 Lv</label><input type="number" id="adminSpdInput" min="0"><button class="btn-settings-mini" data-set="spd">설정</button></div>
         </div>
         <div class="settings-note">※ 골드는 입력값으로 즉시 설정되며, 성장 레벨은 관련 능력치에 다시 계산되어 반영됩니다.</div>
+        <div class="settings-toggle-row" style="margin-top:10px;">
+          <span>📐 커스텀 화면비율 사용</span>
+          <label class="switch"><input type="checkbox" id="adminCustomRatioToggle"><span class="slider"></span></label>
+        </div>
+        <div class="admin-stage-row" style="margin-top:6px;">
+          <label>비율(W:H)</label>
+          <input type="number" id="adminCustomRatioWInput" min="0.1" step="0.01" placeholder="가로">
+          <input type="number" id="adminCustomRatioHInput" min="0.1" step="0.01" placeholder="세로">
+          <button class="btn-settings-mini" id="adminCustomRatioApplyBtn">적용</button>
+        </div>
+        <button class="btn-settings-mini" id="adminCustomRatioResetBtn" style="margin-top:6px; width:auto;">↺ 화면비율 기본값으로 초기화</button>
+        <div class="settings-note">※ 가로/세로에 입력한 값이 화면 디자인 크기(BASE_W×BASE_H) 자체가 되어(예: 884×340), 다른 기기에서도 그 화면을 그대로 재현해 테스트/플레이할 수 있습니다. 끄면 기기에 맞춰 자동으로 돌아갑니다. 초기화 버튼은 이 화면비율 설정만 기본값으로 되돌립니다(다른 관리자 설정에는 영향 없음).</div>
       </div>
     </div>
 
@@ -2492,8 +2528,27 @@
   // 숨긴다. PC/태블릿은 세로/가로 상관없이 그대로 플레이 가능.
   function updateOrientationGate(){
     if(!rotateDeviceOverlayEl) return;
-    const blocked = IS_MOBILE_DEVICE && window.innerWidth < window.innerHeight;
+    // 관리자가 커스텀 화면비율을 켜둔 동안은 원하는 비율로 바로 확인/플레이할 수 있도록
+    // 세로 회전 유도 화면을 띄우지 않는다.
+    let customOn = false;
+    try { customOn = !!settings.customRatioEnabled; } catch(e) {}
+    const blocked = !customOn && IS_MOBILE_DEVICE && window.innerWidth < window.innerHeight;
     rotateDeviceOverlayEl.classList.toggle('hide', !blocked);
+  }
+  // 세로 공간이 극단적으로 좁은 상태(data-height-tier="tiny")에서, 카카오톡 등 인앱
+  // 브라우저로 보이면 "다른 브라우저로 열기"를 한 번만 안내한다. 인앱 브라우저 자체 상단바가
+  // 세로 공간을 크게 차지해 생기는 문제라, 우리 쪽 레이아웃만으로는 완전히 해결할 수 없기
+  // 때문에 근본 원인과 해결책을 함께 알려주는 용도.
+  let inAppBrowserTipShown = false;
+  function maybeShowInAppBrowserTip(){
+    if(inAppBrowserTipShown) return;
+    if(document.body.dataset.heightTier !== 'tiny') return;
+    let customOn = false;
+    try { customOn = !!settings.customRatioEnabled; } catch(e) {}
+    if(customOn) return;
+    if(!/KAKAOTALK|Instagram|FBAN|FBAV|NAVER\(inapp|Line\//i.test(navigator.userAgent)) return;
+    inAppBrowserTipShown = true;
+    try { toast('인앱 브라우저는 화면이 좁게 보일 수 있어요. 우측 상단 메뉴에서 "다른 브라우저로 열기"를 선택하면 더 넓게 즐길 수 있습니다.', 'success', true); } catch(e) {}
   }
   // 참고: 랭킹/PvP가 있는 게임이라 화면 비율에 따라 유저마다 보이는 필드 범위가 달라지는
   // 편차는 남아있다. 완전히 동일한 시야를 보장하려면 화면 꽉 채우기 대신 고정 비율(레터박스)
@@ -2509,12 +2564,24 @@
     const isMobileLandscape = IS_MOBILE_DEVICE && rawAspect >= 1;
     const clampKey = isMobileLandscape ? 'mobileLandscape' : (deviceType === 'mobile' ? 'mobile' : 'pc');
     const clamp = ASPECT_CLAMP[clampKey];
-    const aspect = Math.min(Math.max(rawAspect, clamp.min), clamp.max);
+    // 관리자 설정 > 커스텀 화면비율이 켜져 있으면 기기 자동감지/클램프를 완전히 건너뛰고
+    // 관리자가 입력한 가로×세로 값을 BASE_W/BASE_H로 그대로 사용한다(예: 884×340을 입력하면
+    // 비율만이 아니라 디자인 캔버스 크기 자체가 정확히 884×340이 되어, 실제 그 화면에서 보던
+    // 레이아웃을 다른 기기에서도 그대로 재현/테스트할 수 있다). 꺼져 있으면 기존처럼 기기
+    // 자동감지 + 비율 클램프를 사용한다.
+    let customOk = false;
+    try { customOk = !!settings.customRatioEnabled && settings.customRatioW > 0 && settings.customRatioH > 0; } catch(e) {}
     document.body.dataset.deviceType = isMobileLandscape ? 'mobile-landscape' : deviceType;
-    BASE_H = isMobileLandscape
-      ? Math.round(Math.min(Math.max(window.innerHeight, MOBILE_LANDSCAPE_H_MIN), MOBILE_LANDSCAPE_H_MAX))
-      : BASE_H_DEFAULT;
-    BASE_W = Math.round(BASE_H * aspect);
+    if(customOk){
+      BASE_H = Math.round(settings.customRatioH);
+      BASE_W = Math.round(settings.customRatioW);
+    } else {
+      const aspect = Math.min(Math.max(rawAspect, clamp.min), clamp.max);
+      BASE_H = isMobileLandscape
+        ? Math.round(Math.min(Math.max(window.innerHeight, MOBILE_LANDSCAPE_H_MIN), MOBILE_LANDSCAPE_H_MAX))
+        : BASE_H_DEFAULT;
+      BASE_W = Math.round(BASE_H * aspect);
+    }
     viewportScalerEl.style.width = BASE_W + 'px';
     viewportScalerEl.style.height = BASE_H + 'px';
     // 가로가 넓은(태블릿 가로/노트북/PC/모바일 가로) 레이아웃일 때는 모달 등 일부 UI가
@@ -2523,8 +2590,12 @@
     document.body.classList.toggle('layout-wide', (BASE_W / BASE_H) >= 0.95);
     const scale = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
     viewportScalerEl.style.transform = `translate(-50%, -50%) scale(${scale})`;
+    // 세로 공간이 아주 좁은 화면(카카오톡 등 인앱 브라우저에서 자주 발생)에서는 HUD/네비게이션
+    // padding·font-size를 단계적으로 압축해 게임 화면(#gameView)에 세로 공간을 더 돌려준다.
+    document.body.dataset.heightTier = BASE_H <= 380 ? 'tiny' : (BASE_H <= 460 ? 'compact' : 'normal');
     updateAspectRatioDebug();
     updateOrientationGate();
+    maybeShowInAppBrowserTip();
   }
   function resizeCanvas(){
     const rect = gameView.getBoundingClientRect();
@@ -4462,7 +4533,7 @@
 
 
   // ===== 설정 =====
-  let settings = { sfxVolume:70, bgmVolume:50, bgmTrack:'1', notify:true, killMsg:true, playerName:'', monsterChase:true, noAutoEnterHouse:false, weaponFx:true, screenFlash:true, skillSound:true, hitboxDebug:false, skipJobSelect:false, skipTitleScreen:false, miniMap:true, showAspectRatio:false };
+  let settings = { sfxVolume:70, bgmVolume:50, bgmTrack:'1', notify:true, killMsg:true, playerName:'', monsterChase:true, noAutoEnterHouse:false, weaponFx:true, screenFlash:true, skillSound:true, hitboxDebug:false, skipJobSelect:false, skipTitleScreen:false, miniMap:true, showAspectRatio:false, customRatioEnabled:false, customRatioW:16, customRatioH:9 };
   let adminUnlocked = false;
   let adminSkipMobRequirement = false; // 관리자: 모든 스테이지에서 잡몹 처치 없이 즉시 보스 소환 허용
   let adminAllStagesCleared = false; // 관리자: 비밀번호 입력 시 모든 스테이지를 클리어한 것으로 판정
@@ -10531,6 +10602,8 @@
   const adminSkipMobToggleEl=$('adminSkipMobToggle');
   const adminGodModeToggleEl=$('adminGodModeToggle');
   const adminChapterInputEl=$('adminChapterInput'), adminStageInChapterInputEl=$('adminStageInChapterInput'), adminGoStageBtnEl=$('adminGoStageBtn');
+  const adminCustomRatioToggleEl=$('adminCustomRatioToggle'), adminCustomRatioWInputEl=$('adminCustomRatioWInput'), adminCustomRatioHInputEl=$('adminCustomRatioHInput'), adminCustomRatioApplyBtnEl=$('adminCustomRatioApplyBtn'), adminCustomRatioResetBtnEl=$('adminCustomRatioResetBtn');
+  const CUSTOM_RATIO_DEFAULT = { w:16, h:9 }; // 화면비율 설정만 초기화할 때 되돌아갈 기본값
 
   // ===== 직업(클래스) 선택/변경 UI =====
   function jobCardHTML(jk){
@@ -11555,6 +11628,9 @@
     adminGodModeToggleEl.checked = adminGodMode;
     adminChapterInputEl.value = chapterOf(state.stage);
     adminStageInChapterInputEl.value = stageInChapterOf(state.stage);
+    adminCustomRatioToggleEl.checked = settings.customRatioEnabled;
+    adminCustomRatioWInputEl.value = settings.customRatioW;
+    adminCustomRatioHInputEl.value = settings.customRatioH;
   }
   adminSkipMobToggleEl.addEventListener('change', e=>{
     adminSkipMobRequirement = e.target.checked;
@@ -11595,6 +11671,36 @@
     closeSettings();
     switchToFieldTab();
     toast(`관리자: ${stageLabel(stageNum)} 스테이지로 이동했습니다.`, 'success', true);
+  });
+  // 관리자: 자동감지 대신 내가 입력한 가로:세로 비율을 강제 적용해 그 비율로 테스트/플레이
+  adminCustomRatioToggleEl.addEventListener('change', e=>{
+    settings.customRatioEnabled = e.target.checked;
+    applyViewportScale();
+    toast(settings.customRatioEnabled
+      ? `관리자: 커스텀 화면비율(${settings.customRatioW}:${settings.customRatioH})이 적용되었습니다.`
+      : '관리자: 커스텀 화면비율을 해제하고 기기 자동감지로 되돌렸습니다.', 'success', true);
+  });
+  adminCustomRatioApplyBtnEl.addEventListener('click', ()=>{
+    const w = Number(adminCustomRatioWInputEl.value);
+    const h = Number(adminCustomRatioHInputEl.value);
+    if(!(w>0) || !(h>0)){ toast('가로/세로 값을 0보다 크게 입력해주세요.', 'fail', true); return; }
+    settings.customRatioW = w;
+    settings.customRatioH = h;
+    settings.customRatioEnabled = true;
+    adminCustomRatioToggleEl.checked = true;
+    applyViewportScale();
+    toast(`관리자: 화면비율이 ${w}:${h}로 적용되었습니다.`, 'success', true);
+  });
+  // 화면비율 설정만 기본값으로 초기화 (다른 관리자 설정에는 영향 없음)
+  adminCustomRatioResetBtnEl.addEventListener('click', ()=>{
+    settings.customRatioEnabled = false;
+    settings.customRatioW = CUSTOM_RATIO_DEFAULT.w;
+    settings.customRatioH = CUSTOM_RATIO_DEFAULT.h;
+    adminCustomRatioToggleEl.checked = false;
+    adminCustomRatioWInputEl.value = CUSTOM_RATIO_DEFAULT.w;
+    adminCustomRatioHInputEl.value = CUSTOM_RATIO_DEFAULT.h;
+    applyViewportScale();
+    toast('관리자: 화면비율 설정을 기본값으로 초기화했습니다.', 'success', true);
   });
   adminPwBtnEl.addEventListener('click', ()=>{
     if(adminPwInputEl.value === ADMIN_PASSWORD){
