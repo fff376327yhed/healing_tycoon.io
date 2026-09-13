@@ -351,6 +351,52 @@
   }
   #npcTalkBtn.show{ display:block; animation:summonPulse 1.1s ease-in-out infinite; }
 
+  /* PC 단축키 안내용 작은 "키캡" 배지: 버튼 모서리에 겹쳐 그려 해당 버튼이 어떤 키로도 눌린다는 것을 보여준다.
+     터치로만 조작하는 모바일 기기에서는 키보드가 없으므로 의미가 없어, PC로 감지된 경우에만 표시한다
+     (body[data-device-type="pc"] — applyViewportScale()이 매겨주는 값). */
+  .kbd-hint{
+    display:none; position:absolute; top:-7px; right:-6px;
+    min-width:18px; height:18px; padding:0 4px; border-radius:5px;
+    background:rgba(10,8,16,0.94); border:1.5px solid rgba(255,255,255,0.6);
+    color:#fff; font-size:10px; font-weight:800; align-items:center; justify-content:center;
+    box-shadow:0 2px 5px rgba(0,0,0,0.45); pointer-events:none; z-index:7; line-height:1;
+  }
+  body[data-device-type="pc"] .kbd-hint{ display:flex; }
+
+  /* 블랙홀 스킬(특이점의 지팡이 전용)이 있을 때만 나타나는 마나 HUD 칩 */
+  #manaHudChip{ display:none; color:#c9b8ff; }
+  #manaHudChip.show{ display:flex; }
+
+  /* 블랙홀 스킬 발동 버튼: 조이스틱 영역(화면 왼쪽)을 피해 화면 오른쪽 하단에 고정.
+     해당 스킬이 달린 무기를 장착했을 때만 나타나며, 마나 부족/재사용 대기 중에는 어둡게 표시된다. */
+  #blackholeSkillBtn{
+    position:absolute; right:14px; bottom:calc(14px + env(safe-area-inset-bottom,0px));
+    width:60px; height:60px; border-radius:50%; padding:0;
+    display:none; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+    background:radial-gradient(circle at 35% 30%, #2c1a52, #0f0d17 72%);
+    border:2px solid var(--arcane); box-shadow:0 4px 14px rgba(124,92,255,0.5);
+    color:#d9c9ff; font-size:19px; z-index:6; touch-action:none;
+  }
+  #blackholeSkillBtn.show{ display:flex; }
+  #blackholeSkillBtn .bh-cost{ font-size:9.5px; font-weight:800; color:#a99bd9; }
+  #blackholeSkillBtn.disabled{ opacity:0.4; filter:grayscale(0.7); }
+  #blackholeSkillBtn:active:not(.disabled){ filter:brightness(1.2); }
+
+  /* 두 번째 스킬 버튼(절대수호의 지팡이 "시간 정지" 전용): 첫 번째 스킬 버튼 바로 위에 나란히 고정.
+     스킬을 2개 가진 무기를 장착했을 때만 나타나며, 나머지 상태 표시는 첫 버튼과 동일하다. */
+  #secondSkillBtn{
+    position:absolute; right:14px; bottom:calc(82px + env(safe-area-inset-bottom,0px));
+    width:60px; height:60px; border-radius:50%; padding:0;
+    display:none; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+    background:radial-gradient(circle at 35% 30%, #123331, #0a1513 72%);
+    border:2px solid #8fe0c9; box-shadow:0 4px 14px rgba(143,224,201,0.45);
+    color:#d9fff0; font-size:19px; z-index:6; touch-action:none;
+  }
+  #secondSkillBtn.show{ display:flex; }
+  #secondSkillBtn .bh-cost{ font-size:9.5px; font-weight:800; color:#7fc9b3; }
+  #secondSkillBtn.disabled{ opacity:0.4; filter:grayscale(0.7); }
+  #secondSkillBtn:active:not(.disabled){ filter:brightness(1.2); }
+
   /* ===== 토스트 (모험 알림) ===== */
   #toastLayer{
     position:fixed; top:calc(56px + env(safe-area-inset-top,0px)); left:50%; transform:translateX(-50%);
@@ -722,6 +768,15 @@
   .settings-section:first-of-type{ border-top:none; }
   .settings-section h3{ font-size:13px; color:var(--gold); margin:0 0 10px; font-weight:800; }
   .settings-row{ font-size:12px; color:var(--text-dim); margin-bottom:8px; }
+  /* PC 단축키 안내 섹션: 키보드가 있는 PC(data-device-type="pc")에서만 노출한다. */
+  #pcShortcutsSection{ display:none; }
+  body[data-device-type="pc"] #pcShortcutsSection{ display:block; }
+  .kbd-list-row{ display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:12px; color:var(--text-dim); }
+  .kbd-key{
+    display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; padding:0 6px;
+    border-radius:6px; background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.38);
+    color:var(--text); font-size:11px; font-weight:800; letter-spacing:0.3px; flex-shrink:0;
+  }
   .settings-btn-row{ display:flex; gap:8px; }
   .btn-settings-mini{ width:auto; flex:1; padding:9px 12px; font-size:12px; background:var(--bg-panel-2); color:var(--text); border:1px solid var(--line); }
   .btn-settings-mini:hover{ background:#2c2340; }
@@ -782,6 +837,18 @@
     border-radius:8px; padding:8px 10px; font-size:13px;
   }
   .admin-stage-row .btn-settings-mini{ flex:0 0 auto; width:60px; }
+
+  /* ---- 픽업 뽑기 "특정 아이템 지정" 다중 선택: Ctrl/Cmd+클릭이 불가능한 모바일에서도
+     그냥 탭 한 번으로 여러 개를 선택/해제할 수 있는 체크박스 리스트 ---- */
+  .admin-multiselect{ display:flex; flex-direction:column; gap:4px; max-height:200px; overflow-y:auto; }
+  .admin-multiselect-item{
+    display:flex; align-items:center; gap:8px; padding:9px 8px; border-radius:6px; cursor:pointer;
+    font-size:12.5px; color:var(--text); border:1px solid transparent; user-select:none;
+  }
+  .admin-multiselect-item:active{ background:rgba(255,255,255,0.06); }
+  .admin-multiselect-item.selected{ background:color-mix(in srgb, var(--gold) 18%, transparent); border-color:var(--gold-dim); font-weight:700; }
+  .admin-multiselect-item input[type="checkbox"]{ width:16px; height:16px; flex:0 0 auto; pointer-events:none; }
+  .admin-multiselect-empty{ font-size:12px; color:var(--text-dim); padding:10px 8px; text-align:center; }
 
   /* ===== 레벨/경험치 바 ===== */
   #expBarWrap{
@@ -1104,6 +1171,47 @@
   .gacha-banner-hint{ font-size:10.5px; color:var(--text-dim); margin-top:6px; }
   .gacha-banner-hint::after{ content:' ›'; font-weight:900; }
 
+  /* ---- 픽업 전용 배너: 일반 시그니처 배너와 한눈에 구분되도록 핑크/보라 계열로 강조하고, 펄스 발광 + 리본 배지를 붙인다 ---- */
+  .gacha-banner-pickup{
+    --gband:#ff4fb8; margin-top:0; margin-bottom:12px; cursor:default;
+    border-color:color-mix(in srgb, var(--gband) 65%, var(--line));
+    animation:pickupBannerPulse 1.8s ease-in-out infinite;
+  }
+  .gacha-banner-pickup:active{ transform:none; }
+  @keyframes pickupBannerPulse{
+    0%,100%{ box-shadow:0 6px 20px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,79,184,0.15); }
+    50%{ box-shadow:0 6px 26px rgba(0,0,0,0.4), 0 0 22px 2px rgba(255,79,184,0.45); }
+  }
+  .gacha-pickup-ribbon{
+    position:absolute; top:10px; right:-28px; width:120px; text-align:center;
+    transform:rotate(40deg); background:linear-gradient(135deg, #ff4fb8, #a24fff);
+    color:#fff; font-size:10px; font-weight:900; letter-spacing:1px; padding:3px 0;
+    box-shadow:0 2px 8px rgba(0,0,0,0.35);
+  }
+  /* 픽업이 없을 때 픽업 배너/카드, 확정뽑기 진행 안내문이 실제로 화면에서 사라지도록 하는 규칙.
+     (이 규칙이 없으면 JS에서 classList로 hide를 붙였다 떼도 실제로는 계속 표시되어 일반 뽑기 카드와 뒤섞여 보인다)
+     같은 이유로 "픽업뽑기" 탭 전환 시 숨겨야 하는 일반 뽑기 배너/버튼, "픽업뽑기" 탭에서만 보여야 하는
+     카테고리 미니 스위처와 "진행 중인 픽업 없음" 안내문도 여기에 함께 등록한다. */
+  #gachaPickupBanner.hide,
+  #gachaPickupCard.hide,
+  #gachaGuarProgressNote.hide,
+  #gachaBanner.hide,
+  #gachaNormalPullBtns.hide,
+  #gachaPickupEmptyNote.hide,
+  #gachaPickupSubswitch.hide{ display:none; }
+
+  /* ---- 픽업뽑기 탭 전용: 무기/보물/장비 중 어떤 카테고리의 픽업을 볼지 고르는 소분류 스위처 ---- */
+  .gacha-pickup-subswitch{ max-width:440px; margin:0 auto 12px; display:flex; gap:6px; }
+  .gachaPickupSubBtn{
+    flex:1; position:relative; background:var(--bg-panel-2); border:1px solid var(--line); color:var(--text-dim);
+    font-size:12px; font-weight:700; padding:9px 4px; border-radius:9px; cursor:pointer;
+  }
+  .gachaPickupSubBtn.active{ color:#ff8fd4; border-color:#ff4fb8; background:#33203a; }
+  .gacha-pickup-subdot{
+    display:inline-block; width:6px; height:6px; border-radius:50%; margin-left:4px; background:transparent; vertical-align:middle;
+  }
+  .gacha-pickup-subdot.on{ background:#ff4fb8; box-shadow:0 0 6px 1px rgba(255,79,184,0.7); }
+
   /* ---- 아이템 픽셀(도트) 아이콘 공용 ---- */
   .item-icon{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
   .item-icon svg{ width:100%; height:100%; }
@@ -1138,6 +1246,29 @@
   .btn-unequip{ background:var(--bg-panel); color:#ffb3b3; border:1px solid rgba(255,77,77,0.4); }
   .btn-sell{ background:var(--bg-panel); color:var(--text-dim); border:1px solid var(--line); }
   .inv-item-price{ font-size:10.5px; color:var(--gold-dim); margin-top:2px; }
+
+  /* ===== 뽑기 탭 상단 "뽑기 내역" 진입 버튼 ===== */
+  .gacha-history-row{ display:flex; justify-content:center; margin:16px 0 0; }
+  .gacha-history-open-btn{
+    width:auto; padding:6px 11px; font-size:11.5px; font-weight:800; border-radius:8px;
+    background:var(--bg-panel-2); color:var(--gold); border:1px solid var(--gold-dim);
+  }
+  /* ===== 뽑기 내역 모달 ===== */
+  .gacha-history-list{ display:flex; flex-direction:column; gap:7px; max-height:504px; overflow-y:auto; }
+  .gacha-history-empty{ font-size:12px; color:var(--text-dim); text-align:center; padding:18px 0; }
+  .gacha-history-item{
+    display:flex; align-items:center; gap:10px; background:var(--bg-panel-2); border:1px solid var(--line);
+    border-radius:10px; padding:8px 10px;
+  }
+  .gacha-history-badge{
+    flex:0 0 auto; width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:900; color:#0f0d17;
+  }
+  .gacha-history-info{ flex:1 1 auto; min-width:0; }
+  .gacha-history-name{ font-size:12.5px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .gacha-history-sub{ font-size:10.5px; color:var(--text-dim); margin-top:2px; }
+  .gacha-history-time{ flex:0 0 auto; font-size:10.5px; color:var(--text-dim); text-align:right; white-space:nowrap; }
+  .gacha-history-note{ font-size:10.5px; color:var(--text-dim); text-align:center; margin-top:10px; }
 
   /* ===== 우편함 ===== */
   .mail-list{ display:flex; flex-direction:column; gap:8px; max-height:504px; overflow-y:auto; }
@@ -1753,6 +1884,7 @@
       <div class="hud-chip">💰 <span id="gold">0</span></div>
       <div class="hud-chip">💠 <span id="gemsHud">0</span></div>
       <div class="hud-chip" id="atkStatChip">⚔ <span id="atkStat">3</span></div>
+      <div class="hud-chip" id="manaHudChip">🔮 <span id="manaHud">0</span>/<span id="manaMaxHud">0</span></div>
     </div>
     <div class="hud-menu-wrap">
       <button class="hud-chip" id="hudMenuBtn" style="cursor:pointer;">☰</button>
@@ -1785,13 +1917,15 @@
       <div id="joystickBase"><div id="joystickHandle"></div></div>
     </div>
     <div id="miniMapWrap"><canvas id="miniMapCanvas"></canvas></div>
-    <button id="summonBossBtn">⚠ 보스 소환</button>
+    <button id="summonBossBtn">⚠ 보스 소환<span class="kbd-hint">Q</span></button>
     <div id="bossAutoSummonBox">
       <span>자동소환</span>
       <label class="switch mini"><input type="checkbox" id="bossAutoSummonToggle"><span class="slider"></span></label>
     </div>
     <button id="giveUpBossBtn">🏳 보스 포기</button>
-    <button id="npcTalkBtn">🗨 말 걸기</button>
+    <button id="npcTalkBtn"><span id="npcTalkBtnLabel">🗨 말 걸기</span><span class="kbd-hint">E</span></button>
+    <button id="blackholeSkillBtn" type="button"><span class="bh-ic" id="blackholeSkillIcon">🕳</span><span class="bh-cost" id="blackholeSkillCostText">0</span><span class="kbd-hint">R</span></button>
+    <button id="secondSkillBtn" type="button"><span class="bh-ic" id="secondSkillIcon">⏳</span><span class="bh-cost" id="secondSkillCostText">0</span></button>
   </div>
 
   <div id="equipView" data-view="equip">
@@ -1835,9 +1969,31 @@
       <button class="gachaSubBtn active" data-cat="weapon">⚔ 무기</button>
       <button class="gachaSubBtn" data-cat="treasure">💎 보물</button>
       <button class="gachaSubBtn" data-cat="equipment">🛡 장비</button>
+      <button class="gachaSubBtn" data-cat="pickup" id="gachaPickupTabBtn">🎯 픽업뽑기</button>
+    </div>
+
+    <!-- 픽업뽑기 탭 전용: 무기/보물/장비 중 어떤 카테고리의 픽업을 볼지 고르는 소분류 스위처.
+         '픽업뽑기' 탭일 때만 노출되며(renderGachaModeUI), 점(dot)이 켜져 있으면 그 카테고리에 지금 진행 중인 픽업이 있다는 뜻이다. -->
+    <div class="gacha-pickup-subswitch hide" id="gachaPickupSubswitch">
+      <button type="button" class="gachaPickupSubBtn active" data-subcat="weapon">⚔ 무기<span class="gacha-pickup-subdot"></span></button>
+      <button type="button" class="gachaPickupSubBtn" data-subcat="treasure">💎 보물<span class="gacha-pickup-subdot"></span></button>
+      <button type="button" class="gachaPickupSubBtn" data-subcat="equipment">🛡 장비<span class="gacha-pickup-subdot"></span></button>
     </div>
 
     <div class="settings-note" id="gachaPickupNotice" style="display:none; margin:0 0 10px; text-align:center;"></div>
+
+    <!-- 픽업 전용 배너: 관리자가 설정한 픽업이 지금 이 카테고리에서 유효할 때만 노출된다(renderPickupNotice에서 표시/숨김 처리). -->
+    <div class="gacha-banner gacha-banner-pickup hide" id="gachaPickupBanner">
+      <div class="gacha-banner-glow"></div>
+      <div class="gacha-pickup-ribbon">PICK UP</div>
+      <div class="gacha-banner-icon" id="gachaPickupBannerIcon"></div>
+      <div class="gacha-banner-info">
+        <div class="gacha-banner-eyebrow">🎯 기간 한정 픽업 진행 중</div>
+        <div class="gacha-banner-grade" id="gachaPickupBannerGrade"></div>
+        <div class="gacha-banner-name" id="gachaPickupBannerName">-</div>
+        <div class="gacha-banner-hint" id="gachaPickupBannerHint">일반 뽑기와 별도로 진행됩니다</div>
+      </div>
+    </div>
 
     <div class="gacha-banner" id="gachaBanner">
       <div class="gacha-banner-glow"></div>
@@ -1850,13 +2006,31 @@
       </div>
     </div>
 
-    <div class="craft-card gacha-pull-card">
+    <div class="craft-card gacha-pull-card hide" id="gachaPickupCard" style="border:1px solid var(--gold-dim);">
+      <div class="gacha-banner-eyebrow" style="text-align:center; margin-bottom:8px;">🎯 픽업 뽑기 (기간 한정, 일반 뽑기와 별도)</div>
       <div class="gacha-pull-btns">
-        <button class="btn-upgrade gacha-pull-btn" id="gachaPull1Btn">1회 뽑기 (<span id="gachaCost1">100</span>💠)</button>
-        <button class="btn-upgrade gacha-pull-btn" id="gachaPull10Btn">10회 뽑기 (<span id="gachaCost10">900</span>💠)</button>
-        <button class="btn-upgrade gacha-pull-btn hide" id="gachaGuarBtn">🎁 확정 뽑기 (<span id="gachaGuarCost">0</span>💠)</button>
+        <button class="btn-upgrade gacha-pull-btn" id="gachaPickup1Btn">픽업 1회 뽑기 (<span id="gachaPickupCost1">100</span>💠)</button>
+        <button class="btn-upgrade gacha-pull-btn" id="gachaPickup10Btn">픽업 10회 뽑기 (<span id="gachaPickupCost10">900</span>💠)</button>
       </div>
-      <button class="gacha-inv-open-btn" id="gachaInvOpenBtn">🎒 내 아이템 보기</button>
+      <div class="settings-note" id="gachaPickupEndNote" style="text-align:center; margin-top:8px;"></div>
+    </div>
+
+    <!-- 픽업뽑기 탭인데 선택된 카테고리에 지금 진행 중인 픽업이 없을 때만 보이는 안내문. -->
+    <div class="settings-note hide" id="gachaPickupEmptyNote" style="text-align:center; margin:0 0 12px;">현재 이 카테고리는 진행 중인 픽업이 없습니다. 위에서 다른 카테고리를 확인해보세요.</div>
+
+    <div class="craft-card gacha-pull-card">
+      <div class="gacha-pull-btns" id="gachaNormalPullBtns">
+        <button class="btn-upgrade gacha-pull-btn" id="gachaPull1Btn">일반 1회 뽑기 (<span id="gachaCost1">100</span>💠)</button>
+        <button class="btn-upgrade gacha-pull-btn" id="gachaPull10Btn">일반 10회 뽑기 (<span id="gachaCost10">900</span>💠)</button>
+      </div>
+      <!-- 확정뽑기는 더 이상 별도 버튼/재화가 아니라, 일반·픽업 뽑기를 합산한 횟수(피티)가 관리자가 정한 횟수에 도달하면
+           자동으로 지급되는 방식이다(advanceGachaPity). 이 줄은 그 진행 상황만 보여주는 안내문이며, 픽업뽑기 탭에서도
+           똑같이 표시되어 픽업 뽑기 역시 같은 피티에 합산되고 있음을 보여준다. -->
+      <div class="settings-note hide" id="gachaGuarProgressNote" style="text-align:center; margin-top:12px;"></div>
+    </div>
+
+    <div class="gacha-history-row">
+      <button type="button" class="gacha-history-open-btn" id="gachaHistoryBtn">📜 최근 뽑기 내역</button>
     </div>
   </div>
 
@@ -1932,6 +2106,17 @@
       <div class="settings-note">※ 최신 버전이 안 보이는 것 같으면 눌러주세요. 서버에서 게임을 다시 불러옵니다.</div>
     </div>
 
+    <div class="settings-section" id="pcShortcutsSection">
+      <h3>⌨ PC 단축키</h3>
+      <div class="kbd-list-row"><span class="kbd-key">W A S D</span><span>이동</span></div>
+      <div class="kbd-list-row"><span class="kbd-key">방향키</span><span>이동</span></div>
+      <div class="kbd-list-row"><span class="kbd-key">Space</span><span>공격</span></div>
+      <div class="kbd-list-row"><span class="kbd-key">Q</span><span>보스 소환</span></div>
+      <div class="kbd-list-row"><span class="kbd-key">E</span><span>NPC 상호작용 (말 걸기)</span></div>
+      <div class="kbd-list-row"><span class="kbd-key">R</span><span>스킬 사용</span></div>
+      <div class="settings-note">※ 키보드가 있는 PC 환경에서만 보이며, 해당 상황(예: 보스 소환 가능/NPC 근처/스킬 사용 가능)일 때만 실제로 동작합니다.</div>
+    </div>
+
     <div class="settings-section">
       <h3>👤 계정</h3>
       <div class="settings-row">로그인 상태: <b style="color:var(--text)" id="accountStatus">게스트</b></div>
@@ -1952,8 +2137,13 @@
     </div>
 
     <div class="settings-section">
-      <h3>🔄 전체 초기화</h3>
-      <div class="settings-row" style="color:var(--fail);">⚠ 골드·레벨·직업·아이템·장비·모든 스테이지 진행도가 전부 삭제되고 신규 계정처럼 처음부터 다시 시작합니다.</div>
+      <h3>🔄 초기화</h3>
+      <div class="settings-row" style="color:var(--fail);">⚠ 현재 직업의 레벨·골드·소환석·아이템·장비·스테이지 진행도만 삭제됩니다. 다른 직업의 진행도는 그대로 유지됩니다.</div>
+      <div class="settings-btn-row">
+        <button class="btn-settings-mini" id="jobResetBtn" style="color:var(--fail);border-color:var(--fail);">직업 초기화</button>
+      </div>
+      <div class="settings-note">※ 되돌릴 수 없습니다.</div>
+      <div class="settings-row" style="color:var(--fail); margin-top:12px;">⚠ 골드·레벨·직업·아이템·장비·모든 스테이지 진행도가 전부 삭제되고 신규 계정처럼 처음부터 다시 시작합니다.</div>
       <div class="settings-btn-row">
         <button class="btn-settings-mini" id="fullResetBtn" style="color:var(--fail);border-color:var(--fail);">전체 초기화</button>
       </div>
@@ -2072,6 +2262,16 @@
         <label class="switch"><input type="checkbox" id="noAutoEnterHouseToggle"><span class="slider"></span></label>
       </div>
       <div class="settings-toggle-row">
+        <span>보스 자동 소환</span>
+        <label class="switch"><input type="checkbox" id="bossAutoSummonSettingsToggle"><span class="slider"></span></label>
+      </div>
+      <div class="settings-note">※ 필드에서 보스 소환 버튼이 떴을 때 뜨는 "자동소환" 토글과 항상 같은 값으로 연동됩니다. 켜두면 잡몹 처치를 모두 완료하는 즉시 보스가 자동으로 소환됩니다.</div>
+      <div class="settings-toggle-row">
+        <span>스킬 자동 발동</span>
+        <label class="switch"><input type="checkbox" id="skillAutoCastToggle"><span class="slider"></span></label>
+      </div>
+      <div class="settings-note">※ 기본값은 꺼짐입니다. 켜두면 장착한 무기의 액티브 스킬(들)이 재사용 대기시간이 끝나고 마나가 충분히 모이는 즉시 자동으로 발동됩니다.</div>
+      <div class="settings-toggle-row">
         <span>히트박스 표시</span>
         <label class="switch"><input type="checkbox" id="hitboxToggle"><span class="slider"></span></label>
       </div>
@@ -2117,6 +2317,10 @@
         <button class="btn-settings-mini" id="adminPwBtn">확인</button>
       </div>
       <div id="adminPanel" style="display:none;">
+        <div class="settings-input-row" style="margin-bottom:10px;">
+          <button class="btn-settings-mini" id="adminUidCheckBtn" style="flex:1;">🔑 내 UID / Firebase 관리자(admins) 권한 확인</button>
+        </div>
+        <div class="settings-note" id="adminUidCheckNote"></div>
         <div class="settings-toggle-row">
           <span>⚡ 관리자 모드</span>
           <label class="switch"><input type="checkbox" id="adminGodModeToggle"><span class="slider"></span></label>
@@ -2133,14 +2337,16 @@
         </div>
         <div class="settings-note">※ 원하는 챕터·스테이지로 즉시 이동합니다(클리어 여부와 무관).</div>
         <div class="admin-grid">
-          <div class="admin-field"><label>골드</label><input type="number" id="adminGoldInput" min="0"><button class="btn-settings-mini" data-set="gold">설정</button></div>
-          <div class="admin-field"><label>다이아</label><input type="number" id="adminGemsInput" min="0"><button class="btn-settings-mini" data-set="gems">설정</button></div>
-          <div class="admin-field"><label>공격력 Lv</label><input type="number" id="adminAtkInput" min="0"><button class="btn-settings-mini" data-set="atk">설정</button></div>
-          <div class="admin-field"><label>체력 Lv</label><input type="number" id="adminHpInput" min="0"><button class="btn-settings-mini" data-set="hp">설정</button></div>
+          <div class="admin-field"><label>골드</label><input type="text" inputmode="decimal" id="adminGoldInput"><button class="btn-settings-mini" data-set="gold">설정</button></div>
+          <div class="admin-field"><label>다이아</label><input type="text" inputmode="decimal" id="adminGemsInput"><button class="btn-settings-mini" data-set="gems">설정</button></div>
+          <div class="admin-field"><label>마나</label><input type="text" inputmode="decimal" id="adminManaInput"><button class="btn-settings-mini" data-set="mana">설정</button></div>
+          <div class="admin-field"><label>공격력 Lv</label><input type="text" inputmode="decimal" id="adminAtkInput"><button class="btn-settings-mini" data-set="atk">설정</button></div>
+          <div class="admin-field"><label>체력 Lv</label><input type="text" inputmode="decimal" id="adminHpInput"><button class="btn-settings-mini" data-set="hp">설정</button></div>
           <div class="admin-field"><label>방어력 Lv</label><input type="number" id="adminDefInput" min="0"><button class="btn-settings-mini" data-set="def">설정</button></div>
           <div class="admin-field"><label>이동속도 Lv</label><input type="number" id="adminSpdInput" min="0"><button class="btn-settings-mini" data-set="spd">설정</button></div>
         </div>
-        <div class="settings-note">※ 골드는 입력값으로 즉시 설정되며, 성장 레벨은 관련 능력치에 다시 계산되어 반영됩니다.</div>
+        <div class="settings-note" id="adminCurrentStatsNote"></div>
+        <div class="settings-note">※ 골드·다이아·마나·공격력 Lv·체력 Lv는 입력값으로 즉시 설정되며, 성장 레벨(공격력·체력)은 관련 능력치에 다시 계산되어 반영됩니다. 이 5개 입력칸은 모두 HUD와 동일한 단위 표기(예: 1500000, 1.5a, 1.3ak)를 그대로 입력할 수 있고, 단위가 부족해지면 aa, ab...처럼 알파벳 자릿수가 계속 늘어나 사실상 한도 없이 큰 값을 입력할 수 있습니다. 마나는 계정에 저장되지 않는 값이라(접속마다 초기화) 설정한 값은 현재 접속 중에만 유지됩니다.</div>
         <div class="settings-toggle-row" style="margin-top:10px;">
           <span>📐 커스텀 화면비율 사용</span>
           <label class="switch"><input type="checkbox" id="adminCustomRatioToggle"><span class="slider"></span></label>
@@ -2154,108 +2360,6 @@
         <button class="btn-settings-mini" id="adminCustomRatioResetBtn" style="margin-top:6px; width:auto;">↺ 화면비율 기본값으로 초기화</button>
         <div class="settings-note">※ 가로/세로에 입력한 값이 화면 디자인 크기(BASE_W×BASE_H) 자체가 되어(예: 884×340), 다른 기기에서도 그 화면을 그대로 재현해 테스트/플레이할 수 있습니다. 끄면 기기에 맞춰 자동으로 돌아갑니다. 초기화 버튼은 이 화면비율 설정만 기본값으로 되돌립니다(다른 관리자 설정에는 영향 없음).</div>
 
-        <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--line);">
-          <div style="font-size:12.5px; font-weight:800; margin-bottom:8px;">📮 전체 우편 발송</div>
-          <div class="settings-input-row">
-            <input type="text" id="adminMailTitleInput" placeholder="제목 (예: 출석 이벤트 보상)">
-          </div>
-          <div class="settings-input-row" style="margin-top:6px;">
-            <input type="text" id="adminMailMsgInput" placeholder="메시지 (선택)">
-          </div>
-          <div class="admin-grid" style="margin-top:6px;">
-            <div class="admin-field"><label>골드</label><input type="number" id="adminMailGoldInput" min="0" value="0"></div>
-            <div class="admin-field"><label>다이아</label><input type="number" id="adminMailGemsInput" min="0" value="0"></div>
-          </div>
-          <div class="admin-stage-row" style="margin-top:6px;">
-            <label>아이템</label>
-            <select id="adminMailCatSelect">
-              <option value="">없음</option>
-              <option value="treasure">보물</option>
-              <option value="equipment">장비</option>
-            </select>
-            <select id="adminMailItemSelect" disabled></select>
-          </div>
-          <div class="admin-stage-row" style="margin-top:6px;">
-            <label>수량</label>
-            <input type="number" id="adminMailQtyInput" min="1" value="1" style="max-width:70px;">
-            <button class="btn-settings-mini" id="adminMailSendBtn" style="flex:1;">📮 전체 발송</button>
-          </div>
-          <div class="settings-note">※ 현재 접속 중인 모든 유저의 우편함에 즉시 도착합니다. 아이템 보상은 유저가 "받기"를 누른 시점에, 그 유저가 그때 플레이 중인 직업의 보관함으로 들어갑니다(인벤토리가 직업별로 분리 관리되기 때문). 골드·다이아·아이템 중 하나 이상은 반드시 설정해야 발송됩니다.</div>
-        </div>
-
-        <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--line);">
-          <div style="font-size:12.5px; font-weight:800; margin-bottom:8px;">🎯 픽업 뽑기 관리</div>
-          <div class="admin-stage-row">
-            <label>카테고리</label>
-            <select id="adminPickupCatSelect">
-              <option value="">선택</option>
-              <option value="weapon">무기</option>
-              <option value="treasure">보물</option>
-              <option value="equipment">장비</option>
-            </select>
-            <select id="adminPickupJobSelect" style="display:none;">
-              <option value="warrior">검사</option>
-              <option value="mage">마법사</option>
-              <option value="archer">궁수</option>
-              <option value="rogue">도적</option>
-            </select>
-          </div>
-          <select id="adminPickupItemSelect" multiple size="6" style="width:100%; margin-top:6px; background:var(--bg-panel-2); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:6px;" disabled></select>
-          <div class="admin-stage-row" style="margin-top:6px;">
-            <label>확률(%)</label>
-            <input type="number" id="adminPickupRateInput" min="0" max="100" step="0.001" placeholder="예: 5">
-          </div>
-          <div class="admin-stage-row" style="margin-top:6px;">
-            <button class="btn-settings-mini" id="adminPickupApplyBtn" style="flex:1;">✅ 픽업 적용</button>
-            <button class="btn-settings-mini" id="adminPickupOffBtn" style="flex:1;">⏹ 픽업 종료</button>
-          </div>
-          <div class="settings-note" id="adminPickupStatusNote">현재 픽업: 없음</div>
-          <div class="settings-note">※ Ctrl(또는 ⌘)+클릭으로 아이템을 여러 개 선택할 수 있습니다. 선택한 아이템들이 설정한 확률(%)을 균등하게 나눠 가지며, 나머지 확률은 기존 등급 확률표를 그대로 따릅니다. 모든 접속 중인 유저에게 실시간으로 즉시 반영됩니다.</div>
-        </div>
-
-        <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--line);">
-          <div style="font-size:12.5px; font-weight:800; margin-bottom:8px;">🎁 확정 뽑기 관리</div>
-          <div class="admin-stage-row">
-            <label>카테고리</label>
-            <select id="adminGuarCatSelect">
-              <option value="">선택</option>
-              <option value="weapon">무기</option>
-              <option value="treasure">보물</option>
-              <option value="equipment">장비</option>
-            </select>
-            <select id="adminGuarJobSelect" style="display:none;">
-              <option value="warrior">검사</option>
-              <option value="mage">마법사</option>
-              <option value="archer">궁수</option>
-              <option value="rogue">도적</option>
-            </select>
-          </div>
-          <div class="admin-stage-row" style="margin-top:6px;">
-            <label>확정 방식</label>
-            <select id="adminGuarModeSelect">
-              <option value="grade">등급 지정</option>
-              <option value="item">특정 아이템 지정</option>
-            </select>
-          </div>
-          <div class="admin-stage-row" id="adminGuarGradeRow" style="margin-top:6px;">
-            <label>등급</label>
-            <select id="adminGuarGradeSelect"></select>
-          </div>
-          <div class="admin-stage-row" id="adminGuarItemRow" style="margin-top:6px; display:none;">
-            <label>아이템</label>
-            <select id="adminGuarItemSelect" disabled></select>
-          </div>
-          <div class="admin-stage-row" style="margin-top:6px;">
-            <label>비용(💠)</label>
-            <input type="number" id="adminGuarCostInput" min="1" placeholder="예: 500">
-          </div>
-          <div class="admin-stage-row" style="margin-top:6px;">
-            <button class="btn-settings-mini" id="adminGuarApplyBtn" style="flex:1;">✅ 확정뽑기 적용</button>
-            <button class="btn-settings-mini" id="adminGuarOffBtn" style="flex:1;">⏹ 확정뽑기 종료</button>
-          </div>
-          <div class="settings-note" id="adminGuarStatusNote">현재 확정뽑기: 없음</div>
-          <div class="settings-note">※ "등급 지정"은 해당 등급 안에서 무작위 아이템 1개를, "특정 아이템 지정"은 선택한 그 아이템을 100% 확정 지급합니다. 뽑기 화면에 별도 "🎁 확정 뽑기" 버튼으로 표시되며, 카테고리가 일치할 때만 나타납니다.</div>
-        </div>
       </div>
     </div>
 
@@ -2327,6 +2431,17 @@
     </div>
     <div id="gachaOddsFeatured" class="odds-featured"></div>
     <div id="gachaOddsList"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="gachaHistoryModal">
+  <div class="modal-panel gacha-detail-panel">
+    <div class="modal-header">
+      <h2>📜 뽑기 내역</h2>
+      <button class="modal-close" id="gachaHistoryCloseBtn">✕</button>
+    </div>
+    <div id="gachaHistoryList" class="gacha-history-list"></div>
+    <div class="gacha-history-note">최근 뽑기 최대 100건까지 보관됩니다.</div>
   </div>
 </div>
 
@@ -2507,6 +2622,12 @@
         <div class="res"><div class="label">최대 체력</div><div class="value" id="hpGrowView">24</div></div>
       </div>
     </div>
+
+    <div class="craft-card" id="goldExchangeCard">
+      <div class="desc">챕터가 넘어가면 골드는 새 챕터 기준 0부터 다시 쌓입니다. 이전 챕터에 얼어붙은 골드는 여기서 지금 챕터 골드로 환전할 수 있습니다 (챕터 차이 1당 환율이 30배씩 복리로 나빠집니다: 1챕터 전 30:1, 2챕터 전 900:1...).</div>
+      <div class="settings-note" id="goldExchangeNote">이전 챕터에 얼어있는 골드가 없습니다.</div>
+      <div id="goldExchangeList"></div>
+    </div>
   </div>
 </div>
 
@@ -2559,8 +2680,8 @@
   // 업데이트(배포)할 때마다 이 두 값을 함께 갱신한다.
   // GAME_VERSION: 사람이 읽는 버전 번호 (예: 1.0.0 -> 1.0.1, 1.1.0 등 SemVer 스타일)
   // GAME_BUILD:   배포 시각을 YYYYMMDDHHmm 형식 숫자 문자열로 기록 (예: 202609120612 = 2026년 9월 12일 06시 12분)
-  const GAME_VERSION = '1.0.1';
-  const GAME_BUILD = '202609130138';
+  const GAME_VERSION = '1.0.0';
+  const GAME_BUILD = '202609140106';
 
   // ============ PWA 설치 강제 게이트 (안드로이드 전용) ============
   // 안드로이드에서 "설치" 없이 그냥 브라우저로 열었을 때는 #pwaInstallGate로 화면 전체를 덮어
@@ -3023,7 +3144,11 @@
     nearbyTalkNPC = best;
     if(typeof npcTalkBtnEl!=='undefined' && npcTalkBtnEl){
       npcTalkBtnEl.classList.toggle('show', !!best);
-      if(best) npcTalkBtnEl.textContent = best.onTalk ? `🗨 ${best.name}에게 말 걸기` : `💬 ${best.name}와(과) 대화하기`;
+      // 버튼 텍스트는 안쪽 라벨 span(npcTalkBtnLabelEl)만 갱신한다 — 버튼 전체에 textContent를
+      // 쓰면 옆에 붙여둔 PC 단축키 배지(E, kbd-hint)까지 함께 지워져버리기 때문.
+      if(best && typeof npcTalkBtnLabelEl!=='undefined' && npcTalkBtnLabelEl){
+        npcTalkBtnLabelEl.textContent = best.onTalk ? `🗨 ${best.name}에게 말 걸기` : `💬 ${best.name}와(과) 대화하기`;
+      }
     }
   }
 
@@ -4829,6 +4954,10 @@
   const ATTACK_RANGE=40, ATTACK_COOLDOWN=380;
   const ATTACK_ARC = Math.PI*0.62; // 공격 판정 부채꼴 각도(전체). 플레이어가 바라보는 방향 기준 좌우 절반씩
   const TILE = 28; // 필드 1칸의 픽셀 크기
+  // ===== 마나 (특수 무기 스킬 전용 자원) =====
+  // 현재는 "특이점의 지팡이"(SSS 무기)의 블랙홀 스킬만 소모하는 자원이라, 해당 무기를 장착했을 때만 HUD에 노출된다.
+  const MANA_MAX = 100;
+  const MANA_REGEN_PER_SEC = 5; // 100마나(블랙홀 1회 비용 = 전체 마나)를 회복하는 데 약 20초 — 마나 회복 속도 자체가 실질적인 재사용 제약이 된다
 
   // ===== 무기별 고유 프로필 =====
   // 근접무기: 바라보는 방향 기준 부채꼴(무기마다 다른 각도, 기본 45도)로 "무기를 휘두르는" 모션, 주변 3칸 이내의 모든 적을 한 번에 타격.
@@ -4967,7 +5096,14 @@
   const MAX_CONCURRENT_MOBS=32; // 화면 안에 항상 다수(30+)가 있도록 유지
   const MOB_CHASE_TRIGGER=220; // (더 이상 사용하지 않음 - 몬스터는 항상 추적)
   const AUTO_HUNT_SEARCH_RADIUS=2000; // 조작이 없을 때 사냥할 대상을 찾는 범위
-  function stageHpMult(){ return Math.pow(1.07, state.stage-1); } // 스테이지가 오를수록 몬스터 체력 배율 증가
+  // ===== 안전 상한: 강화 비용/몬스터 체력배율/능력치처럼 지수적으로 커질 수 있는 값을 다룰 때
+  // NaN/Infinity가 섞여 게임이 멈추는 사고를 막기 위한 공통 클램프. =====
+  const SAFE_NUM_CAP = 1e15; // 이 값을 넘어서면 이미 플레이에 아무 의미가 없으므로 여기서 상한으로 고정
+  function safeNum(n){
+    if(typeof n!=='number' || Number.isNaN(n) || !isFinite(n)) return SAFE_NUM_CAP;
+    return n>SAFE_NUM_CAP ? SAFE_NUM_CAP : n;
+  }
+  function stageHpMult(){ return safeNum(Math.pow(1.07, state.stage-1)); } // 스테이지가 오를수록 몬스터 체력 배율 증가 (안전 상한 적용)
   function stageDmgMult(){ return 1 + (state.stage-1)*0.08; } // 스테이지가 오를수록 피해량 배율 증가 (0.06 -> 0.08 상향)
   function bossTimeLimit(){ return Math.round(Math.min(55000, 32000 + state.stage*1400)); } // 보스전 제한시간(ms)
 
@@ -4981,6 +5117,62 @@
     if(stageInChapter===CHAPTER_STAGE_COUNT) return 'final';
     if(stageInChapter===10 || stageInChapter===20) return 'elite';
     return 'normal';
+  }
+
+  // ============ 챕터별 골드 환전 ============
+  // 이전 챕터에 얼어붙은 골드(state.frozenGold)를 지금 챕터 골드(state.gold)로 바꿀 때의 환율.
+  // 챕터 차이 1당 1/30씩 복리로 손해를 본다: 1챕터 전 골드는 30개당 1개, 2챕터 전은 900개(30^2)당 1개로 교환된다.
+  function goldExchangeRate(fromChapter){
+    const diff = Math.max(0, chapterOf(state.stage) - fromChapter);
+    return safeNum(Math.pow(30, diff));
+  }
+  // 지정한 옛 챕터(fromChapter)에 얼어있는 골드 중 oldGoldAmount만큼을 환전해 지금 챕터 골드로 바꾼다.
+  // 실제로 늘어난(지금 챕터 기준) 골드량을 반환한다.
+  function exchangeFrozenGold(fromChapter, oldGoldAmount){
+    const bucket = (state.frozenGold && state.frozenGold[fromChapter]) || 0;
+    const amt = Math.max(0, Math.min(Math.floor(oldGoldAmount||0), bucket));
+    if(amt<=0) return 0;
+    const rate = goldExchangeRate(fromChapter);
+    const gained = Math.floor(safeNum(amt/rate));
+    if(gained<=0){
+      toast('환율이 너무 낮아 지금은 환전해도 얻는 골드가 없습니다.', 'fail', true);
+      return 0;
+    }
+    state.frozenGold[fromChapter] = bucket - amt;
+    if(state.frozenGold[fromChapter]<=0) delete state.frozenGold[fromChapter];
+    state.gold = safeNum(state.gold + gained);
+    toast(`챕터 ${fromChapter} 골드 ${formatBigNum(amt)} → 현재 챕터 골드 ${formatBigNum(gained)}(으)로 환전했습니다.`, 'success', true);
+    updateHudText();
+    return gained;
+  }
+  // 골드 환전 UI(훈련소 패널) 갱신: 챕터별로 얼어있는 골드 목록과 예상 환전량을 표시한다.
+  function renderGoldExchange(){
+    if(typeof goldExchangeListEl==='undefined' || !goldExchangeListEl) return;
+    const frozen = state.frozenGold || {};
+    const keys = Object.keys(frozen).map(Number).filter(c=> frozen[c]>0).sort((a,b)=> b-a);
+    if(keys.length===0){
+      goldExchangeNoteEl.textContent = '이전 챕터에 얼어있는 골드가 없습니다.';
+      goldExchangeListEl.innerHTML = '';
+      return;
+    }
+    goldExchangeNoteEl.textContent = `현재 챕터: ${chapterOf(state.stage)} · 챕터 차이가 클수록 환율이 나빠지니 참고하세요.`;
+    goldExchangeListEl.innerHTML = '';
+    keys.forEach(ch=>{
+      const amt = frozen[ch];
+      const rate = goldExchangeRate(ch);
+      const gained = Math.floor(safeNum(amt/rate));
+      const row = document.createElement('div');
+      row.className = 'grow-row';
+      row.innerHTML = `
+        <div class="grow-info">
+          <div class="grow-label">챕터 ${ch} 골드</div>
+          <div class="grow-value">보유 ${formatBigNum(amt)} (환율 ${formatBigNum(rate)}:1 → 지금 챕터 골드 ${formatBigNum(gained)})</div>
+        </div>
+        <button class="btn-upgrade grow-btn" type="button">전액 환전</button>
+      `;
+      row.querySelector('button').addEventListener('click', ()=>{ exchangeFrozenGold(ch, amt); renderGoldExchange(); updateHudText(); });
+      goldExchangeListEl.appendChild(row);
+    });
   }
 
   // 1챕터 전용 정예/최종보스 디자인 (외형 틴트·스탯·패턴 전부 다르게 구성)
@@ -5129,6 +5321,9 @@
       gold:0, atk:3, stage:1, maxClearedStage:0,
       mobsKilled:0, mobsRequired:5, stageProgress:{}, // stageProgress: 스테이지별로 처치한 잡몹 수를 기억해 재방문 시 그대로 복원
       def:0, lvAtk:0, lvHp:0, lvDef:0, lvSpd:0,
+      // 챕터별 골드 분리/강화 영구전환 관련: frozenGold={이전 챕터 번호: 그 챕터에서 못 쓰고 얼어붙은 골드},
+      // permAtkBonus/permHpBonus=챕터 클리어 시 강화 능력치가 1.2배로 전환되어 절대 리셋되지 않는 영구 보너스
+      frozenGold:{}, permAtkBonus:0, permHpBonus:0,
       gems:0, // 뽑기 재화(소환석) — 직업마다 완전히 별개로 관리됨(아래 jobStats 참고)
       job:null, // 직업(클래스): 'warrior'|'mage'|'archer'|'rogue', 최초 접속 시 선택
       level:1, exp:0, // 캐릭터 레벨/경험치: 제한 없이 계속 오르며, 레벨이 오를수록 필요 경험치도 늘어난다
@@ -5146,6 +5341,11 @@
       itemOverrides:{},
       // 우편함에서 수령 완료한 우편 id 저장소: { [mailId]: true } — 계정 전체 공용(직업과 무관하게 한 번만 받을 수 있음)
       claimedMail:{},
+      // 확정뽑기 피티(진행도) 저장소: { [category]: {count, cfgKey} } — 카테고리별로 "일반+픽업 뽑기 합산 횟수"를 센다.
+      // cfgKey는 관리자가 적용한 확정뽑기 설정의 updatedAt이며, 관리자가 설정을 새로 바꾸면 진행도가 자동으로 리셋된다(advanceGachaPity 참고).
+      gachaPity:{},
+      // 최근 뽑기 내역: [{ts, category, mode, id, name, grade}, ...] 최신순으로 앞에 쌓이며 최대 GACHA_HISTORY_MAX개까지만 보관한다.
+      gachaHistory:[],
     };
   }
   let state = createFreshState();
@@ -5153,10 +5353,11 @@
   // 직업별로 완전히 분리 관리되는 진행치 키 목록: 레벨/경험치/성장 스탯·골드·소환석(보석)·스테이지 진행도뿐 아니라
   // 인벤토리(inv)와 장착 장비(equip)까지 전부 직업마다 따로 저장된다. 즉 직업을 바꾸면 완전히 다른 서버에
   // 접속한 것처럼 레벨/골드/보석/스테이지/보유 아이템/장착 아이템이 하나도 공유되지 않고 처음부터 새로 시작한다.
-  const JOB_STAT_KEYS = ['level','exp','lvAtk','lvHp','lvDef','lvSpd','atk','def','gold','gems','stage','maxClearedStage','stageProgress','inv','equip'];
+  const JOB_STAT_KEYS = ['level','exp','lvAtk','lvHp','lvDef','lvSpd','atk','def','gold','gems','stage','maxClearedStage','stageProgress','inv','equip','frozenGold','permAtkBonus','permHpBonus'];
   function defaultJobStats(){
     return {
       level:1, exp:0, lvAtk:0, lvHp:0, lvDef:0, lvSpd:0, atk:3, def:0, gold:0, gems:0, stage:1, maxClearedStage:0, stageProgress:{},
+      frozenGold:{}, permAtkBonus:0, permHpBonus:0,
       inv:{weapon:[], treasure:[], equipment:[]},
       equip:{weapon:[null,null,null], treasure:[null,null,null,null,null], equipment:[null,null,null,null]},
     };
@@ -5184,7 +5385,7 @@
 
 
   // ===== 설정 =====
-  let settings = { sfxVolume:70, bgmVolume:50, bgmTrack:'1', notify:true, killMsg:true, playerName:'', monsterChase:true, noAutoEnterHouse:false, weaponFx:true, screenFlash:true, skillSound:true, hitboxDebug:false, skipJobSelect:false, skipTitleScreen:false, miniMap:true, showAspectRatio:false, customRatioEnabled:false, customRatioW:16, customRatioH:9, fixedJoystick:false, bossAutoSummon:false }; // bossAutoSummon: 잡몹 처치 완료 시 보스를 자동으로 소환할지 여부 (기본 off)
+  let settings = { sfxVolume:70, bgmVolume:50, bgmTrack:'1', notify:true, killMsg:true, playerName:'', monsterChase:true, noAutoEnterHouse:false, weaponFx:true, screenFlash:true, skillSound:true, hitboxDebug:false, skipJobSelect:false, skipTitleScreen:false, miniMap:true, showAspectRatio:false, customRatioEnabled:false, customRatioW:16, customRatioH:9, fixedJoystick:false, bossAutoSummon:false, skillAutoCast:false }; // bossAutoSummon: 잡몹 처치 완료 시 보스를 자동으로 소환할지 여부 (기본 off) / skillAutoCast: 장착 무기의 액티브 스킬(들)을 마나가 차는 대로 자동 발동할지 여부 (기본 off)
   let adminUnlocked = false;
   let adminSkipMobRequirement = false; // 관리자: 모든 스테이지에서 잡몹 처치 없이 즉시 보스 소환 허용
   let adminAllStagesCleared = false; // 관리자: 비밀번호 입력 시 모든 스테이지를 클리어한 것으로 판정
@@ -5253,6 +5454,7 @@
   const GRADE_BY_KEY = {}; GACHA_GRADES.forEach(g=> GRADE_BY_KEY[g.key]=g);
   const SELL_VALUE = {SSS:800, SS:300, S:120, A:45, B:25, C:12, D:6, E:2};
   const GACHA_COST_1 = 100, GACHA_COST_10 = 900;
+  const GACHA_HISTORY_MAX = 100; // 뽑기 내역 최대 보관 개수(그 이상은 오래된 것부터 잘림)
 
   const GACHA_CATEGORY_LABEL = {weapon:'무기', treasure:'보물', equipment:'장비'};
   const WEAPON_NOUNS    = ['검','도끼','창','활','단검','지팡이','망치','낫','채찍','대검','쌍검','석궁','장검','철퇴','투창'];
@@ -5373,6 +5575,154 @@
   const ITEM_INDEX = {}; // id -> item, 조회 속도를 위한 캐시 (모든 직업의 무기 풀 + 보물/장비 풀을 전부 인덱싱해, 직업을 바꿔도 예전에 얻은 무기를 조회할 수 있게 한다)
   JOB_KEYS.forEach(jk=> GACHA_GRADES.forEach(g=> JOB_WEAPON_POOLS[jk][g.key].forEach(it=> ITEM_INDEX[it.id]=it)));
   ['treasure','equipment'].forEach(cat=> GACHA_GRADES.forEach(g=> GACHA_POOLS[cat][g.key].forEach(it=> ITEM_INDEX[it.id]=it)));
+  // ===== SSS 무기 특수 스킬: 블랙홀 =====
+  // 마법사 SSS 지팡이 1종(weapon_mage_SSS_0)을 "특이점의 지팡이"로 개명하고, 마나를 소모해 블랙홀을 소환하는
+  // 고유 액티브 스킬을 부여한다. 블랙홀은 주변 적을 중심으로 서서히 끌어당기며 지속시간 동안 주기적으로 피해를 준다.
+  // 밸런스: 마나 100/100(마나를 전부 소모) 소모, 재사용 대기시간 없음(요청에 따라 전 스킬 공통 삭제 — 마나 회복
+  // 속도(초당5, 약 20초)가 사실상의 재사용 제약이 된다), 반경 3.5칸, 5초간 0.5초마다 총 10틱 피해(틱당 공격력의 80% = 지속시간 내 총 공격력의
+  // 약 8배) — 광역 군집 제어기 성격이 강한 만큼 단일 대상 지속 딜은 보통 무기보다 낮게, 광역 상황에서 크게 이득을
+  // 보도록 설계. 또한 블랙홀 중심에 가까울수록 피해가 커져(centerBonusMax, 가장자리 1배 ~ 중심 최대 2.5배) 적을
+  // 중앙으로 끌어들여 몰아넣을수록 더 큰 보상을 받는다.
+  const BLACKHOLE_WEAPON_ID = 'weapon_mage_SSS_0';
+  if(ITEM_INDEX[BLACKHOLE_WEAPON_ID]){
+    const bhItem = ITEM_INDEX[BLACKHOLE_WEAPON_ID];
+    bhItem.name = '특이점의 지팡이';
+    bhItem.skill = {
+      id: 'blackhole',
+      manaCost: 100,
+      cooldownMs: 0, // 재사용 대기시간 삭제(요청 반영) — 마나가 채워지는 즉시 재사용 가능
+      radiusTiles: 5.5, // 폴백값. 실제 소환 시에는 castBlackHole()에서 "내 사거리*0.7"로 매번 덮어써진다(사거리 -30%).
+      durationMs: 5000,
+      tickMs: 500,
+      tickDmgMult: 0.8, // 틱당 기본 피해 = effectiveAtk() * tickDmgMult (여기에 중심 보너스가 추가로 곱해진다)
+      pullSpeed: 0.015, // 훨씬 더 강하고 빠르게 빨아들인다(더 빠른 흡입 요청 반영, 기존 대비 약 1.7배)
+      centerBonusMax: 1.5, // 블랙홀 중심에서는 최대 +150% 추가 피해(가장자리는 기본 피해 1배를 그대로 받고, 중심으로 갈수록 최대 2.5배까지 — 가장자리도 항상 피해를 받는다)
+      explodeDmgMult: 3.0, // 소멸 시 폭발 피해 = baseTickDmg * explodeDmgMult
+      explodeRadiusMult: 1.4, // 폭발 범위 = 블랙홀 반경 * explodeRadiusMult
+    };
+  }
+  // ===== 특이점의 지팡이 전용 기본 공격 설정: 블랙홀 투척 =====
+  // 다른 지팡이들의 등급별 "하늘에서 낙하" 공격(STAFF_GRADE_CONFIG)을 이 무기에는 전혀 쓰지 않고,
+  // 대신 플레이어가 직접 소형 블랙홀을 던져 날리는 전용 기본 공격으로 완전히 대체한다.
+  // 스킬(특이점 소환)보다 훨씬 작고 짧게 존재하지만, 기본 공격에도 동일하게 "중심부 추가 피해" 규칙이 적용된다.
+  const BLACKHOLE_ATTACK_CONFIG = {
+    id: 'blackhole',
+    radiusTiles: 3.5,       // 스킬(5.5칸)보다 작은 소형 블랙홀
+    durationMs: 700,      // 짧게 존재했다가 사라짐(2틱)
+    tickMs: 350,
+    tickDmgMult: 0.55,    // 틱당 기본 피해 = effectiveAtk() * 무기(지팡이) dmgMult * tickDmgMult
+    pullSpeed: 0.0055,    // 기본 공격도 훨씬 강하고 빠르게 끌어당긴다(기존 대비 약 2.5배)
+    centerBonusMax: 1.0,  // 중심 명중 시 최대 +100% 추가 피해(가장자리 1배 ~ 중심 2배)
+    explodeDmgMult: 1.8,  // 소멸 시 폭발 피해 = baseTickDmg * explodeDmgMult
+    explodeRadiusMult: 1.5, // 폭발 범위 = 블랙홀 반경 * explodeRadiusMult
+  };
+  // ===== SSS 무기 특수 스킬: 멀티버스 (검사 전용) =====
+  // 마법사의 "특이점의 지팡이"를 제외한 나머지 SSS 무기 중 하나(검사의 검)를 "멀티버스의 대검"으로 개명하고,
+  // 마나를 소모해 시전 지점에 차원 포탈을 여는 고유 액티브 스킬을 부여한다. 포탈은 존재하는 동안 일정 주기로
+  // 안에서 물건(쓰레기 → 마지막엔 항상 기차)을 뱉어내며 주변 적에게 피해를 준다. 기본 공격 방식은 그대로
+  // 유지되며(검사 고유 특성/등급별 근접 공격), 이 스킬은 "특이점의 지팡이"의 블랙홀처럼 액티브 스킬 버튼으로만
+  // 발동하는 추가 자원 소비 스킬이다. 마나 자원 체계(최대치/회복 속도/자연 회복)는 블랙홀과 완전히 공유한다.
+  const MULTIVERSE_WEAPON_ID = 'weapon_warrior_SSS_0';
+  if(ITEM_INDEX[MULTIVERSE_WEAPON_ID]){
+    const mvItem = ITEM_INDEX[MULTIVERSE_WEAPON_ID];
+    mvItem.name = '멀티버스의 대검';
+    // (2026-09 수정: 사용자 요청으로 멀티버스의 대검의 특수공격(액티브 스킬)을 완전히 삭제했다.
+    //  스킬 정의(mvItem.skill)를 아예 부여하지 않으므로 equippedWeaponSkill()이 null을 반환해
+    //  스킬 버튼/HUD에도 노출되지 않고 castEquippedActiveSkill()로도 발동되지 않는다.
+    //  포탈 관련 함수(spawnMultiversePortal 등)는 더 이상 어떤 무기에서도 호출되지 않는 죽은 코드로 남아있다.)
+  }
+  // ===== 속성 공격 시스템 (원소지배의 지팡이 전용) =====
+  // 6가지 속성(독/불/얼음/풀/물/번개) 각각 고유 효과를 갖는 "패시브" 공격 옵션이다.
+  // 패시브 상태에서는 매 공격 적중마다 속성별로 독립적인 확률(chance, %)로 발동한다.
+  // 액티브 스킬 "속성 폭주"(elementalBurst)를 사용하면 durationMs(5초)동안 확률 판정 없이
+  // 매 적중마다 6가지 속성 효과가 전부 함께 발동한다(패시브 상태의 상위호환 버전).
+  const ELEMENT_DEFS = {
+    poison:    {label:'독',   icon:'☠',  color:'#a855f7', desc:'적중 시 확률로 독을 걸어 일정 시간 동안 지속 피해를 입힙니다.'},
+    fire:      {label:'불',   icon:'🔥', color:'#ff6b3d', desc:'적중 시 확률로 적의 현재 체력의 일정 %를 즉시 추가로 태워버립니다.'},
+    ice:       {label:'얼음', icon:'❄',  color:'#8fd9ff', desc:'적중 시 확률로 적을 짧게 얼려 이동·공격을 완전히 멈춥니다.'},
+    grass:     {label:'풀',   icon:'🌿', color:'#5fd97a', desc:'적중 시 확률로 아군(플레이어)을 치료해주는 정령을 잠시 소환합니다.'},
+    water:     {label:'물',   icon:'💧', color:'#4aa3ff', desc:'적중 시 확률로 적의 이동속도와 공격속도를 일정 시간 감소시킵니다.'},
+    lightning: {label:'번개', icon:'⚡', color:'#ffe066', desc:'적중 시 확률로 공격력의 일정 %만큼 추가 피해를 즉시 입힙니다.'},
+  };
+  const MYTHIC_STAFF2_ID = 'weapon_mage_SSS_1'; // 자동 생성명(GRADE_ADJ.SSS[1]='신화의' + 지팡이 + rep1('Ⅱ') → "신화의 지팡이 Ⅱ") 대신 아래에서 "원소지배의 지팡이"로 직접 개명한다.
+  const MYTHIC_STAFF2_MAX_MANA = 400; // 이 무기를 장착한 동안에는 최대 마나가 400으로 늘어난다(기본 100의 4배).
+  if(ITEM_INDEX[MYTHIC_STAFF2_ID]){
+    const msItem = ITEM_INDEX[MYTHIC_STAFF2_ID];
+    // 6속성 공격 이름에 맞춰 무기명을 "원소지배의 지팡이"로 개명(멀티버스의 대검과 동일한 방식의 고유 개명).
+    msItem.name = '원소지배의 지팡이';
+    // 패시브 속성 공격: 특이점의 지팡이(매 공격 확정 AoE+흡입+폭발)와 맞먹는 화력이 나오도록,
+    // 확률/수치를 기존보다 크게 상향했다(2026-09 밸런스 조정: 기본 공격 자체도 스플래시를 갖도록 재설계됨).
+    msItem.elemental = {
+      poison:    {chance:28, ticks:5,  tickMs:1000, dmgPctOfAtk:65},   // 5초간, 1초마다 공격력의 65%씩 피해
+      fire:      {chance:22, hpPct:9},                                 // 적 현재체력의 9%를 즉시 추가 감소
+      ice:       {chance:18, freezeMs:1500},                           // 1.5초 동결(이동/공격 완전 정지)
+      grass:     {chance:16, healPct:4, durationMs:6000, tickMs:1000}, // 6초간 1초마다 최대체력의 4%씩 회복하는 정령 소환
+      water:     {chance:28, slowMs:3000, moveMult:0.4, atkMult:0.4},  // 3초간 이동속도/공격속도 60% 감소
+      lightning: {chance:32, dmgPctOfAtk:65},                          // 공격력의 65%만큼 즉시 추가 피해
+    };
+    // 액티브 스킬 "속성 폭주": 마나 200 소모(이 무기 최대마나는 400) → 5초간 모든 공격이 6속성을 전부 확정 발동.
+    msItem.skill = {
+      id: 'elementalBurst',
+      manaCost: 200,
+      maxManaOverride: MYTHIC_STAFF2_MAX_MANA,
+      cooldownMs: 0, // 재사용 대기시간 삭제(요청 반영) — 마나가 채워지는 즉시 재사용 가능
+      durationMs: 5000,
+    };
+  }
+  // ===== SSS 무기 3종: 절대수호의 지팡이 (마법사 전용, 스킬 2개) =====
+  // 마법사 SSS 지팡이 3번째 종(weapon_mage_SSS_2, 자동 생성명 "절대 지팡이")을 "절대수호의 지팡이"로 개명하고,
+  // 다른 SSS 무기와 달리 액티브 스킬을 2개 보유한다:
+  //   ① 수호령 소환(guardianSummon) - 소환된 수호령이 지속시간 동안 주기적으로 나(플레이어)를 치료하고 주변 적에게 피해를 주며,
+  //      "도발" 판정을 가져 그 범위 안의 잡몹은 나 대신 수호령을 목표로 삼아 공격한다(수호령은 피해를 받지 않는 미끼).
+  //      수호령의 체력/공격력/방어력은 매 소환 시점의 내 체력·공격력·방어력의 25%를 그대로 물려받는다(spawnGuardianTotem 참고).
+  //   ② 시간 정지(timeStop) - 마나를 모두 소모해 그 순간 필드의 모든 잡몹 "그리고 보스"까지 완전히 정지(이동/공격/패턴/제한시간 소모 전부 불가)시킨다.
+  //      더 이상 보스는 면역이 아니다(요청에 따라 보스도 동일하게 얼어붙는다). 실제 정지(freeze)는 5초간이지만,
+  //      그 이후로도 "시간 정지 표식"이 이어져 총 1분(TIME_STOP_DEBUFF_MS) 동안 방어력이 80% 깎인 채로 유지된다.
+  //      정지가 풀리기 0.1초 직전, 그 순간까지 정지되어 있던 모든 대상에게 "악령"이 하나씩 씌워져(spawnVengefulGhost)
+  //      1분간 따라다니며 5초마다 그 대상 자신의 공격력 10%만큼 피해를 준다.
+  //      또한 이동할 때마다 1%의 확률로 같은 정지 효과가 3초간(방어감소/악령은 동일하게 1분) 저절로 발동한다(rollMoveTimeStopProc).
+  //      같은 대상에게 정지가 다시 걸려도 중첩되지 않고, 정지시간/방어감소 지속시간 각각 "더 긴 쪽"으로만 교체된다(applyTimeStopTo).
+  // 두 스킬은 마나 자원(최대치 200/스킬①이 maxManaOverride 담당)은 공유하지만, 재사용 대기시간은 서로 독립적이다
+  // (스킬 버튼도 2개로 분리되어 동시에 굴릴 수 있다). 요청에 따라 두 스킬 모두 재사용 대기시간 자체를 삭제했다.
+  // ===== 시간 정지 공용 상수 (스킬②/이동 중 확률 발동 공용) =====
+  const TIME_STOP_DEBUFF_MS = 60000;     // 방어력 감소(80%) + "정지 표식"이 유지되는 총 시간(1분)
+  const TIME_STOP_DEF_REDUCE_PCT = 80;   // 시간 정지 표식이 남아있는 동안 감소되는 방어력 비율
+  const TIME_STOP_MOVE_PROC_CHANCE = 1;  // 이동 1칸(TILE)마다 시간 정지가 저절로 발동할 확률(%)
+  const TIME_STOP_MOVE_PROC_FREEZE_MS = 3000; // 이동 중 확률 발동 시 실제 정지(freeze) 지속시간
+  const TIME_STOP_GHOST_LIFE_MS = 60000; // 악령이 유지되는 시간(1분)
+  const TIME_STOP_GHOST_TICK_MS = 5000;  // 악령이 피해를 주는 주기(5초)
+  const TIME_STOP_GHOST_DMG_PCT = 75;    // 악령 피해 = 이 악령을 소환한 시전자(플레이어)의 공격력 * 이 비율(%) — 요청 반영: 75%
+  const TIME_STOP_GHOST_TRIGGER_LEAD_MS = 100; // 정지가 풀리기 이 시간(0.1초) 전에 악령을 소환
+  const GUARDIAN_STAFF_ID = 'weapon_mage_SSS_2';
+  const GUARDIAN_STAFF_MAX_MANA = 200;
+  if(ITEM_INDEX[GUARDIAN_STAFF_ID]){
+    const gsItem = ITEM_INDEX[GUARDIAN_STAFF_ID];
+    gsItem.name = '절대수호의 지팡이';
+    // 스킬① 수호령 소환: 마나 100 소모(최대마나 200의 절반). 지속 8초 동안 1초마다
+    // 최대체력의 4%(8틱 총 32%) 회복 + 반경 안의 적에게 공격력의 40%(8틱 총 320%) 피해, 도발로 나를 보호한다.
+    // 화력/치유량 자체는 블랙홀·멀티버스보다 낮게 잡되, "생존기"로서의 가치(도발+지속회복)로 밸런스를 맞췄다.
+    gsItem.skill = {
+      id: 'guardianSummon',
+      manaCost: 100,
+      maxManaOverride: GUARDIAN_STAFF_MAX_MANA,
+      cooldownMs: 0, // 재사용 대기시간 삭제(요청 반영) — 마나가 채워지는 즉시 재사용 가능
+      durationMs: 8000,
+      tickMs: 1000,
+      healPctOfMaxHp: 4,   // 틱당 내 최대체력의 4%를 회복
+      dmgPctOfAtk: 40,     // 틱당 공격력의 40%만큼 반경 안의 적에게 피해
+      taunt: true,
+    };
+    // 스킬② 시간 정지: 마나 200(전부) 소모. 필드의 모든 잡몹+보스를 5초간 완전 정지시키고,
+    // 이후 방어력 80% 감소 표식을 1분간 남기는 강력한 광역 CC라 재사용 대기시간은 없앴지만
+    // 마나 소모량 자체(전부)가 사실상의 재사용 제약이 된다.
+    gsItem.skill2 = {
+      id: 'timeStop',
+      manaCost: 200,
+      maxManaOverride: GUARDIAN_STAFF_MAX_MANA,
+      cooldownMs: 0, // 재사용 대기시간 삭제(요청 반영)
+      durationMs: 5000, // 실제 이동/공격이 완전히 멈추는 "정지" 시간(이후 방어감소는 TIME_STOP_DEBUFF_MS만큼 더 유지됨)
+    };
+  }
   function findItemById(category, id){ return ITEM_INDEX[id] || null; }
 
   // 카테고리에서 가장 높은 등급의 대표 아이템(배너에 걸릴 "가장 강한" 아이템)
@@ -5754,23 +6104,106 @@
       });
     });
   }
-  // 관리자가 설정한 픽업 뽑기가 켜져 있고 카테고리가 일치하면, 지정 확률(%)만큼 픽업 아이템 중
-  // 하나를 균등한 확률로 먼저 시도한다. 무기는 현재 직업 풀에 실제로 존재하는 아이템만 유효하다
-  // (다른 직업용으로 설정된 픽업 아이템은 자동으로 걸러진다).
-  function pullOne(category){
-    const pk = gachaConfig.pickup;
-    if(pk && pk.active && pk.category===category && Array.isArray(pk.itemIds) && pk.itemIds.length){
+  // 관리자가 설정한 픽업/확정 뽑기가 "지금 이 순간" 실제로 유효한지 검사한다.
+  // active 플래그뿐 아니라 시작/종료 기간(startAt/endAt, 없으면 무제한)까지 함께 확인한다.
+  function isGachaConfigLive(cfg){
+    if(!cfg || !cfg.active) return false;
+    const now = Date.now();
+    if(cfg.startAt && now < cfg.startAt) return false;
+    if(cfg.endAt && now >= cfg.endAt) return false;
+    return true;
+  }
+  // 종료 시각이 지났고, 그 지난 지 24시간이 넘은 설정인지 확인한다. 관리자 탭의 픽업/확정뽑기 현황
+  // 안내문에서 "이미 오래전에 끝난 설정"은 목록에서 아예 숨기되, 끝난 지 하루가 안 된 것은 참고할 수
+  // 있도록 계속 보여주기 위한 기준이다.
+  function isConfigStaleExpired(cfg){
+    if(!cfg || !cfg.endAt) return false;
+    const now = Date.now();
+    return cfg.endAt < now && (now - cfg.endAt) > 24*60*60*1000;
+  }
+  // 픽업이 켜져있는지(isGachaConfigLive)뿐 아니라, "등급별 확률"이 실제로 1개 이상 설정돼 있거나
+  // "특정 아이템 지정"이 지금 이 카테고리(직업 스코프 포함)에 실제로 존재하는 아이템을 가리키고 있어서
+  // 지금 이 카테고리에서 정말로 뽑을 대상이 있는지까지 확인한다. 픽업뽑기 탭의 카테고리 점(dot) 표시와
+  // "진행 중인 픽업 없음" 안내문이 renderPickupNotice와 항상 같은 기준을 쓰도록 이 함수 하나로 통일한다.
+  function isPickupActuallyLive(category){
+    const pk = gachaConfig.pickup[category];
+    if(!isGachaConfigLive(pk)) return false;
+    if(pk.mode==='grade'){
+      return GACHA_GRADES.some(g=> (Number(pk.gradeRates && pk.gradeRates[g.key])||0) > 0);
+    }
+    if(Array.isArray(pk.itemIds) && pk.itemIds.length){
       const curIds = new Set(allItemsFlat(category).map(it=>it.id));
-      const validIds = pk.itemIds.filter(id=> curIds.has(id));
-      if(validIds.length){
-        const rate = Math.max(0, Math.min(100, Number(pk.ratePercent)||0));
-        if(Math.random()*100 < rate){
-          const item = findItemById(category, validIds[Math.floor(Math.random()*validIds.length)]);
-          addToInventory(category, item.id);
-          return item;
+      return pk.itemIds.some(id=> curIds.has(id));
+    }
+    return false;
+  }
+  // 남은 시간을 "3일 4시간", "2시간 15분", "40초" 처럼 사람이 읽기 쉬운 형태로 변환한다.
+  function formatRemainMs(ms){
+    if(ms<=0) return '종료됨';
+    const sec = Math.floor(ms/1000);
+    const d = Math.floor(sec/86400), h = Math.floor((sec%86400)/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+    if(d>0) return `${d}일 ${h}시간`;
+    if(h>0) return `${h}시간 ${m}분`;
+    if(m>0) return `${m}분 ${s}초`;
+    return `${s}초`;
+  }
+  function formatDateTime(ts){
+    const d = new Date(ts);
+    const pad = n=> String(n).padStart(2,'0');
+    return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  // 픽업/확정 뽑기의 종료 예정(또는 시작 예정) 안내 문구. 기간을 설정하지 않았으면 빈 문자열을 돌려준다.
+  function gachaPeriodNoteText(cfg){
+    if(!cfg) return '';
+    const now = Date.now();
+    if(cfg.startAt && now < cfg.startAt) return `${formatDateTime(cfg.startAt)}부터 시작 예정`;
+    if(cfg.endAt) return `종료까지: ${formatRemainMs(cfg.endAt-now)} (${formatDateTime(cfg.endAt)} 종료)`;
+    return '';
+  }
+
+  // 관리자가 설정한 "등급별 확률 지정" 픽업(pk.mode==='grade')이 지금 유효할 때, 등급마다 따로
+  // 설정된 확률(%)을 순서대로 굴려 당첨된 등급 안에서 무작위 아이템 1개를 돌려준다(당첨 없으면 null).
+  function rollPickupGradeItem(pk, category){
+    if(!pk || !pk.gradeRates) return null;
+    const r = Math.random()*100;
+    let acc = 0;
+    for(const g of GACHA_GRADES){
+      const rate = Math.max(0, Number(pk.gradeRates[g.key])||0);
+      acc += rate;
+      if(r < acc){
+        const list = poolOf(category)[g.key];
+        return (list && list.length) ? list[Math.floor(Math.random()*list.length)] : null;
+      }
+    }
+    return null;
+  }
+  // 관리자가 설정한 픽업 뽑기(카테고리별로 완전히 독립적으로 켤 수 있음)가 지금(기간 포함) 유효하면,
+  // 방식(mode)에 따라 "등급별 확률 지정"(gradeRates) 또는 "특정 아이템 지정"(itemIds+ratePercent)으로
+  // 먼저 시도한다. 무기는 현재 직업 풀에 실제로 존재하는 아이템만 유효하다(다른 직업용 픽업은 자동으로 걸러짐).
+  // 이 함수는 "픽업 뽑기" 전용 버튼에서만 호출되며, 일반 뽑기(pullOneNormal)와는 완전히 분리되어 있다.
+  function pullOnePickup(category){
+    const pk = gachaConfig.pickup[category];
+    if(isGachaConfigLive(pk)){
+      if(pk.mode==='grade'){
+        const item = rollPickupGradeItem(pk, category);
+        if(item){ addToInventory(category, item.id); return item; }
+      } else if(Array.isArray(pk.itemIds) && pk.itemIds.length){
+        const curIds = new Set(allItemsFlat(category).map(it=>it.id));
+        const validIds = pk.itemIds.filter(id=> curIds.has(id));
+        if(validIds.length){
+          const rate = Math.max(0, Math.min(100, Number(pk.ratePercent)||0));
+          if(Math.random()*100 < rate){
+            const item = findItemById(category, validIds[Math.floor(Math.random()*validIds.length)]);
+            addToInventory(category, item.id);
+            return item;
+          }
         }
       }
     }
+    return pullOneNormal(category);
+  }
+  // 일반 뽑기 전용: 픽업 설정 여부와 무관하게 항상 기본 등급 확률표만 사용한다(픽업 뽑기와 완전히 분리).
+  function pullOneNormal(category){
     const grade = pickGrade();
     const list = poolOf(category)[grade.key];
     const item = list[Math.floor(Math.random()*list.length)];
@@ -5778,11 +6211,21 @@
     return item;
   }
 
+  // 뽑기 내역 1건 기록: 최신 항목이 배열 맨 앞에 오도록 쌓고, GACHA_HISTORY_MAX를 넘으면 오래된 것부터 잘라낸다.
+  function pushGachaHistory(category, mode, item){
+    if(!Array.isArray(state.gachaHistory)) state.gachaHistory = [];
+    state.gachaHistory.unshift({ ts:Date.now(), category, mode, id:item.id, name:item.name, grade:item.grade });
+    if(state.gachaHistory.length > GACHA_HISTORY_MAX) state.gachaHistory.length = GACHA_HISTORY_MAX;
+  }
+  // 뽑기 1회(단발 또는 10연) 결과 전체를 내역에 기록한다. mode: 'normal'|'pickup' — doGachaPull/doPickupPull에서 각각 호출.
+  function recordGachaHistory(category, mode, results){
+    results.forEach(item=> pushGachaHistory(category, mode, item));
+  }
   // 관리자가 설정한 확정 뽑기 대상(특정 아이템 또는 등급)을 현재 상태 기준으로 계산한다.
-  // 무기는 현재 직업 풀에 실제로 존재할 때만 유효하다.
+  // 무기는 현재 직업 풀에 실제로 존재할 때만 유효하다. 카테고리별로 완전히 독립적으로 설정되어 있다.
   function guaranteedPullTarget(category){
-    const gr = gachaConfig.guaranteed;
-    if(!gr || !gr.active || gr.category!==category) return null;
+    const gr = gachaConfig.guaranteed[category];
+    if(!isGachaConfigLive(gr)) return null;
     if(gr.mode==='item'){
       const item = findItemById(category, gr.itemId);
       if(item && allItemsFlat(category).some(it=> it.id===item.id)) return item;
@@ -5795,28 +6238,63 @@
     }
     return null;
   }
-  function doGuaranteedPull(category){
-    if(gachaAnimating) return;
-    const gr = gachaConfig.guaranteed;
-    if(!gr || !gr.active || gr.category!==category){ toast('현재 진행 중인 확정 뽑기가 없습니다.', 'fail', true); return; }
-    const target = guaranteedPullTarget(category);
-    if(!target){ toast('확정 뽑기 대상 아이템을 지금은 사용할 수 없습니다(직업 확인).', 'fail', true); return; }
-    const cost = Math.max(1, Math.floor(Number(gr.cost)||0));
-    if(state.gems < cost){ toast('소환석이 부족합니다.', 'fail', true); return; }
-    state.gems -= cost;
-    addToInventory(category, target.id);
-    SFX.gachaSummon();
-    updateHudText();
-    renderGachaView();
-    playGachaPullAnim(category, [target], ()=> showGachaResult(category, [target]));
+  // 확정뽑기 피티(진행도) 상태를 가져온다. 예전 세이브 데이터에는 없을 수 있으므로 없으면 새로 만든다.
+  function getGachaPity(category){
+    if(!state.gachaPity) state.gachaPity = {};
+    if(!state.gachaPity[category]) state.gachaPity[category] = {count:0, cfgKey:null};
+    return state.gachaPity[category];
   }
+  // 확정뽑기는 더 이상 별도 버튼이 아니라, "이 카테고리에서 일반+픽업 뽑기를 합쳐서 몇 번째 뽑기인가"를 세는
+  // 피티 카운터다. 관리자가 설정한 반복 횟수(pityCount)에 도달하는 순간의 뽑기 결과를 확정 대상으로 강제한다.
+  // 관리자가 확정뽑기 설정을 새로 바꾸면(updatedAt이 달라짐) 진행 중이던 카운트는 자동으로 리셋된다.
+  // 실제 낱개 뽑기를 수행하는 pullOneNormal/pullOnePickup 앞단에서, 카테고리 단위로 한 번만 호출해야 한다.
+  function advanceGachaPity(category){
+    const gr = gachaConfig.guaranteed[category];
+    if(!isGachaConfigLive(gr)) return null;
+    const pity = getGachaPity(category);
+    if(pity.cfgKey !== gr.updatedAt){ pity.count = 0; pity.cfgKey = gr.updatedAt; }
+    pity.count++;
+    const need = Math.max(1, Math.floor(Number(gr.pityCount)||1));
+    if(pity.count >= need){
+      const target = guaranteedPullTarget(category);
+      if(target){ pity.count = 0; return target; }
+    }
+    return null;
+  }
+  // 뽑기 1회를 수행하되, 그 전에 먼저 확정뽑기 피티가 이번 뽑기에서 발동해야 하는지 확인한다.
+  // 발동하면 실제 확률 로직(rawPullFn) 대신 확정 대상 아이템을 지급한다. 일반/픽업 뽑기 어느 쪽에서 호출되든
+  // 같은 카운터에 함께 반영되므로("아무 뽑기나 일정 횟수를 채우면"), doGachaPull/doPickupPull에서만 사용한다.
+  function pullOneWithPity(category, rawPullFn){
+    const forced = advanceGachaPity(category);
+    if(forced){ addToInventory(category, forced.id); return forced; }
+    return rawPullFn(category);
+  }
+  // 일반 뽑기: 픽업 설정과 무관하게 항상 기본 등급 확률표만 사용한다(픽업 뽑기 버튼과 완전히 분리).
   function doGachaPull(category, times){
     if(gachaAnimating) return;
     const cost = times===10 ? GACHA_COST_10 : GACHA_COST_1;
     if(state.gems < cost){ toast('소환석이 부족합니다.', 'fail', true); return; }
     state.gems -= cost;
     const results = [];
-    for(let i=0;i<times;i++) results.push(pullOne(category));
+    for(let i=0;i<times;i++) results.push(pullOneWithPity(category, pullOneNormal));
+    recordGachaHistory(category, 'normal', results);
+    SFX.gachaSummon();
+    updateHudText();
+    renderGachaView();
+    playGachaPullAnim(category, results, ()=> showGachaResult(category, results));
+  }
+  // 픽업 뽑기 전용: 비용 체계는 일반 뽑기와 동일하지만, 뽑기 확률 로직(pullOnePickup)이 완전히 분리되어 있고
+  // 관리자가 설정한 픽업이 지금(기간 포함) 유효할 때만 실행된다.
+  function doPickupPull(category, times){
+    if(gachaAnimating) return;
+    const pk = gachaConfig.pickup[category];
+    if(!isGachaConfigLive(pk)){ toast('현재 진행 중인 픽업 뽑기가 없습니다.', 'fail', true); return; }
+    const cost = times===10 ? GACHA_COST_10 : GACHA_COST_1;
+    if(state.gems < cost){ toast('소환석이 부족합니다.', 'fail', true); return; }
+    state.gems -= cost;
+    const results = [];
+    for(let i=0;i<times;i++) results.push(pullOneWithPity(category, pullOnePickup));
+    recordGachaHistory(category, 'pickup', results);
     SFX.gachaSummon();
     updateHudText();
     renderGachaView();
@@ -5857,6 +6335,11 @@
   }
   // category: 'weapon'|'treasure'|'equipment', slotIndex: 0~해당 카테고리 슬롯개수-1 (무기도 최대 3개까지 동시 장착 가능)
   function equipItem(category, id, slotIndex){
+    // 보스전(소환 연출 포함) 중에는 장비를 바꿀 수 없다 - 전투 중 스탯이 갑자기 바뀌는 것을 막기 위함.
+    if(bossActive || bossIncoming){
+      toast('보스전 중에는 장비를 변경할 수 없습니다!', 'danger', true);
+      return;
+    }
     slotIndex = slotIndex||0;
     // 이미 같은 카테고리의 다른 슬롯에 껴 있던 아이템이면, 중복 장착이 되지 않도록 그 슬롯을 먼저 비운다(사실상 슬롯 이동).
     const prevSlot = findEquippedSlot(category, id);
@@ -5864,6 +6347,7 @@
     state.equip[category][slotIndex] = id;
     recalcGear();
     applyHpGrowth();
+    player.mana = 0; // 요청 반영: 장비를 바꾸면(장착) 마나는 항상 0으로 초기화된다
     updateHudText();
     renderGachaView();
     renderEquipView();
@@ -5871,10 +6355,16 @@
     toast(`${item.name} 장착!`, 'success', true);
   }
   function unequipItem(category, slotIndex){
+    // 보스전 중에는 장비 해제도 막는다(장착 변경의 일부이므로 동일하게 제한).
+    if(bossActive || bossIncoming){
+      toast('보스전 중에는 장비를 변경할 수 없습니다!', 'danger', true);
+      return;
+    }
     slotIndex = slotIndex||0;
     state.equip[category][slotIndex] = null;
     recalcGear();
     applyHpGrowth();
+    player.mana = 0; // 요청 반영: 장비를 바꾸면(해제) 마나는 항상 0으로 초기화된다
     updateHudText();
     renderGachaView();
     renderEquipView();
@@ -5883,6 +6373,12 @@
     const inv = state.inv[category];
     const entry = inv.find(e=>e.id===id);
     if(!entry) return;
+    // 보스전 중에 장착 중인 장비를 판매하면 강제로 해제되어버리므로(=장비 변경) 이 역시 막는다.
+    // 장착하지 않은 여분 아이템 판매는 전투 중에도 그대로 허용한다.
+    if((bossActive || bossIncoming) && findEquippedSlot(category, id)>=0){
+      toast('보스전 중에는 장착 중인 장비를 판매할 수 없습니다!', 'danger', true);
+      return;
+    }
     const item = findItemById(category, id);
     const val = SELL_VALUE[item.grade] || 1;
     entry.count -= 1;
@@ -5971,7 +6467,762 @@
     return cd;
   }
 
-  // 필드 캐릭터에 장착한 무기/장비/보물 모양을 등급색 도트로 실제로 그려 넣는다.
+  // ===== 블랙홀 스킬 (특이점의 지팡이 전용) =====
+  // 현재 장착한 무기가 블랙홀 스킬을 갖고 있는지(=특이점의 지팡이인지) 확인한다.
+  function equippedWeaponSkill(){
+    const item = equippedWeaponItem();
+    return item && item.skill ? item.skill : null;
+  }
+  // 절대수호의 지팡이처럼 스킬을 2개 가진 무기의 "두 번째" 스킬(현재는 시간 정지)을 반환한다.
+  function equippedWeaponSkill2(){
+    const item = equippedWeaponItem();
+    return item && item.skill2 ? item.skill2 : null;
+  }
+  // 블랙홀 인스턴스 하나를 (wx,wy) 위치에 생성한다. 이후 update(dt)의 updateBlackHoles가 매 프레임 갱신을 담당한다.
+  // cfg: {radiusTiles, durationMs, tickMs, tickDmgMult, pullSpeed, centerBonusMax, dmgBaseMult, isAttack}
+  // dmgBaseMult: effectiveAtk()에 추가로 곱할 배율(기본 공격은 무기 dmgMult를, 스킬은 1을 넘긴다).
+  // isAttack이 true면 "기본 공격(투척)"으로 생성된 소형 블랙홀이라, 시전 전용 효과음/붕괴 효과음을 생략해
+  // 잦은 기본 공격마다 큰 소환음이 겹쳐 시끄러워지는 것을 막는다.
+  function spawnBlackHole(wx, wy, cfg){
+    blackHoles.push({
+      wx, wy,
+      radius: cfg.radiusTiles*TILE,
+      pullSpeed: cfg.pullSpeed,
+      tickMs: cfg.tickMs,
+      tickTimer: 0, // 0으로 시작해 생성 직후 첫 틱이 바로 한 번 들어가게 한다
+      baseTickDmg: Math.max(1, Math.round(effectiveAtk()*(cfg.dmgBaseMult||1)*cfg.tickDmgMult)),
+      centerBonusMax: cfg.centerBonusMax||0,
+      explodeDmgMult: cfg.explodeDmgMult||0,
+      explodeRadiusMult: cfg.explodeRadiusMult||1.3,
+      life: cfg.durationMs,
+      spawnT: 0, // 등장 연출(확장 애니메이션)용 경과 시간
+      isAttack: !!cfg.isAttack,
+      vfxTimer: 0, // 흡입 파티클 스폰 주기 타이머
+      humTimer: 0, // 유지 웅웅거림 효과음 주기 타이머
+    });
+    if(!cfg.isAttack) SFX.blackholeCast();
+  }
+  // 블랙홀이 소멸하는 순간, 끌어모았던 적들 한가운데서 한 번 크게 터진다: 폭발 반경(=블랙홀 반경*배율) 안의
+  // 모든 적(+보스)에게 폭발 피해를 주고 바깥으로 튕겨내며, 화려한 폭발 이펙트와 효과음을 함께 재생한다.
+  function explodeBlackHole(bh){
+    if(!bh.explodeDmgMult) return;
+    const R = bh.radius*bh.explodeRadiusMult;
+    const dmg = Math.max(1, Math.round(bh.baseTickDmg*bh.explodeDmgMult));
+    const knockPow = bh.isAttack ? 2.6 : 3.8;
+    mobs.forEach(mob=>{
+      if(mob.dying>0 || mob.dead) return;
+      const dx=mob.wx-bh.wx, dy=mob.wy-bh.wy, d=Math.hypot(dx,dy)||1;
+      if(d>R) return;
+      damageMob(mob, dmg, false, 'blackhole');
+      // 흡수됐던 반동으로 바깥을 향해 크게 튕겨나간다
+      mob.knockVX = (mob.knockVX||0) + (dx/d)*knockPow;
+      mob.knockVY = (mob.knockVY||0) + (dy/d)*knockPow;
+    });
+    if(boss && boss.dying===0){
+      const dx=boss.wx-bh.wx, dy=boss.wy-bh.wy, d=Math.hypot(dx,dy)||1;
+      if(d<=R) damageBoss(dmg, false);
+    }
+    spawnBlackHoleExplosionFx(bh, R);
+    SFX.blackholeExplode(bh.isAttack);
+    triggerScreenShake(bh.isAttack?1.2:2.6, bh.isAttack?110:220);
+  }
+  // 블랙홀 폭발 전용 연출: 중심이 순간 새하얗게 번쩍이며 부풀었다가, 겹겹의 확산 링과 빛줄기, 사방으로
+  // 튀는 파편이 한꺼번에 터져나간다. 스킬(대형)일수록 더 화려하고, 기본 공격(소형)은 축소된 버전으로 재생.
+  function spawnBlackHoleExplosionFx(bh, R){
+    if(!settings.weaponFx) return;
+    const wx=bh.wx, wy=bh.wy-8;
+    spawnImpactRing(wx, wy, 2, R*0.4, '#ffffff', bh.isAttack?160:220, 3);
+    spawnImpactRing(wx, wy, 4, R*0.95, '#ff3fae', bh.isAttack?260:420, bh.isAttack?2.4:3.4);
+    spawnImpactRing(wx, wy, 6, R*1.2, '#7c5cff', bh.isAttack?220:360, 2);
+    spawnImpactRays(wx, wy, bh.isAttack?6:11, R*0.8, '#c9a6ff', bh.isAttack?220:340);
+    const shardN = bh.isAttack ? 10 : 22;
+    for(let i=0;i<shardN;i++){
+      const a=Math.random()*Math.PI*2, spd=2+Math.random()*3.4;
+      particles.push({wx, wy, vx:Math.cos(a)*spd, vy:Math.sin(a)*spd*0.6, life:0.32+Math.random()*0.3, color: Math.random()<0.5?'#ffffff':(Math.random()<0.5?'#ff3fae':'#7c5cff'), shape:'shard', size:3+Math.random()*3, noGrav:true});
+    }
+    if(!bh.isAttack) triggerScreenFlash('#c9a6ff', 0.2, 180);
+  }
+  // 활성 블랙홀들을 매 프레임 갱신: 지속시간 감소, 반경 내 몹(+보스)을 중심으로 서서히 끌어당기고,
+  // 틱마다 피해를 준다. 중심에 가까운 대상일수록 centerBonusMax만큼 추가 피해를 받는다
+  // (가장자리 1배 ~ 중심 (1+centerBonusMax)배로 선형 보간).
+  function updateBlackHoles(dt){
+    if(!blackHoles.length) return;
+    for(let i=blackHoles.length-1;i>=0;i--){
+      const bh = blackHoles[i];
+      bh.spawnT += dt;
+      bh.life -= dt;
+      if(bh.life<=0){
+        explodeBlackHole(bh);
+        blackHoles.splice(i,1); continue;
+      }
+      bh.tickTimer -= dt;
+      const doTick = bh.tickTimer<=0;
+      if(doTick) bh.tickTimer += bh.tickMs;
+      // 유지되는 동안 주기적으로 낮은 웅웅거림을 재생(대형 스킬 블랙홀에서만 — 짧은 기본 공격은 생략)
+      if(!bh.isAttack){
+        bh.humTimer -= dt;
+        if(bh.humTimer<=0){ bh.humTimer = 900; SFX.blackholeHum(); }
+      }
+      // 흡입되는 느낌을 강조하는 파티클: 반경 가장자리에서 생성되어 중심으로 빨려 들어간다
+      if(settings.weaponFx){
+        bh.vfxTimer -= dt;
+        if(bh.vfxTimer<=0){
+          bh.vfxTimer = bh.isAttack ? 90 : 55;
+          const ang = Math.random()*Math.PI*2;
+          const startR = bh.radius*(0.82+Math.random()*0.18);
+          const px = bh.wx+Math.cos(ang)*startR, py = bh.wy+Math.sin(ang)*startR*0.55-8;
+          const ddx=bh.wx-px, ddy=(bh.wy-8)-py, dd=Math.hypot(ddx,ddy)||1;
+          const spd = 0.9+Math.random()*0.7;
+          particles.push({wx:px, wy:py, vx:(ddx/dd)*spd, vy:(ddy/dd)*spd, life:0.4+Math.random()*0.2, color: Math.random()<0.5?'#c9a6ff':'#ff3fae', shape:'glow', size:1.6+Math.random()*1.6, noGrav:true});
+        }
+      }
+      const mobDmgAt = (d)=>{
+        const closeness = 1 - Math.min(1, d/bh.radius);
+        return Math.max(1, Math.round(bh.baseTickDmg*(1+bh.centerBonusMax*closeness)));
+      };
+      mobs.forEach(mob=>{
+        if(mob.dying>0 || mob.dead) return;
+        const dx=bh.wx-mob.wx, dy=bh.wy-mob.wy, d=Math.hypot(dx,dy)||1;
+        if(d>bh.radius) return;
+        const pull = Math.min(d, bh.pullSpeed*dt*10);
+        if(pull>0){ mob.wx += (dx/d)*pull; mob.wy += (dy/d)*pull; }
+        if(doTick) damageMob(mob, mobDmgAt(d), false, 'blackhole');
+      });
+      // 보스도 반경 안에 있으면 함께 끌어당기고 피해를 준다(단, 보스는 55% 강도로만 끌려와 완전히 묶이지 않는다).
+      if(boss && boss.dying===0){
+        const dx=bh.wx-boss.wx, dy=bh.wy-boss.wy, d=Math.hypot(dx,dy)||1;
+        if(d<=bh.radius){
+          const pull = Math.min(d, bh.pullSpeed*dt*10*0.55);
+          if(pull>0){ boss.wx += (dx/d)*pull; boss.wy += (dy/d)*pull; }
+          if(doTick) damageBoss(mobDmgAt(d), false);
+        }
+      }
+    }
+  }
+  // 맵 전체(사거리 제한 없음)에서 살아있는 모든 적을 살펴, 블랙홀 반경 안에 가장 많은 적이 함께 몰리게 되는
+  // 위치(=적이 가장 밀집한 지점)를 찾아 그 자리에 블랙홀을 소환한다. 적이 하나도 없을 때만
+  // 바라보는 방향 앞쪽에 소환해 진형을 미리 봉쇄하는 용도로 쓸 수 있게 한다.
+  function castBlackHole(){
+    const skill = equippedWeaponSkill();
+    if(!skill || skill.id!=='blackhole' || inHouse) return;
+    const now = now_ms();
+    if(blackholeSkillCooldownUntil > now){ toast('아직 재사용 대기시간입니다.', 'fail', true); return; }
+    if(player.mana < skill.manaCost){ toast('마나가 부족합니다.', 'fail', true); return; }
+    player.mana -= skill.manaCost;
+    blackholeSkillCooldownUntil = now + skill.cooldownMs;
+    // 특수공격(블랙홀 소환)의 범위는 고정값이 아니라 "현재 내 공격 사거리의 70%"(=사거리 -30%)를 그대로 따른다.
+    // 사거리 증가 옵션/무기 등급업 등으로 평소 공격 사거리가 늘어나면 블랙홀 범위도 함께 커진다.
+    const radiusTiles = (effectiveAttackRange()*0.7)/TILE;
+    const aliveMobs = mobs.filter(m=> m.dying<=0 && !m.dead);
+    let bestMob=null, bestCount=-1;
+    const clusterR = radiusTiles*TILE;
+    aliveMobs.forEach(m=>{
+      let cnt=0;
+      aliveMobs.forEach(o=>{ if(Math.hypot(o.wx-m.wx, o.wy-m.wy) <= clusterR) cnt++; });
+      if(cnt>bestCount){ bestCount=cnt; bestMob=m; }
+    });
+    const castX = bestMob ? bestMob.wx : player.wx+player.facing.x*TILE*3;
+    const castY = bestMob ? bestMob.wy : player.wy+player.facing.y*TILE*3;
+    spawnBlackHole(castX, castY, {...skill, radiusTiles, dmgBaseMult:1, isAttack:false});
+  }
+  // 활성 블랙홀들을 화면에 그린다. 실제 블랙홀처럼 보이도록 다음 레이어를 겹쳐 그린다:
+  // ① 넓게 번지는 중력렌즈 헤일로(따뜻한 색~보라색 그라데이션) ② 기울어진 강착원반(뒤쪽 절반 먼저, 핵 뒤로 지나가게)
+  // ③ 완전한 암흑의 사건의 지평선(그림자) ④ 지평선 바로 바깥을 두르는 새하얀 광자 고리(빛이 휘어 보이는 부분)
+  // ⑤ 강착원반 앞쪽 절반(핵 앞을 지나가 불투명하게 보임) ⑥ 게임플레이용 흡입 범위 경계·중심 보너스 경계·회전 링·흡입 화살촉.
+  // 소멸 직전(마지막 800ms)에는 지평선 가장자리가 붉게 깜빡이며 붕괴를 예고한다.
+  // 기본 공격(isAttack)의 소형 블랙홀은 강착원반 밴드 수를 줄인 축소판으로 그려 잦은 발동에도 화면이 번잡해지지 않게 한다.
+  function drawBlackHoles(){
+    if(!blackHoles.length) return;
+    const tms = now_ms();
+    blackHoles.forEach(bh=>{
+      const cx=sx(bh.wx), cy=sy(bh.wy);
+      const growT = Math.min(1, bh.spawnT/220); // 소환 후 220ms 동안 0→1로 확장
+      const rad = Math.max(0, bh.radius*growT); // 버그 수정: 음수 반지름이 arc/ellipse/createRadialGradient에 그대로 들어가 오류가 나지 않도록 0 이상으로 클램프
+      const pulse = 0.5+0.5*Math.sin(tms/140);
+      const collapsing = !bh.isAttack && bh.life < 800; // 소멸 임박 경고 연출 여부
+      const collapseFlicker = collapsing ? (0.5+0.5*Math.sin(tms/45)) : 0;
+      const diskTiltY = 0.42; // 강착원반을 눕혀 그리는 세로 압축비 — 위에서 비스듬히 내려다보는 원반처럼 보이게 한다
+      ctx.save();
+
+      // ① 중력렌즈 헤일로 — 뜨거운 안쪽(주황/금)에서 차가운 바깥(보라)으로 넓게 번지는 다중 색 오라
+      // 버그 수정: rad가 0 이하이거나 아주 작을 때 createRadialGradient의 바깥 반지름(r1)이 안쪽 반지름(r0)보다
+      // 작아지면(혹은 음수가 되면) "IndexSizeError: r1 provided is less than 0"이 발생하므로, 항상 안쪽보다 크도록 클램프한다.
+      const haloInnerR = Math.max(1, rad*0.12);
+      const haloR = Math.max(haloInnerR+1, rad*1.9);
+      const halo = ctx.createRadialGradient(cx,cy,haloInnerR,cx,cy,haloR);
+      halo.addColorStop(0,   'rgba(255,214,150,0.17)');
+      halo.addColorStop(0.32,'rgba(255,140,120,0.13)');
+      halo.addColorStop(0.62,'rgba(150,80,220,0.10)');
+      halo.addColorStop(1,   'rgba(90,50,170,0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath(); ctx.arc(cx, cy, haloR, 0, Math.PI*2); ctx.fill();
+
+      // ② 강착원반 - 여러 겹의 얇은 밴드로 그려 두께감을 내고, 안쪽일수록 뜨거운 흰-금색, 바깥일수록 차가운 보라색이 되게 한다.
+      // fromA~toA 구간(라디안)만 그려 "핵의 뒤/앞을 지나가는 절반"을 나눠 그릴 수 있게 한다.
+      const diskSpin = tms/520;
+      const diskROuter = rad*1.5, diskRInner = rad*0.46;
+      const bandN = bh.isAttack ? 3 : 5;
+      const drawDiskArc = (fromA, toA, alphaMul)=>{
+        for(let b=0;b<bandN;b++){
+          const bt = b/(bandN-1); // 0=바깥(차가운 보라) → 1=안쪽(뜨거운 흰-금)
+          const rr = diskRInner + (diskROuter-diskRInner)*(1-bt);
+          let color;
+          if(bt>0.7) color = `rgba(255,${Math.round(232-bt*8)},${Math.round(214-bt*70)},${(0.55+0.35*bt)*alphaMul})`;
+          else if(bt>0.35) color = `rgba(255,${Math.round(150+bt*110)},${Math.round(80+bt*90)},${(0.42+0.32*bt)*alphaMul})`;
+          else color = `rgba(${Math.round(150+bt*130)},${Math.round(90+bt*50)},255,${(0.26+0.26*bt)*alphaMul})`;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = Math.max(1.3, rad*0.085);
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, rr, Math.max(1,rr*diskTiltY), 0, fromA+diskSpin, toA+diskSpin);
+          ctx.stroke();
+        }
+      };
+      drawDiskArc(Math.PI*0.04, Math.PI*0.96, 0.55); // 뒤쪽 절반 — 핵보다 먼저 그려 반투명하게 가려지게 한다
+
+      // ③ 사건의 지평선(완전한 암흑의 그림자) — 위아래로 살짝 눌린 타원으로 "빛조차 빠져나오지 못하는 구멍" 표현
+      const coreRX = Math.max(1, rad*0.42*growT)*(bh.isAttack?0.85:1);
+      const coreRY = coreRX*0.86;
+      const shadowGrad = ctx.createRadialGradient(cx,cy,0,cx,cy,coreRX);
+      if(collapsing){
+        shadowGrad.addColorStop(0,'#000000');
+        shadowGrad.addColorStop(0.72,'#180007');
+        shadowGrad.addColorStop(1,`rgba(255,80,110,${0.55+0.4*collapseFlicker})`);
+      } else {
+        shadowGrad.addColorStop(0,'#000000');
+        shadowGrad.addColorStop(0.78,'#050109');
+        shadowGrad.addColorStop(1,'rgba(20,10,35,0.92)');
+      }
+      ctx.fillStyle = shadowGrad;
+      ctx.beginPath(); ctx.ellipse(cx, cy, coreRX, coreRY, 0, 0, Math.PI*2); ctx.fill();
+
+      // ④ 광자 고리(photon ring) — 지평선 바로 바깥을 두르는 매우 얇고 밝은 흰빛 테두리(중력에 휘어진 빛)
+      ctx.strokeStyle = collapsing ? `rgba(255,255,255,${0.72+0.28*collapseFlicker})` : `rgba(255,246,224,${0.5+0.32*pulse})`;
+      ctx.lineWidth = Math.max(1, rad*0.05);
+      ctx.beginPath(); ctx.ellipse(cx, cy, coreRX*1.1, coreRY*1.1, 0, 0, Math.PI*2); ctx.stroke();
+
+      drawDiskArc(Math.PI*1.04, Math.PI*1.96, 1.0); // 앞쪽 절반 — 핵 위로 지나가 또렷하게 보이게 한다
+
+      // 흡입 범위 경계 + 은은한 안쪽 채움 (소멸 임박 시 붉게 경고 점멸)
+      const ringColor = collapsing ? `rgba(255,${Math.round(63+collapseFlicker*100)},${Math.round(80-collapseFlicker*40)},${0.4+0.3*collapseFlicker})` : `rgba(124,92,255,${0.30+0.25*pulse})`;
+      ctx.strokeStyle = ringColor;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, rad, 0, Math.PI*2); ctx.stroke();
+      ctx.fillStyle = 'rgba(80,50,160,0.07)';
+      ctx.beginPath(); ctx.arc(cx, cy, rad, 0, Math.PI*2); ctx.fill();
+      // 중심부(피해 증가 구간)를 은은하게 표시하는 안쪽 점선 경계
+      ctx.setLineDash([3,4]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(cx, cy, rad*0.45, 0, Math.PI*2); ctx.stroke();
+      ctx.setLineDash([]);
+      // 회전하는 소용돌이 링 (강착원반과 별개로 도는 얇은 에너지 링 — 흡입 범위를 계속 강조)
+      const spin = tms/260;
+      const ringCount = bh.isAttack ? 2 : 3;
+      for(let i=0;i<ringCount;i++){
+        const ang = spin + i*(Math.PI*2/ringCount);
+        ctx.strokeStyle = 'rgba(255,63,174,0.5)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rad*0.62, ang, ang+1.6);
+        ctx.stroke();
+      }
+      // 안쪽으로 빨려드는 흡입 화살촉(쐐기) — 반경 둘레를 따라 돌며 "빨아들이는" 방향을 시각적으로 드러낸다
+      if(!bh.isAttack){
+        const chevronN = 6;
+        const chevSpin = -tms/380; // 안쪽 링과 반대로 돌아 흡입감을 더한다
+        for(let i=0;i<chevronN;i++){
+          const ang = chevSpin + i*(Math.PI*2/chevronN);
+          const outR = rad*0.86, inR = rad*0.68;
+          const ox=cx+Math.cos(ang)*outR, oy=cy+Math.sin(ang)*outR*0.94;
+          const ix=cx+Math.cos(ang)*inR, iy=cy+Math.sin(ang)*inR*0.94;
+          const perp = ang+Math.PI/2;
+          ctx.fillStyle = 'rgba(201,166,255,0.6)';
+          ctx.beginPath();
+          ctx.moveTo(ox+Math.cos(perp)*3, oy+Math.sin(perp)*3);
+          ctx.lineTo(ox-Math.cos(perp)*3, oy-Math.sin(perp)*3);
+          ctx.lineTo(ix, iy);
+          ctx.closePath(); ctx.fill();
+        }
+      }
+      ctx.restore();
+    });
+  }
+
+  // ===== 멀티버스 스킬 (멀티버스의 대검 전용) =====
+  // 블랙홀처럼 "끌어당기며 지속 피해"를 주는 대신, 포탈이 열려있는 동안 일정 주기로 포탈에서
+  // 물건이 튀어나와 그 순간 반경 안의 적에게 한 번씩 피해를 주는 방식이다(끌어당기는 효과 없음).
+  // 마지막 등장은 항상 "기차"로 고정되어 훨씬 큰 피해를 주는 마무리 타격 역할을 한다.
+  function spawnMultiversePortal(wx, wy, cfg){
+    const totalTicks = Math.max(1, Math.round(cfg.durationMs/cfg.tickMs));
+    multiversePortals.push({
+      wx, wy,
+      radius: cfg.radiusTiles*TILE,
+      tickMs: cfg.tickMs,
+      tickTimer: 0, // 0으로 시작해 생성 직후 첫 물건이 바로 튀어나오게 한다
+      baseTickDmg: Math.max(1, Math.round(effectiveAtk()*cfg.tickDmgMult)),
+      finaleDmgMult: cfg.finaleDmgMult||1,
+      life: cfg.durationMs,
+      totalTicks, tickCount:0,
+      spawnT: 0, // 등장 연출(포탈이 열리는 확장 애니메이션)용 경과 시간
+    });
+    SFX.blackholeCast();
+  }
+  // 포탈에서 물건 하나가 튀어나오는 순간의 연출 + 판정. isFinale이면 항상 기차이고, 아니면 쓰레기류 중 하나를 무작위로 고른다.
+  function spawnMultiverseObjectFx(mv, isFinale){
+    const wx = mv.wx, wy = mv.wy-10;
+    const dmg = isFinale ? Math.max(1, Math.round(mv.baseTickDmg*mv.finaleDmgMult)) : mv.baseTickDmg;
+    const char = isFinale ? '🚂' : (Math.random()<0.5 ? '🗑️' : '🚮');
+    const hitR = isFinale ? mv.radius*1.05 : mv.radius*0.62; // 기차는 포탈 반경 전체, 쓰레기는 절반 정도만 맞힌다
+    particles.push({wx, wy, vx:0, vy:-0.35, life: isFinale?0.6:0.42, color:'#ffffff', shape:'emoji', char, size: isFinale?36:24, noGrav:true});
+    spawnImpactRing(wx, wy, 3, hitR, isFinale?'#ff8c42':'#c9a6ff', isFinale?380:220, isFinale?3.2:2);
+    if(settings.weaponFx) spawnImpactRays(wx, wy, isFinale?9:5, hitR*0.85, '#7c5cff', isFinale?320:200);
+    SFX.blackholeExplode(!isFinale);
+    triggerScreenShake(isFinale?2.4:1.0, isFinale?220:90);
+    mobs.forEach(mob=>{
+      if(mob.dying>0 || mob.dead) return;
+      if(Math.hypot(mob.wx-mv.wx, mob.wy-mv.wy) <= hitR) damageMob(mob, dmg, false, 'multiverse');
+    });
+    if(boss && boss.dying===0 && Math.hypot(boss.wx-mv.wx, boss.wy-mv.wy) <= hitR){
+      damageBoss(dmg, false);
+    }
+  }
+  function updateMultiversePortals(dt){
+    if(!multiversePortals.length) return;
+    for(let i=multiversePortals.length-1;i>=0;i--){
+      const mv = multiversePortals[i];
+      mv.spawnT += dt;
+      mv.life -= dt;
+      if(mv.life<=0){ multiversePortals.splice(i,1); continue; }
+      mv.tickTimer -= dt;
+      if(mv.tickTimer<=0){
+        mv.tickTimer += mv.tickMs;
+        mv.tickCount += 1;
+        const isFinale = mv.tickCount >= mv.totalTicks; // 포탈의 마지막 등장은 항상 기차
+        spawnMultiverseObjectFx(mv, isFinale);
+      }
+    }
+  }
+  // 블랙홀과 동일한 방식으로, 사거리 안에서 적이 가장 밀집한 위치를 찾아 그 자리에 포탈을 연다.
+  function castMultiverse(){
+    const skill = equippedWeaponSkill();
+    if(!skill || skill.id!=='multiverse' || inHouse) return;
+    const now = now_ms();
+    if(blackholeSkillCooldownUntil > now){ toast('아직 재사용 대기시간입니다.', 'fail', true); return; }
+    if(player.mana < skill.manaCost){ toast('마나가 부족합니다.', 'fail', true); return; }
+    player.mana -= skill.manaCost;
+    blackholeSkillCooldownUntil = now + skill.cooldownMs;
+    const radiusTiles = (effectiveAttackRange()*0.7)/TILE;
+    const aliveMobs = mobs.filter(m=> m.dying<=0 && !m.dead);
+    let bestMob=null, bestCount=-1;
+    const clusterR = radiusTiles*TILE;
+    aliveMobs.forEach(m=>{
+      let cnt=0;
+      aliveMobs.forEach(o=>{ if(Math.hypot(o.wx-m.wx, o.wy-m.wy) <= clusterR) cnt++; });
+      if(cnt>bestCount){ bestCount=cnt; bestMob=m; }
+    });
+    const castX = bestMob ? bestMob.wx : player.wx+player.facing.x*TILE*3;
+    const castY = bestMob ? bestMob.wy : player.wy+player.facing.y*TILE*3;
+    spawnMultiversePortal(castX, castY, {...skill, radiusTiles});
+  }
+  // ===== 속성 폭주 스킬 (원소지배의 지팡이 전용) =====
+  // 블랙홀/멀티버스처럼 특정 위치에 무언가를 소환하는 대신, "durationMs(5초)동안 내 모든 공격이
+  // 6가지 속성 효과를 확률 판정 없이 전부 발동"하는 자기 강화형 스킬이다. 마나 자원(최대치/회복 속도)은
+  // 블랙홀·멀티버스와 완전히 동일한 체계를 공유하되, 이 무기를 장착한 동안만 최대마나가 400(스킬.maxManaOverride)으로 늘어난다.
+  function castElementalBurst(){
+    const skill = equippedWeaponSkill();
+    if(!skill || skill.id!=='elementalBurst' || inHouse) return;
+    const now = now_ms();
+    if(blackholeSkillCooldownUntil > now){ toast('아직 재사용 대기시간입니다.', 'fail', true); return; }
+    if(player.mana < skill.manaCost){ toast('마나가 부족합니다.', 'fail', true); return; }
+    player.mana -= skill.manaCost;
+    blackholeSkillCooldownUntil = now + skill.cooldownMs;
+    player.elementalBurstUntil = now + skill.durationMs;
+    toast('속성 폭주 발동! 5초간 모든 속성 공격이 확정 발동합니다.', 'great', true);
+    triggerScreenFlash('#c9a6ff', 0.16, 160);
+  }
+  // ===== 수호령 소환 스킬 (절대수호의 지팡이 스킬①) =====
+  // 시전 위치(내 바로 옆)에 수호령 하나를 소환한다. 수호령은 스스로 피해를 받지 않는 대신,
+  // 지속시간 동안 1초마다 나를 치료하고 반경 안의 적(잡몹+보스)에게 피해를 주며, 반경 안의 잡몹에게는
+  // "도발"이 걸려 나 대신 수호령을 목표로 쫓아가 공격하게 만든다(findNearestChaseTarget 참고).
+  const GUARDIAN_TOTEM_MAX_COUNT = 3; // 요청 반영: 수호령은 동시에 최대 3개까지 존재할 수 있다
+  function spawnGuardianTotem(wx, wy, skill){
+    // 요청 반영: 수호령은 소환 시점의 내 체력·공격력·방어력의 25%를 자신의 실제 스탯으로 그대로 물려받는다.
+    // 이제 더 이상 무적 미끼가 아니라, 이 체력이 깎여 0이 되면(잡몹의 공격을 방어력만큼 경감해 흡수) 소멸하는
+    // "진짜 몸빵 미끼"가 된다(실제 피해 처리는 아래 잡몹 공격 판정부(mob.atkTargetTaunted) 참고).
+    // 요청 반영: 더 이상 지속시간(life)이 다 되어 사라지지 않으며, 체력이 0이 될 때까지 영구히 존재한다.
+    // 동시에 최대 GUARDIAN_TOTEM_MAX_COUNT(3)개까지 존재할 수 있다(초과분은 castGuardianSummon에서 막는다).
+    const gMaxHp = Math.max(1, Math.round(player.maxHp*0.25));
+    guardianTotems.push({
+      wx, wy, r:22, // 도발당한 잡몹이 실제로 "명중 판정"을 시도하는 수호령 자체의 반경
+      radius: TILE*4, // 치료/피해 발동 범위(고정 4칸) — 소환 위치를 중심으로 항상 일정
+      tauntRadius: TILE*5.5, // 도발이 적용되는 범위(치료/피해 범위보다 살짝 더 넓게 잡아 다가오는 잡몹까지 미리 끌어당긴다)
+      tickMs: skill.tickMs,
+      tickTimer: 0, // 0으로 시작해 소환 직후 첫 틱이 바로 한 번 들어가게 한다
+      healPerTick: Math.max(1, Math.round(player.maxHp*skill.healPctOfMaxHp/100)),
+      dmgPerTick: Math.max(1, Math.round(effectiveAtk()*skill.dmgPctOfAtk/100)),
+      taunt: !!skill.taunt,
+      spawnT: 0,
+      maxHp: gMaxHp, hp: gMaxHp,                                   // 내 최대체력의 25%
+      atk: Math.max(1, Math.round(effectiveAtk()*0.25)),           // 내 공격력의 25%(표시/향후 확장용 스탯)
+      defPct: Math.round(effectiveDefPct()*0.25*10)/10,            // 내 방어력의 25%(잡몹 공격을 이 비율만큼 경감)
+    });
+    SFX.staffCast();
+  }
+  // 필드에 존재하는 "도발" 수호령들 중, 주어진 잡몹(mob)과 가장 가까운 것을 찾아 반환한다.
+  // 요청 반영: 이제 수호령이 최대 3개까지 동시에 존재할 수 있어, 잡몹마다 가장 가까운 수호령을 각자 추적하게 한다.
+  function activeTauntTotem(mob){
+    let best=null, bestD=Infinity;
+    for(let i=0;i<guardianTotems.length;i++){
+      const t = guardianTotems[i];
+      if(!t.taunt) continue;
+      if(!mob){ return t; } // 대상이 지정되지 않은 호출부(레거시 호환)는 첫 번째 도발 수호령을 반환
+      const d = Math.hypot(mob.wx-t.wx, mob.wy-t.wy);
+      if(d<bestD){ bestD=d; best=t; }
+    }
+    return best;
+  }
+  // 활성 수호령들을 매 프레임 갱신: tickMs마다 치료/피해 판정(체력이 0이 될 때까지 지속시간 제한 없이 영구 유지).
+  function updateGuardianTotems(dt){
+    if(!guardianTotems.length) return;
+    for(let i=guardianTotems.length-1;i>=0;i--){
+      const g = guardianTotems[i];
+      g.spawnT += dt;
+      g.tickTimer -= dt;
+      if(g.tickTimer<=0){
+        g.tickTimer += g.tickMs;
+        if(player.hp>0 && player.hp<player.maxHp){
+          player.hp = Math.min(player.maxHp, player.hp+g.healPerTick);
+          damageNumbers.push({wx:player.wx, wy:player.wy-(player.r||18)*2.4, text:'+'+formatBigNum(g.healPerTick), vy:-0.6, alpha:1, color:'#8fe0c9'});
+        }
+        mobs.forEach(mob=>{
+          if(mob.dying>0 || mob.dead) return;
+          if(Math.hypot(mob.wx-g.wx, mob.wy-g.wy) < g.radius) damageMob(mob, g.dmgPerTick, false, 'guardian');
+        });
+        if(boss && boss.dying===0 && Math.hypot(boss.wx-g.wx, boss.wy-g.wy) < g.radius){
+          damageBoss(g.dmgPerTick, false);
+        }
+        if(settings.weaponFx) spawnImpactRing(g.wx, g.wy-14, 2, g.radius*0.3, '#8fe0c9', 260, 1.6);
+      }
+    }
+  }
+  // 수호령을 화면에 그린다: 은은한 녹청색 오라 기둥 + 위에 떠서 맴도는 작은 빛 결정. 소멸 임박(마지막 700ms)에는 깜빡인다.
+  function drawGuardianTotems(){
+    if(!guardianTotems.length) return;
+    const tms = now_ms();
+    guardianTotems.forEach(g=>{
+      const cx=sx(g.wx), cy=sy(g.wy);
+      const growT = Math.min(1, g.spawnT/220);
+      // 요청 반영: 더 이상 지속시간이 없으므로, 대신 체력이 얼마 남지 않았을 때(15% 이하) 깜빡여 위태로움을 알린다.
+      const collapsing = g.maxHp>0 && (g.hp/g.maxHp) <= 0.15;
+      const flicker = collapsing ? (0.5+0.5*Math.sin(tms/45)) : 1;
+      const bob = Math.sin(tms/260)*4;
+      ctx.save();
+      ctx.globalAlpha = growT*flicker;
+      // 발밑 범위 표시(치료/피해 반경)
+      ctx.strokeStyle = 'rgba(143,224,201,0.45)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, g.radius*growT, 0, Math.PI*2); ctx.stroke();
+      ctx.fillStyle = 'rgba(80,200,170,0.08)';
+      ctx.beginPath(); ctx.arc(cx, cy, g.radius*growT, 0, Math.PI*2); ctx.fill();
+      // 은은한 빛기둥
+      const beamGrad = ctx.createLinearGradient(cx, cy+10, cx, cy-70);
+      beamGrad.addColorStop(0, 'rgba(143,224,201,0.55)');
+      beamGrad.addColorStop(1, 'rgba(143,224,201,0)');
+      ctx.fillStyle = beamGrad;
+      ctx.beginPath(); ctx.ellipse(cx, cy-30+bob, 16, 60, 0, 0, Math.PI*2); ctx.fill();
+      // 체력바: 이제 무적이 아니라 실제 체력(내 최대체력의 25%)을 갖고 있어, 얼마나 버틸 수 있는지 한눈에 보여준다
+      if(g.maxHp>0){
+        const barW=34, barH=4, barX=cx-barW/2, barY=cy-64+bob;
+        const hpRatio = Math.max(0, g.hp/g.maxHp);
+        ctx.fillStyle = 'rgba(10,21,19,0.7)';
+        ctx.fillRect(barX, barY, barW, barH);
+        ctx.fillStyle = hpRatio>0.35 ? '#8fe0c9' : '#ff9d9d';
+        ctx.fillRect(barX, barY, barW*hpRatio, barH);
+        ctx.strokeStyle = 'rgba(234,255,246,0.55)'; ctx.lineWidth = 1;
+        ctx.strokeRect(barX, barY, barW, barH);
+      }
+      // 맴도는 수호 결정 코어
+      ctx.fillStyle = '#eafff6';
+      ctx.strokeStyle = '#8fe0c9';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for(let i=0;i<6;i++){
+        const ang = tms/900 + i*(Math.PI*2/6);
+        const rr = i%2===0 ? 13 : 7;
+        const px = cx+Math.cos(ang)*rr, py = cy-42+bob+Math.sin(ang)*rr*0.9;
+        if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+      }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    });
+  }
+  // ===== 시간 정지 스킬 (절대수호의 지팡이 스킬②) — 공용 적용 로직 =====
+  // ref(잡몹 또는 보스) 하나에 시간 정지를 적용한다. freezeMs 동안은 이동/공격/패턴이 완전히 멈추고,
+  // debuffMs(보통 TIME_STOP_DEBUFF_MS=1분) 동안은 방어력이 TIME_STOP_DEF_REDUCE_PCT%만큼 깎인 채 유지된다.
+  // 요청 반영: 중복 적용되지 않으며, 이미 걸려있는 효과보다 "더 긴 쪽"으로만 교체된다(정지시간/방어감소 각각 독립 비교).
+  // 더 긴 정지로 새로 교체된 경우에만 "정지 종료 0.1초 전 악령 소환" 트리거를 다시 걸 수 있도록 ghostSpawned를 리셋한다.
+  function applyTimeStopTo(ref, freezeMs, debuffMs){
+    const now = now_ms();
+    if(!ref.timeStop) ref.timeStop = {freezeUntil:0, debuffUntil:0, ghostSpawned:false};
+    const newFreezeUntil = now + freezeMs;
+    const newDebuffUntil = now + debuffMs;
+    if(newFreezeUntil > ref.timeStop.freezeUntil){
+      ref.timeStop.freezeUntil = newFreezeUntil;
+      ref.timeStop.ghostSpawned = false;
+    }
+    if(newDebuffUntil > ref.timeStop.debuffUntil) ref.timeStop.debuffUntil = newDebuffUntil;
+  }
+  // 요청 반영: 시간 정지는 더 이상 필드 전체(모든 잡몹+보스)를 한꺼번에 멈추지 않는다.
+  // 대신 "악령"이 씌워질 그 개인(플레이어와 가장 가까운 적 하나)만 골라 멈춘다.
+  function nearestTimeStopTarget(){
+    let best=null, bestD=Infinity;
+    mobs.forEach(mob=>{
+      if(mob.dying>0 || mob.dead) return;
+      const d = Math.hypot(mob.wx-player.wx, mob.wy-player.wy);
+      if(d<bestD){ bestD=d; best=mob; }
+    });
+    if(boss && boss.dying<=0){
+      const d = Math.hypot(boss.wx-player.wx, boss.wy-player.wy);
+      if(d<bestD){ bestD=d; best=boss; }
+    }
+    return best;
+  }
+  // 요청 반영: 전체가 아니라 악령 스킬을 가진 각 개인(가장 가까운 적 하나)에게만 시간 정지를 적용한다.
+  // 스킬②(castTimeStop) 발동 시 이 함수를 사용한다.
+  function triggerTimeStop(freezeMs, debuffMs){
+    const target = nearestTimeStopTarget();
+    if(target) applyTimeStopTo(target, freezeMs, debuffMs);
+    return target;
+  }
+  // 요청 반영: 시간 정지는 오직 200마나짜리 스킬(castTimeStop)을 직접 사용했을 때만 발동해야 한다.
+  // 기존에는 이동할 때마다 1% 확률로 마나 소모 없이 저절로 발동하는 경우가 있었는데(rollMoveTimeStopProc),
+  // 이는 "200마나짜리 사용한 이후로만 적용"되어야 한다는 요청에 어긋나므로 더 이상 아무 효과도 내지 않게 막아둔다.
+  function rollMoveTimeStopProc(distMoved){
+    return; // 무료 자동 발동 비활성화 — 시간 정지는 castTimeStop()을 통한 200마나 소모 시에만 발동한다.
+  }
+  function castTimeStop(){
+    const skill = equippedWeaponSkill2();
+    if(!skill || skill.id!=='timeStop' || inHouse) return;
+    const now = now_ms();
+    if(timeStopSkillCooldownUntil > now){ toast('아직 재사용 대기시간입니다.', 'fail', true); return; }
+    if(player.mana < skill.manaCost){ toast('마나가 부족합니다.', 'fail', true); return; }
+    player.mana -= skill.manaCost;
+    timeStopSkillCooldownUntil = now + skill.cooldownMs;
+    const target = triggerTimeStop(skill.durationMs, TIME_STOP_DEBUFF_MS);
+    if(target){
+      toast('시간 정지 발동! 가장 가까운 적 하나가 5초간 완전히 멈추고, 이후 1분간 방어력이 크게 약해집니다.', 'great', true);
+    } else {
+      toast('시간 정지 발동! 그러나 근처에 멈출 대상이 없습니다.', 'great', true);
+    }
+    triggerScreenFlash('#eafff6', 0.22, 200);
+    triggerScreenShake(1.4, 160);
+  }
+  // ===== 악령 (시간 정지가 풀리기 0.1초 전, 정지되어 있던 대상에게 씌워지는 저주) =====
+  // 대상을 1분간 따라다니며 5초마다 "이 악령을 소환한 시전자(플레이어) 자신의 공격력 75%"만큼 피해를 준다
+  // (요청 반영: 대상 자신의 공격력이 아니라 시전자의 공격력 기준으로 계산한다. damageMob/damageBoss 재사용).
+  function spawnVengefulGhost(ref, kind){
+    const atkPower = effectiveAtk(); // 시전자(플레이어) 공격력 기준
+    vengefulGhosts.push({
+      targetRef: ref, targetKind: kind,
+      dmgPerTick: Math.max(1, Math.round(atkPower*TIME_STOP_GHOST_DMG_PCT/100)),
+      life: TIME_STOP_GHOST_LIFE_MS,
+      tickMs: TIME_STOP_GHOST_TICK_MS, tickTimer: TIME_STOP_GHOST_TICK_MS,
+      wx: ref.wx, wy: ref.wy, floatT: Math.random()*Math.PI*2,
+    });
+    if(settings.weaponFx) spawnImpactRing(ref.wx, ref.wy-(ref.r||18), 2, 20, '#8a6bff', 260, 1.8);
+  }
+  // 시간 정지(freeze)가 걸려있는 모든 대상을 매 프레임 검사해, 정지가 풀리기 TIME_STOP_GHOST_TRIGGER_LEAD_MS(0.1초)
+  // 이내로 남았고 아직 악령을 받지 않았다면 그 시점에 딱 한 번 악령을 씌운다.
+  function checkTimeStopGhostSpawns(){
+    const now = now_ms();
+    function maybeSpawn(ref, kind){
+      const ts = ref.timeStop;
+      if(!ts || ts.ghostSpawned || ts.freezeUntil<=0) return;
+      if(ts.freezeUntil - now <= TIME_STOP_GHOST_TRIGGER_LEAD_MS){
+        ts.ghostSpawned = true;
+        spawnVengefulGhost(ref, kind);
+      }
+    }
+    mobs.forEach(mob=>{ if(mob.dying<=0 && !mob.dead) maybeSpawn(mob, 'mob'); });
+    if(boss && boss.dying<=0) maybeSpawn(boss, 'boss');
+  }
+  // 활성 악령들을 매 프레임 갱신: 대상을 따라다니며 지속시간 감소 + tickMs마다 피해.
+  // 대상(잡몹/보스)이 이미 죽었거나 필드에서 사라졌으면 악령도 함께 소멸한다.
+  function updateVengefulGhosts(dt){
+    if(!vengefulGhosts.length) return;
+    for(let i=vengefulGhosts.length-1;i>=0;i--){
+      const g = vengefulGhosts[i];
+      const ref = g.targetRef;
+      const alive = g.targetKind==='boss' ? (boss===ref && ref.dying<=0) : (ref && !ref.dead && ref.dying<=0 && mobs.includes(ref));
+      if(!alive){ vengefulGhosts.splice(i,1); continue; }
+      g.life -= dt;
+      g.floatT += dt/260;
+      g.wx = ref.wx; g.wy = ref.wy;
+      if(g.life<=0){ vengefulGhosts.splice(i,1); continue; }
+      g.tickTimer -= dt;
+      if(g.tickTimer<=0){
+        g.tickTimer += g.tickMs;
+        if(g.targetKind==='boss') damageBoss(g.dmgPerTick, false);
+        else damageMob(ref, g.dmgPerTick, false, 'ghost');
+      }
+    }
+  }
+  // 악령을 화면에 그린다: 보라빛으로 일렁이는 원혼 형체 + 붉게 빛나는 두 눈. 소멸 임박(마지막 700ms)에는 깜빡인다.
+  function drawVengefulGhosts(){
+    if(!vengefulGhosts.length) return;
+    const tms = now_ms();
+    vengefulGhosts.forEach(g=>{
+      const cx=sx(g.wx), cy=sy(g.wy)-38+Math.sin(g.floatT)*5;
+      const collapsing = g.life < 700;
+      const flicker = collapsing ? (0.5+0.5*Math.sin(tms/45)) : (0.78+0.22*Math.sin(g.floatT*1.6));
+      ctx.save();
+      ctx.globalAlpha = flicker;
+      // 흐릿하게 일렁이는 원혼 몸체
+      const bodyGrad = ctx.createRadialGradient(cx, cy+4, 2, cx, cy+4, 20);
+      bodyGrad.addColorStop(0, 'rgba(180,150,255,0.85)');
+      bodyGrad.addColorStop(1, 'rgba(120,80,220,0)');
+      ctx.fillStyle = bodyGrad;
+      ctx.beginPath();
+      ctx.moveTo(cx-13, cy-6);
+      ctx.quadraticCurveTo(cx-15, cy+16, cx-8, cy+18+Math.sin(g.floatT*3)*2);
+      ctx.quadraticCurveTo(cx-3, cy+13, cx, cy+18+Math.sin(g.floatT*3+1)*2);
+      ctx.quadraticCurveTo(cx+3, cy+13, cx+8, cy+18+Math.sin(g.floatT*3+2)*2);
+      ctx.quadraticCurveTo(cx+15, cy+16, cx+13, cy-6);
+      ctx.quadraticCurveTo(cx+13, cy-20, cx, cy-22);
+      ctx.quadraticCurveTo(cx-13, cy-20, cx-13, cy-6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(230,215,255,0.6)'; ctx.lineWidth = 1.4; ctx.stroke();
+      // 붉게 빛나는 눈
+      ctx.fillStyle = '#ff4d6d';
+      ctx.beginPath(); ctx.arc(cx-4.5, cy-4, 1.8, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx+4.5, cy-4, 1.8, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    });
+  }
+  // 시간 정지(freeze)가 실제로 걸려있는 동안(잡몹+보스 공용) 서늘한 얼음빛 오라를 둘러 "시간이 멈췄다"는
+  // 느낌을 시각적으로 준다. 방어감소만 남고 freeze 자체는 풀린 뒤(디버프만 남은 상태)에는 그리지 않는다.
+  function drawTimeStopFreezeAuras(){
+    const now = now_ms();
+    function drawOne(ref){
+      const ts = ref.timeStop;
+      if(!ts || ts.freezeUntil<=now) return;
+      const cx=sx(ref.wx), cy=sy(ref.wy);
+      const r = (ref.r||16)*1.5;
+      const pulse = 0.55+0.25*Math.sin(now/220);
+      ctx.save();
+      ctx.globalAlpha = pulse;
+      ctx.strokeStyle = 'rgba(180,225,255,0.85)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(180,225,255,0.14)';
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+    mobs.forEach(mob=>{ if(mob.dying<=0 && !mob.dead) drawOne(mob); });
+    if(boss && boss.dying<=0) drawOne(boss);
+  }
+  function castEquippedActiveSkill(){
+    const skill = equippedWeaponSkill();
+    if(!skill) return;
+    if(skill.id==='blackhole') castBlackHole();
+    else if(skill.id==='elementalBurst') castElementalBurst();
+    else if(skill.id==='guardianSummon') castGuardianSummon();
+  }
+  // 절대수호의 지팡이처럼 스킬이 2개인 무기의 "두 번째" 스킬 버튼 진입점.
+  function castEquippedSecondSkill(){
+    const skill = equippedWeaponSkill2();
+    if(!skill) return;
+    if(skill.id==='timeStop') castTimeStop();
+  }
+  // ===== 스킬 자동 발동 (설정, 기본 OFF) =====
+  // 설정에서 "스킬 자동 발동"이 켜져 있으면, 장착한 무기의 액티브 스킬(들)을 재사용 대기시간이 끝나고
+  // 마나가 충분히 모이는 즉시 자동으로 발동시킨다. 마나 부족/재사용 대기 중이라는 실패 토스트가 매 프레임
+  // 반복해서 뜨지 않도록, castEquippedActiveSkill()/castEquippedSecondSkill()을 곧바로 부르지 않고
+  // HUD와 동일한 "지금 쓸 수 있는지" 조건을 먼저 확인한 뒤에만 호출한다.
+  function updateSkillAutoCast(){
+    if(!settings.skillAutoCast || inHouse) return;
+    const now = now_ms();
+    const skill = equippedWeaponSkill();
+    if(skill && (skill.id==='blackhole' || skill.id==='elementalBurst' || skill.id==='guardianSummon')){
+      const onCooldown = blackholeSkillCooldownUntil > now;
+      // 수호령 소환은 이미 최대 개수(3개)에 도달했으면 자동 발동을 건너뛴다(불필요한 실패 토스트 방지).
+      const atGuardianCap = skill.id==='guardianSummon' && guardianTotems.length >= GUARDIAN_TOTEM_MAX_COUNT;
+      if(!onCooldown && !atGuardianCap && player.mana >= skill.manaCost) castEquippedActiveSkill();
+    }
+    const skill2 = equippedWeaponSkill2();
+    if(skill2 && skill2.id==='timeStop'){
+      const onCooldown2 = timeStopSkillCooldownUntil > now;
+      if(!onCooldown2 && player.mana >= skill2.manaCost) castEquippedSecondSkill();
+    }
+  }
+  // 수호령 소환: 블랙홀/멀티버스와 동일하게 사거리*0.7 이내에서 적이 가장 밀집한 위치를 찾아 그 자리에 소환하고,
+  // 적이 하나도 없으면 바라보는 방향 바로 앞(내 근처)에 소환해 언제든 도발/치료 효과를 받을 수 있게 한다.
+  function castGuardianSummon(){
+    const skill = equippedWeaponSkill();
+    if(!skill || skill.id!=='guardianSummon' || inHouse) return;
+    const now = now_ms();
+    if(blackholeSkillCooldownUntil > now){ toast('아직 재사용 대기시간입니다.', 'fail', true); return; }
+    // 요청 반영: 수호령은 체력이 다 사라지기 전까지 영구히 존재하는 대신, 동시에 최대 3개까지만 소환할 수 있다.
+    if(guardianTotems.length >= GUARDIAN_TOTEM_MAX_COUNT){
+      toast(`수호령은 최대 ${GUARDIAN_TOTEM_MAX_COUNT}개까지만 존재할 수 있습니다!`, 'fail', true);
+      return;
+    }
+    if(player.mana < skill.manaCost){ toast('마나가 부족합니다.', 'fail', true); return; }
+    player.mana -= skill.manaCost;
+    blackholeSkillCooldownUntil = now + skill.cooldownMs;
+    const radiusTiles = (effectiveAttackRange()*0.7)/TILE;
+    const aliveMobs = mobs.filter(m=> m.dying<=0 && !m.dead);
+    let bestMob=null, bestCount=-1;
+    const clusterR = radiusTiles*TILE;
+    aliveMobs.forEach(m=>{
+      let cnt=0;
+      aliveMobs.forEach(o=>{ if(Math.hypot(o.wx-m.wx, o.wy-m.wy) <= clusterR) cnt++; });
+      if(cnt>bestCount){ bestCount=cnt; bestMob=m; }
+    });
+    const castX = bestMob ? bestMob.wx : player.wx+player.facing.x*TILE*2;
+    const castY = bestMob ? bestMob.wy : player.wy+player.facing.y*TILE*2;
+    spawnGuardianTotem(castX, castY, skill);
+    toast('수호령 소환! 체력이 다할 때까지 주변 적을 도발하며 치료/피해를 줍니다.', 'great', true);
+  }
+  // 활성 멀티버스 포탈들을 화면에 그린다: 지면에 눕혀 그린 타원형 소용돌이 포탈 + 회전하는 점선 테두리.
+  // 소멸 임박(마지막 700ms)에는 테두리가 붉게 깜빡이며 곧 닫힐 것을 예고한다.
+  function drawMultiversePortals(){
+    if(!multiversePortals.length) return;
+    const tms = now_ms();
+    multiversePortals.forEach(mv=>{
+      const cx=sx(mv.wx), cy=sy(mv.wy)-8;
+      const growT = Math.min(1, mv.spawnT/220);
+      const rad = Math.max(0, mv.radius*growT); // 버그 수정: 음수 반지름이 ellipse/createRadialGradient에 들어가 오류가 나지 않도록 0 이상으로 클램프
+      const spin = tms/260;
+      const collapsing = mv.life < 700;
+      const collapseFlicker = collapsing ? (0.5+0.5*Math.sin(tms/45)) : 0;
+      ctx.save();
+      // 버그 수정: rad가 작거나 0/음수일 때 r1(바깥)이 r0(안쪽)보다 작아져 IndexSizeError가 나는 것을 방지하기 위해 클램프한다.
+      const mvInnerR = Math.max(1, rad*0.12);
+      const mvOuterR = Math.max(mvInnerR+1, rad);
+      const grad = ctx.createRadialGradient(cx,cy,mvInnerR,cx,cy,mvOuterR);
+      grad.addColorStop(0,'rgba(180,120,255,0.55)');
+      grad.addColorStop(0.6,'rgba(120,60,220,0.35)');
+      grad.addColorStop(1,'rgba(120,60,220,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.ellipse(cx,cy,rad,rad*0.55,0,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = collapsing ? `rgba(255,${Math.round(63+collapseFlicker*100)},${Math.round(80-collapseFlicker*40)},${0.55+0.35*collapseFlicker})` : 'rgba(201,166,255,0.85)';
+      ctx.lineWidth = 2.4;
+      ctx.setLineDash([10,8]); ctx.lineDashOffset = -spin*18;
+      ctx.beginPath(); ctx.ellipse(cx,cy,rad*0.92,rad*0.5,0,0,Math.PI*2); ctx.stroke();
+      ctx.setLineDash([]);
+      // 안쪽 소용돌이 링(회전) — 포탈 안쪽으로 빨려 들어가는 듯한 느낌을 더한다
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.ellipse(cx,cy,rad*0.5,rad*0.28,spin*0.6,0,Math.PI*1.4); ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+
   // "장비를 낀 티"가 나도록 한다(캐릭터 도트 자체를 갈아끼우는 대신 오버레이 연출로 표현).
   // 장비 명칭(투구/갑옷/신발 등)마다 실제 신체 부위에 맞는 위치·크기를 정해둔다 (cx,cy는 캐릭터 발밑 기준 좌표).
   const EQUIP_NOUN_POS = {
@@ -6049,14 +7300,14 @@
   const GROWTH_DEF_MAX_LV=20;
   const GROWTH_DEF_MAX_PCT=30;
   const GROWTH_DEF_PCT_PER_LV=GROWTH_DEF_MAX_PCT/GROWTH_DEF_MAX_LV;
-  function growthCost(baseCost, growth, lv){ return Math.floor(baseCost*Math.pow(growth, lv)); }
+  function growthCost(baseCost, growth, lv){ return Math.floor(safeNum(baseCost*Math.pow(growth, lv))); } // 안전 상한 적용: 레벨이 아무리 높아져도 NaN/Infinity로 새지 않음
   function growCostAtk(){ return growthCost(45, 1.30, state.lvAtk); }
   function growCostHp(){ return growthCost(35, 1.24, state.lvHp); }
   // 방어력/이동속도는 20레벨 안에서 맥스에 도달하므로 성장률을 완만하게 재조정 (적절한 골드 소모량)
   function growCostDef(){ return growthCost(55, 1.28, state.lvDef); }
   function growCostSpd(){ return growthCost(75, 1.28, state.lvSpd); }
   // 방어구(장비)의 "체력/이동속도 증가" 스탯이 반영되도록 gearTotals(뽑기 시스템)를 곱해준다.
-  function effectiveMaxHp(){ return Math.round((PLAYER_MAXHP + state.lvHp*GROWTH_HP_PER_LV) * (1 + (gearTotals.hpInc||0)/100)); }
+  function effectiveMaxHp(){ return Math.round(safeNum((PLAYER_MAXHP + state.lvHp*GROWTH_HP_PER_LV + (state.permHpBonus||0)) * (1 + (gearTotals.hpInc||0)/100))); } // permHpBonus: 챕터 클리어 시 영구 전환된 체력 보너스, 안전 상한 적용
   function effectivePlayerSpeed(){
     const base = (PLAYER_SPEED + Math.min(state.lvSpd, GROWTH_SPEED_MAX_LV)*GROWTH_SPEED_PER_LV) * (1 + (gearTotals.spdInc||0)/100);
     if(state.job==='warrior'){
@@ -6084,7 +7335,7 @@
   function buyGrowAtk(){
     const cost = growCostAtk();
     if(state.gold<cost) return;
-    state.gold -= cost; state.lvAtk += 1; state.atk += GROWTH_ATK_PER_LV;
+    state.gold -= cost; state.lvAtk += 1; state.atk = safeNum(state.atk + GROWTH_ATK_PER_LV);
     SFX.levelUp();
     toast(`공격력이 상승했습니다! (공격력 ${state.atk})`, 'success');
     updateHudText();
@@ -6121,6 +7372,8 @@
 
   const player = {
     wx:0, wy:0, r:9, hp:PLAYER_MAXHP, maxHp:PLAYER_MAXHP,
+    mana:MANA_MAX, maxMana:MANA_MAX, // 특수 무기 스킬(블랙홀 등) 전용 자원 — 계정에 저장하지 않고 매 접속마다 가득 찬 채로 시작한다
+    elementalBurstUntil:0, // "속성 폭주"(원소지배의 지팡이 전용 스킬) 활성 종료 시각(now_ms() 기준). 이 시각 이전에는 속성 공격이 100% 확정 발동한다.
     facing:{x:1,y:0}, moving:false, bob:0,
     attackCooldown:0, attackAnimT:0, invuln:0, hitFlashT:0,
     slowT:0, // 상대 보스 패턴에 걸린 "둔화" 디버프 남은 시간(ms). 저항(res) 스탯으로 지속시간이 줄어듦.
@@ -6129,6 +7382,17 @@
   };
   const keys = {up:false,down:false,left:false,right:false};
   let mobs = [];
+  let blackHoles = []; // 활성화된 블랙홀 인스턴스들(스킬+기본 공격 공용): [{wx, wy, radius, life, tickMs, tickTimer, baseTickDmg, centerBonusMax, pullSpeed, isAttack}, ...]
+  let multiversePortals = []; // (더 이상 어떤 무기도 사용하지 않는 죽은 코드) 과거 멀티버스의 대검 전용 스킬이 쓰던 포탈 인스턴스 목록
+  let guardianTotems = []; // 절대수호의 지팡이 "수호령 소환" 스킬로 소환된 수호령 인스턴스들(최대 3개, 체력이 0이 될 때까지 영구 유지): [{wx, wy, r, radius, tauntRadius, tickMs, tickTimer, healPerTick, dmgPerTick, taunt, spawnT, maxHp, hp, atk, defPct}, ...]
+  let vengefulGhosts = []; // 시간 정지가 풀리기 0.1초 전 씌워지는 "악령" 인스턴스들: [{targetRef, targetKind, dmgPerTick, life, tickMs, tickTimer, wx, wy, floatT}, ...]
+  let moveTimeStopProcDist = 0; // 이동 확률 발동(TIME_STOP_MOVE_PROC_CHANCE) 판정용 누적 이동 거리(월드 픽셀), TILE만큼 쌓일 때마다 1회 판정
+  // ===== 풀(grass) 속성 전용: 아군 치료 정령 =====
+  // 실제 몹 엔티티를 새로 만드는 대신, 플레이어 머리 위를 맴도는 가벼운 정령 이펙트로 표현하고
+  // healAuraUntil까지 healAuraTickMs마다 healAuraHealPerTick만큼 플레이어를 회복시킨다.
+  let healAuraUntil = 0, healAuraHealPerTick = 0, healAuraTickMs = 1000, healAuraTimer = 0, healAuraFxTimer = 0;
+  let blackholeSkillCooldownUntil = 0; // performance.now() 기준 타임스탬프 — 이 시간 전까지는 재사용 불가(블랙홀/멀티버스/속성폭주/수호령 소환 공용)
+  let timeStopSkillCooldownUntil = 0; // "시간 정지"(절대수호의 지팡이 2번째 스킬) 전용 재사용 대기 타임스탬프 — 1번 스킬(수호령 소환)과 쿨다운을 공유하지 않는다
   let mobIdSeq = 1; // 몹마다 고유 id를 부여 — 다른 유저에게 브로드캐스트/스틸 요청을 주고받을 때 이 id로 몹을 특정한다
   let boss = null;
   let bossActive = false;
@@ -6314,12 +7578,32 @@
     });
   }
 
-  // 잡몹 어그로: 항상 나(player)를 추적 대상으로 삼는다.
+  // 잡몹 어그로: 기본적으로 항상 나(player)를 추적 대상으로 삼되, "도발" 수호령(절대수호의 지팡이)이
+  // 소환되어 있고 그 도발 범위 안에 있는 잡몹은 나 대신 수호령을 추적 대상으로 삼는다.
   function findNearestChaseTarget(mob){
+    // 요청 반영: 수호령이 최대 3개까지 있을 수 있으므로, 이 잡몹과 가장 가까운 도발 수호령을 찾는다.
+    const totem = activeTauntTotem(mob);
+    if(totem){
+      const d = Math.hypot(mob.wx-totem.wx, mob.wy-totem.wy);
+      if(d < totem.tauntRadius) return {wx:totem.wx, wy:totem.wy, r:totem.r, isTaunt:true, totemRef:totem};
+    }
     return {wx:player.wx, wy:player.wy};
   }
 
   function spawnBoss(){
+    // 필드전에서 소환했던 블랙홀/멀티버스 포탈이 보스전까지 넘어가 계속 영향을 주는 일이 없도록,
+    // 보스가 실제로 등장하는 시점에 필드에 남아있던 것들을 모두 제거한다(필드전↔보스전 완전 분리).
+    // 주의: 이미 생성된 블랙홀 인스턴스만 지우는 것으로는 부족하다 — 아직 착지하지 않고
+    // "날아가는 중"인 블랙홀 투척체(projectiles의 blackholebolt)가 보스 등장 이후에 뒤늦게 착지하면
+    // 그 순간 보스전 한복판에 새 블랙홀이 생겨나고, 이 블랙홀이 나중에 소멸하며 폭발 피해를 줘서
+    // 막 소환된 보스가 한 방에 죽는 버그가 있었다. 그래서 비행 중인 블랙홀 투척체도 함께 제거해
+    // 착지 자체가 아예 일어나지 않게 한다.
+    blackHoles = [];
+    multiversePortals = [];
+    guardianTotems = [];
+    vengefulGhosts = [];
+    projectiles = projectiles.filter(pr=> pr.style!=='blackholebolt');
+    player.mana = 0; // 보스전 시작 시 마나는 항상 0으로 초기화(필드에서 모아둔 마나를 보스전으로 그대로 들고 오지 못하게 함)
     const chapter = chapterOf(state.stage);
     const stageInChapter = stageInChapterOf(state.stage);
     const kind = bossKindForStage(stageInChapter);
@@ -6402,6 +7686,13 @@
     bossActive = false;
     bossIncoming = false;
     spawnTimer = 0;
+    // 보스전에서 남아있던 블랙홀/멀티버스 포탈도 필드로 돌아갈 때 함께 제거해, 서로 넘나들지 않게 한다.
+    // (비행 중인 블랙홀 투척체도 함께 제거 — spawnBoss()와 동일한 이유)
+    blackHoles = [];
+    multiversePortals = [];
+    guardianTotems = [];
+    vengefulGhosts = [];
+    projectiles = projectiles.filter(pr=> pr.style!=='blackholebolt');
     player.hp = player.maxHp;
     player.poisons = []; player.defShredActive = false; // 최종보스(30) 전용 독/방어력감소 디버프는 보스전이 끝나면 모두 해제된다
     // 보스전에 실패하면(30스테이지 최종보스 포함) 분신은 필드까지 따라오지 않고 항상 함께 사라진다
@@ -6426,6 +7717,7 @@
     mobs = []; boss=null; bossActive=false; bossIncoming=false; spawnTimer=0;
     player.poisons = []; player.defShredActive = false; // 최종보스(30) 전용 독/방어력감소 디버프 초기화
     bossAutoSummonBlocked = false; // 새 스테이지 진입 시 자동소환 잠금 해제
+    blackHoles = []; multiversePortals = []; guardianTotems = []; vengefulGhosts = []; // 스테이지 전환 시 남아있던 블랙홀/멀티버스 포탈/수호령/악령 제거
     resetHuntTarget();
     updateHudText();
   }
@@ -6439,6 +7731,7 @@
     state.mobsKilled = saved!=null ? saved : state.mobsRequired; // 기록이 있으면 그대로, 없으면 요구치만큼 채워 보스 소환 가능하게
     mobs = []; boss=null; bossActive=false; bossIncoming=false; spawnTimer=0;
     bossAutoSummonBlocked = false; // 스테이지 이동 시 자동소환 잠금 해제
+    blackHoles = []; multiversePortals = []; guardianTotems = []; vengefulGhosts = []; // 스테이지 전환 시 남아있던 블랙홀/멀티버스 포탈/수호령/악령 제거
     resetHuntTarget();
     player.hp = player.maxHp;
     player.wx = 0; player.wy = 0;
@@ -6472,10 +7765,16 @@
   }
 
   // ============ 전투 처리 ============
+  // isPoison: true/false(기존 방식, 하위호환) 또는 'blackhole' 문자열 — 문자열이면 해당 도트 종류 전용 표시색/문구를 사용한다.
   function damageMob(mob, amount, isCrit, isPoison){
     mob.hp -= amount;
+    const isBlackhole = isPoison==='blackhole';
+    const isMultiverse = isPoison==='multiverse';
+    const isFireElem = isPoison==='fire';
+    const isLightningElem = isPoison==='lightning';
+    const isGhostElem = isPoison==='ghost'; // 시간 정지 종료 직전 씌워진 악령의 지속 피해
     if(isPoison){
-      // 독 틱은 넉백/타격 이펙트 없이 살짝 반짝이기만 해서 일반 타격과 구분되게 한다
+      // 독/블랙홀/멀티버스/악령 틱은 넉백/타격 이펙트 없이 살짝 반짝이기만 해서 일반 타격과 구분되게 한다
       mob.hitFlash = Math.max(mob.hitFlash||0, 0.4);
     } else {
       mob.hitFlash = 1;
@@ -6489,11 +7788,13 @@
       spawnHitParticles(mob.wx, mob.wy-mob.r*1.4);
       SFX.mobHit(mob.type);
     }
-    damageNumbers.push({wx:mob.wx, wy:mob.wy-mob.r*3, text:(isPoison?'독 -':(isCrit?'치명타! -':'-'))+formatBigNum(amount), vy:-0.6, alpha:1, color: isPoison?'#a855f7':(isCrit?'#ff4d4d':'#ffd54f')});
+    const dotLabel = isBlackhole ? '흡수 -' : isMultiverse ? '충돌 -' : isFireElem ? '화상! -' : isLightningElem ? '감전! -' : isGhostElem ? '원한! -' : isPoison ? '독 -' : (isCrit?'치명타! -':'-');
+    const dotColor = isBlackhole ? '#ff3fae' : isMultiverse ? '#7c5cff' : isFireElem ? '#ff6b3d' : isLightningElem ? '#ffe066' : isGhostElem ? '#8a6bff' : isPoison ? '#a855f7' : (isCrit?'#ff4d4d':'#ffd54f');
+    damageNumbers.push({wx:mob.wx, wy:mob.wy-mob.r*3, text:dotLabel+formatBigNum(amount), vy:-0.6, alpha:1, color: dotColor});
     if(mob.hp<=0 && mob.dying===0){
       mob.dying = 0.001;
       SFX.mobDeath(mob.type);
-      spawnDeathParticles(mob.wx, mob.wy-8, isPoison?'#a855f7':'#ffd54f');
+      spawnDeathParticles(mob.wx, mob.wy-8, isBlackhole ? '#ff3fae' : isPoison?'#a855f7':'#ffd54f');
       const g = Math.floor(9+state.stage*2.6);
       const e = Math.floor(4+state.stage*1.2);
       // 잡몹 처치 시 낮은 확률로 소환석(뽑기 재화) 획득
@@ -6564,12 +7865,35 @@
       else if(roll < 4) gemReward = Math.max(1, Math.floor(state.gold*0.01));
       else gemReward = 1;
     }
-    state.gold += g; state.atk += 1; state.gems += gemReward;
+    state.gold = safeNum(state.gold + g); state.atk = safeNum(state.atk + 1); state.gems += gemReward;
     gainExp(Math.floor((40+state.stage*10)*rewardMult));
     const label = boss && boss.kind==='final' ? '🔥 최종보스 처치!' : boss && boss.kind==='elite' ? '⚡ 정예보스 처치!' : '보스 처치!';
     toast(`${label} 골드 +${g}, 소환석 +${gemReward}💠, 공격력 영구 +1 상승!`, 'great');
     player.hp = player.maxHp; // 보스전 종료 시 체력 완전 회복
     state.maxClearedStage = Math.max(state.maxClearedStage, state.stage); // 방금 깬 스테이지를 클리어 기록에 반영
+    // ===== 챕터 클리어(최종보스, 최초 클리어 1회에 한함): 골드는 챕터별로 동결하고, 강화 레벨(lvAtk/lvHp)은
+    // 1.2배로 환산해 영구 보너스로 전환한 뒤 0으로 리셋한다. 스테이지 선택으로 이미 깬 최종보스를 다시
+    // 잡는 반복 파밍에서는(isFirstClear===false) 골드/레벨이 매번 초기화되면 안 되므로 실행하지 않는다. =====
+    if(boss && boss.kind==='final' && isFirstClear){
+      const clearedChapter = chapterOf(state.stage); // 아직 state.stage를 올리기 전이므로 지금 클리어한 챕터 번호
+      state.frozenGold = state.frozenGold || {};
+      if(state.gold>0){
+        state.frozenGold[clearedChapter] = safeNum((state.frozenGold[clearedChapter]||0) + state.gold);
+      }
+      state.gold = 0; // 새 챕터 골드는 0부터 다시 시작
+      const atkGrowthPortion = state.lvAtk*GROWTH_ATK_PER_LV; // 이번 챕터에서 강화로 쌓은 공격력만큼만 전환 대상
+      const hpGrowthPortion = state.lvHp*GROWTH_HP_PER_LV;    // 이번 챕터에서 강화로 쌓은 체력만큼만 전환 대상
+      const atkBonusAdd = Math.round(safeNum(atkGrowthPortion*1.2));
+      const hpBonusAdd = Math.round(safeNum(hpGrowthPortion*1.2));
+      // 강화로 쌓았던 분(atkGrowthPortion)만 빼고 1.2배 영구 보너스로 대체한다(기본 공격력·보스처치 +1 보너스 등은 그대로 유지됨)
+      state.atk = safeNum(state.atk - atkGrowthPortion + atkBonusAdd);
+      state.permAtkBonus = safeNum((state.permAtkBonus||0) + atkBonusAdd);
+      state.permHpBonus = safeNum((state.permHpBonus||0) + hpBonusAdd);
+      state.lvAtk = 0;
+      state.lvHp = 0;
+      applyHpGrowth(); // 리셋된 lvHp(0) + 새로 늘어난 permHpBonus를 반영해 최대체력 재계산
+      toast(`📦 챕터 ${clearedChapter} 클리어! 강화 능력치가 1.2배 영구 보너스로 전환되고, 골드는 새 챕터부터 다시 쌓입니다.`, 'success');
+    }
     state.stage += 1;
     updateRanking();
     setTimeout(()=>{ startStage(); }, 700);
@@ -6827,6 +8151,80 @@
     const perTick = Math.max(1, Math.round(totalDrain/ticks));
     ref.poison = {ticksLeft:ticks, tickTimer:POISON_TICK_MS, dmgPerTick:perTick};
   }
+  // 현재 장착 무기의 속성 공격 설정(원소지배의 지팡이만 보유)을 반환한다.
+  function equippedElemental(){
+    const item = equippedWeaponItem();
+    return item && item.elemental ? item.elemental : null;
+  }
+  // 속성 공격 6종(독/불/얼음/풀/물/번개)을 판정/적용한다. 패시브 상태에서는 속성별 확률(chance%)로 각각 독립 발동하고,
+  // "속성 폭주" 스킬이 켜져 있는 동안(player.elementalBurstUntil)에는 확률 판정 없이 매 적중마다 6가지 모두 발동한다.
+  function applyElementalAttacks(target, ref){
+    const cfg = equippedElemental();
+    if(!cfg || !ref || ref.hp<=0) return;
+    const forced = player.elementalBurstUntil > now_ms();
+    const atk = effectiveAtk();
+    const roll = (chance)=> forced || Math.random()*100 < chance;
+    // 독: 일정 시간 동안 지속 피해(잡몹은 도트 디버프로, 보스는 도트 상태 체계가 없어 총량을 즉시 적용)
+    if(cfg.poison && roll(cfg.poison.chance)){
+      const perTick = Math.max(1, Math.round(atk * cfg.poison.dmgPctOfAtk/100));
+      if(target.kind==='mob') ref.mythPoison = {ticksLeft:cfg.poison.ticks, tickTimer:cfg.poison.tickMs, dmgPerTick:perTick};
+      else damageBoss(perTick*cfg.poison.ticks, false);
+      damageNumbers.push({wx:ref.wx, wy:ref.wy-(ref.r||16)*2, text:'독!', vy:-0.5, alpha:1, color:ELEMENT_DEFS.poison.color});
+    }
+    // 불: 적 현재체력의 n%를 즉시 추가로 태운다
+    if(cfg.fire && roll(cfg.fire.chance)){
+      const burnDmg = Math.max(1, Math.round(ref.hp * cfg.fire.hpPct/100));
+      if(target.kind==='mob') damageMob(ref, burnDmg, false, 'fire'); else damageBoss(burnDmg, false);
+      if(settings.weaponFx) spawnImpactRing(ref.wx, ref.wy-(ref.r||16), 3, 16, ELEMENT_DEFS.fire.color, 220, 2);
+    }
+    // 얼음: 짧게 완전히 얼려 이동·공격을 멈춘다 (보스는 CC 면역)
+    if(cfg.ice && target.kind==='mob' && roll(cfg.ice.chance)){
+      ref.frozenUntil = Math.max(ref.frozenUntil||0, now_ms()+cfg.ice.freezeMs);
+      if(settings.weaponFx) spawnImpactRing(ref.wx, ref.wy-(ref.r||16), 2, 14, ELEMENT_DEFS.ice.color, 200, 2);
+    }
+    // 풀: 아군(플레이어)을 치료하는 정령을 잠시 소환한다
+    if(cfg.grass && roll(cfg.grass.chance)){
+      healAuraUntil = Math.max(healAuraUntil, now_ms()+cfg.grass.durationMs);
+      healAuraHealPerTick = Math.max(1, Math.round(player.maxHp * cfg.grass.healPct/100));
+      healAuraTickMs = cfg.grass.tickMs;
+    }
+    // 물: 적의 이동속도·공격속도를 일정 시간 감소시킨다 (보스는 면역)
+    if(cfg.water && target.kind==='mob' && roll(cfg.water.chance)){
+      ref.slowUntil = Math.max(ref.slowUntil||0, now_ms()+cfg.water.slowMs);
+      ref.slowMoveMult = cfg.water.moveMult; ref.slowAtkMult = cfg.water.atkMult;
+      if(settings.weaponFx) spawnImpactRing(ref.wx, ref.wy-(ref.r||16), 2, 14, ELEMENT_DEFS.water.color, 200, 2);
+    }
+    // 번개: 공격력의 n%만큼 즉시 추가 피해
+    if(cfg.lightning && roll(cfg.lightning.chance)){
+      const boltDmg = Math.max(1, Math.round(atk * cfg.lightning.dmgPctOfAtk/100));
+      if(target.kind==='mob') damageMob(ref, boltDmg, false, 'lightning'); else damageBoss(boltDmg, false);
+      if(settings.weaponFx) spawnImpactRays(ref.wx, ref.wy-(ref.r||16), 5, 16, ELEMENT_DEFS.lightning.color, 180);
+    }
+  }
+  // 풀 속성(원소지배의 지팡이)으로 소환된 치료 정령을 매 프레임 갱신한다: healAuraUntil까지
+  // healAuraTickMs마다 healAuraHealPerTick만큼 플레이어를 회복시키고, 정령이 떠 있는 동안 플레이어
+  // 머리 위로 옅은 초록 반짝임을 주기적으로 흩뿌려 "치료 정령이 함께 있다"는 것을 보여준다.
+  function updateHealAura(dt){
+    const now = now_ms();
+    if(healAuraUntil<=now) return;
+    if(inHouse || player.hp<=0) return;
+    healAuraTimer -= dt;
+    if(healAuraTimer<=0){
+      healAuraTimer += (healAuraTickMs||1000);
+      if(player.hp<player.maxHp){
+        player.hp = Math.min(player.maxHp, player.hp+healAuraHealPerTick);
+        damageNumbers.push({wx:player.wx, wy:player.wy-(player.r||18)*2.4, text:'+'+formatBigNum(healAuraHealPerTick), vy:-0.6, alpha:1, color:ELEMENT_DEFS.grass.color});
+      }
+    }
+    if(settings.weaponFx){
+      healAuraFxTimer -= dt;
+      if(healAuraFxTimer<=0){
+        healAuraFxTimer = 160;
+        const ang = Math.random()*Math.PI*2, r=(player.r||18)*1.3;
+        particles.push({wx:player.wx+Math.cos(ang)*r, wy:player.wy-(player.r||18)*2-Math.random()*10, vx:0, vy:-0.3, life:0.5+Math.random()*0.2, color:ELEMENT_DEFS.grass.color, shape:'glow', size:2+Math.random()*1.6, noGrav:true});
+      }
+    }
+  }
   // 대상 하나에게 실제 피해 판정(치명타/방어관통/회피/출혈/무기 고유 효과)을 적용한다.
   // weapon(무기 프로필)을 넘기면 무기별 피해배율/출혈확률/기절확률이 함께 반영된다. (근접 휘두르기·원거리 투사체 명중 모두 이 함수를 재사용)
   function applyAttackDamage(target, weapon){
@@ -6851,7 +8249,11 @@
     // 예: 치명타 확률 130% → 30%p 초과 → 배율 1.5배 + 0.30 = 1.80배
     if(isCrit) dmg *= 1.5 + Math.max(0, critChance-100)/100;
     // 방어관통(defPen): 상대 방어력의 일부(또는 전부)를 무시
-    const mitigated = Math.max(0, (ref.defPct||0) - (gearTotals.defPen||0));
+    // 요청 반영: 시간 정지 표식(방어감소 디버프, 정지 자체가 풀린 뒤에도 최대 1분간 유지)이 남아있으면
+    // 방어력을 TIME_STOP_DEF_REDUCE_PCT(80%)만큼 먼저 깎은 뒤 방어관통을 적용한다.
+    const timeStopDebuffed = !!(ref.timeStop && ref.timeStop.debuffUntil > now_ms());
+    const baseDefPct = timeStopDebuffed ? (ref.defPct||0) * (1 - TIME_STOP_DEF_REDUCE_PCT/100) : (ref.defPct||0);
+    const mitigated = Math.max(0, baseDefPct - (gearTotals.defPen||0));
     dmg = Math.max(1, Math.round(dmg * (1 - mitigated/100)));
     // 회피감소(evaDown): 상대가 내 공격을 회피할 확률을 낮춘다
     const targetEva = Math.max(0, (ref.evaPct||0) - (gearTotals.evaDown||0));
@@ -6861,6 +8263,7 @@
     }
     if(isCrit) applyBleed(ref, Math.round(dmg*0.2));
     applyPoison(ref); // 크리티컬 여부와 무관하게 모든 적중마다 독 옵션 확률 판정
+    applyElementalAttacks(target, ref); // 원소지배의 지팡이 전용 속성 공격(독/불/얼음/풀/물/번개) 판정
     // 무기 고유 색으로 튀는 타격 스파크 - 어떤 무기로 맞혔는지 한눈에 느껴지도록
     if(weapon && weapon.color) spawnWeaponHitFx(ref.wx, ref.wy-(ref.r||16)*1.3, weapon.color, weapon.color2);
     // 등급 높은 무기(S 이상)는 타격 지점에서도 작은 확산 링이 함께 터진다. 크리티컬이면 흰 빛줄기까지 곁들여 한층 화려해진다.
@@ -6905,8 +8308,14 @@
     const ref = target.kind==='boss' ? boss : target.ref;
     if(!ref) return;
     if(p.type==='ranged'){
-      if(isStaffProfile(p)) fireStaffProjectiles(target, p);
-      else fireProjectile(target, p);
+      if(isStaffProfile(p)){
+        // 특이점의 지팡이(블랙홀 스킬 보유 무기)와 원소지배의 지팡이(속성 폭주 스킬 보유 무기)는
+        // 예외적으로 기존의 "하늘에서 낙하" 공격 대신 각자 전용 기본 공격을 사용한다. 그 외 지팡이는 기존 방식 그대로 유지.
+        const wSkill = equippedWeaponSkill();
+        if(wSkill && wSkill.id==='blackhole') fireBlackHoleBolt(target, p);
+        else if(wSkill && wSkill.id==='elementalBurst') fireElementalStaffAttack(target, p);
+        else fireStaffProjectiles(target, p);
+      } else fireProjectile(target, p);
       return;
     }
     const hitList = findAttackCandidates();
@@ -7034,6 +8443,232 @@
     spawnMagicSigil(wx, wy, drop.tier>=5?46:34, drop.color, 460, 60);
     if(drop.tier>=5 && drop.leadFx) triggerScreenFlash(drop.color, 0.16, 220);
   }
+  // ===== 특이점의 지팡이 전용 기본 공격: 블랙홀 투척 =====
+  // 다른 지팡이의 "하늘에서 낙하하는" 공격 방식(과거의 낙뢰/유성 등)은 이 무기에서는 완전히 사용하지 않는다.
+  // 대신 목표를 향해 소형 블랙홀을 직접 날려 보내고, 명중하거나(또는 사거리를 다 날아가면) 그 자리에
+  // 짧게 존재하는 블랙홀을 형성해 주변 적을 끌어당기며 피해를 준다(중심부일수록 피해 증가).
+  function fireBlackHoleBolt(target, p){
+    const ref = target.kind==='boss' ? boss : target.ref;
+    if(!ref) return;
+    const dx=ref.wx-player.wx, dy=ref.wy-player.wy, d=Math.hypot(dx,dy)||1;
+    projectiles.push({
+      wx:player.wx, wy:player.wy-14, vx:dx/d, vy:dy/d,
+      speed:(p.projSpeed||0.6)*0.85, style:'blackholebolt', color:'#1a0d2e', color2:'#7c5cff',
+      weapon:p, maxDist:effectiveAttackRange(), traveled:0, pierced:new Set(), dead:false, aoeOnImpact:false,
+      bhCfg:{
+        radiusTiles:BLACKHOLE_ATTACK_CONFIG.radiusTiles, durationMs:BLACKHOLE_ATTACK_CONFIG.durationMs,
+        tickMs:BLACKHOLE_ATTACK_CONFIG.tickMs, tickDmgMult:BLACKHOLE_ATTACK_CONFIG.tickDmgMult,
+        pullSpeed:BLACKHOLE_ATTACK_CONFIG.pullSpeed, centerBonusMax:BLACKHOLE_ATTACK_CONFIG.centerBonusMax,
+        // 폭발(explodeDmgMult/explodeRadiusMult)이 여기 빠져있던 탓에 기본 공격 블랙홀은 소멸할 때
+        // 폭발하지 않았다. 특수공격(스킬)처럼 기본 공격도 사라질 때 반드시 폭발하도록 전달한다.
+        explodeDmgMult:BLACKHOLE_ATTACK_CONFIG.explodeDmgMult, explodeRadiusMult:BLACKHOLE_ATTACK_CONFIG.explodeRadiusMult,
+        dmgBaseMult:p.dmgMult, isAttack:true,
+      },
+    });
+    SFX.blackholeThrow();
+  }
+  // ===== 원소지배의 지팡이 전용 기본 공격: 6속성 무작위 공격 =====
+  // 다른 지팡이들의 등급 하나짜리 "하늘에서 낙하"(STAFF_GRADE_CONFIG) 연출을 이 무기에는 전혀 쓰지 않고,
+  // 공격할 때마다 6속성(독/불/얼음/풀/물/번개) 중 하나를 무작위로 뽑아 서로 다른 방식으로 명중시킨다:
+  //   · 독/얼음: 실제로 목표를 향해 날아가 명중하는 투사체
+  //   · 불/물:   목표 머리 위 하늘에서 떨어져 내리는 낙하 공격
+  //   · 풀/번개: 목표가 서 있는 땅 밑에서 솟구쳐 올라오는 공격
+  // "속성 폭주" 스킬이 켜져 있는 동안에는 공격 한 번에 6속성 공격이 전부 동시에 나간다.
+  // 어떤 속성이 "겉모습"으로 나왔는지와 무관하게, 매 적중마다 applyElementalAttacks()의 확률형 부가 효과
+  // (독 도트/화상/동결/치료정령/둔화/추가피해)는 항상 별도로 독립 판정된다 — 여기서는 순수히 연출만 다양화한다.
+  const ELEMENT_ATTACK_ORDER = ['poison','fire','grass','ice','water','lightning'];
+  const ELEMENT_ATTACK_DELIVERY = {poison:'projectile', ice:'projectile', fire:'fall', water:'fall', grass:'rise', lightning:'rise'};
+  // 2026-09 밸런스 조정: 특이점의 지팡이(매 기본 공격이 확정 AoE)와 화력을 맞추기 위해, 원소지배의 지팡이도
+  // 모든 기본 공격(투사체/낙하/솟아오르기 공통)에 착탄 지점 주변 스플래시 피해를 함께 준다.
+  const ELEMENTAL_SPLASH_RADIUS = 100; // 2026-09 재조정: 특이점의 지팡이 블랙홀 기본 공격(반경 약 98px)에 맞춰 범위를 크게 확장
+  const ELEMENTAL_SPLASH_MULT = 0.6; // 스플래시로 맞은 대상은 정타의 60% 피해를 받는다
+  function applyElementalSplash(primaryRef, landX, landY, weapon){
+    mobs.forEach(mob=>{
+      if(mob===primaryRef || mob.dying>0 || mob.dead) return;
+      if(Math.hypot(mob.wx-landX, mob.wy-landY) < ELEMENTAL_SPLASH_RADIUS) applyAttackDamage({kind:'mob', ref:mob}, {dmgMult:(weapon.dmgMult||1)*ELEMENTAL_SPLASH_MULT});
+    });
+    if(boss && boss!==primaryRef && boss.dying===0 && Math.hypot(boss.wx-landX, boss.wy-landY) < ELEMENTAL_SPLASH_RADIUS){
+      applyAttackDamage({kind:'boss', ref:boss}, {dmgMult:(weapon.dmgMult||1)*ELEMENTAL_SPLASH_MULT});
+    }
+  }
+  // 평소 공격은 매번 6속성 중 하나를 무작위로 뽑아 나가고, "속성 폭주"(elementalBurst) 스킬이 켜져
+  // 있는 동안에는 공격 한 번에 6속성 공격이 전부 동시에 나간다(패시브 확률 판정도 이 상태에선 100% 확정).
+  function fireElementalStaffAttack(target, p){
+    if(player.elementalBurstUntil > now_ms()){
+      ELEMENT_ATTACK_ORDER.forEach(elKey=> dispatchElementalAttack(target, p, elKey));
+      return;
+    }
+    const elKey = ELEMENT_ATTACK_ORDER[Math.floor(Math.random()*ELEMENT_ATTACK_ORDER.length)];
+    dispatchElementalAttack(target, p, elKey);
+  }
+  function dispatchElementalAttack(target, p, elKey){
+    const delivery = ELEMENT_ATTACK_DELIVERY[elKey];
+    if(delivery==='projectile') fireElementalProjectile(target, p, elKey);
+    else if(delivery==='fall') spawnElementalFallAttack(target, p, elKey);
+    else spawnElementalRiseAttack(target, p, elKey);
+  }
+  // --- 독/얼음: 실제로 날아가는 투사체 ---
+  function fireElementalProjectile(target, p, elKey){
+    const ref = target.kind==='boss' ? boss : target.ref;
+    if(!ref) return;
+    const dx=ref.wx-player.wx, dy=ref.wy-player.wy, d=Math.hypot(dx,dy)||1;
+    const def = ELEMENT_DEFS[elKey];
+    projectiles.push({
+      wx:player.wx, wy:player.wy-14, vx:dx/d, vy:dy/d,
+      // 얼음은 예리하고 빠르게, 독은 두텁고 느긋하게 - 두 투사체가 속도만으로도 확연히 다르게 느껴지도록.
+      speed:(p.projSpeed||0.6)*(elKey==='ice'?1.45:0.9), style:'elem', elemKey:elKey,
+      color:def.color, color2: elKey==='ice' ? '#ffffff' : '#c084fc',
+      weapon:p, maxDist:effectiveAttackRange(), traveled:0, pierced:new Set(), dead:false, aoeOnImpact:false,
+    });
+    SFX.attackSwing();
+  }
+  // 투사체 명중 시 속성별 착탄 이펙트 - updateProjectiles()의 몹/보스 명중 처리에서 호출된다.
+  function spawnElementalProjectileImpactFx(wx, wy, elKey){
+    if(!settings.weaponFx) return;
+    const def = ELEMENT_DEFS[elKey];
+    if(elKey==='poison'){
+      // 독 폭발 - 두 겹 링 + 회전 마법진 + 사방으로 터지는 독안개 방울
+      spawnImpactRing(wx, wy, 4, 42, def.color, 320, 3);
+      spawnImpactRing(wx, wy, 8, 60, '#7c3fae', 380, 2);
+      spawnMagicSigil(wx, wy, 34, def.color, 320, 0);
+      for(let i=0;i<16;i++){
+        const a=Math.random()*Math.PI*2, spd=0.8+Math.random()*1.6;
+        particles.push({wx, wy, vx:Math.cos(a)*spd, vy:Math.sin(a)*spd*0.6-0.4, life:0.5+Math.random()*0.35, color:def.color, shape:'glow', size:4+Math.random()*3.2, noGrav:true});
+      }
+      triggerScreenShake(1.0, 100);
+    } else { // ice
+      // 얼음 파열 - 서릿발 링/빛줄기와 함께 굵은 얼음 파편이 크게 튄다
+      spawnImpactRing(wx, wy, 3, 46, def.color, 280, 3.2);
+      spawnImpactRing(wx, wy, 6, 30, '#ffffff', 220, 2.4);
+      spawnImpactRays(wx, wy, 10, 34, '#ffffff', 240);
+      spawnMagicSigil(wx, wy, 30, def.color, 300, 0);
+      for(let i=0;i<16;i++){
+        const a=Math.random()*Math.PI*2, spd=1.4+Math.random()*2.4;
+        particles.push({wx, wy, vx:Math.cos(a)*spd, vy:Math.sin(a)*spd*0.6, life:0.3+Math.random()*0.22, color: Math.random()<0.5?def.color:'#ffffff', shape:'shard', size:3.6+Math.random()*3, noGrav:true});
+      }
+      triggerScreenShake(1.0, 100);
+    }
+  }
+  // --- 불/물: 목표 머리 위 하늘에서 떨어지는 낙하 공격 ---
+  let elemFallAttacks = []; // {target, targetKind, weapon, elemKey, elapsed, fallMs, landed}
+  const ELEMENTAL_FALL_MS = 480;
+  function spawnElementalFallAttack(target, p, elKey){
+    const ref = target.kind==='boss' ? boss : target.ref;
+    if(!ref) return;
+    const def = ELEMENT_DEFS[elKey];
+    // 낙하가 시작되는 순간 목표 발밑에 속성 색 마법진이 크게 떠올라 "여기로 떨어진다"는 예고를 확실히 보여준다.
+    if(settings.weaponFx) spawnMagicSigil(ref.wx, ref.wy, 42, def.color, ELEMENTAL_FALL_MS+60, 0);
+    elemFallAttacks.push({target:target.ref, targetKind:target.kind, weapon:p, elemKey:elKey, elapsed:0, fallMs:ELEMENTAL_FALL_MS, landed:false});
+    SFX.staffCast();
+  }
+  // 낙하 공격 진행 갱신 - updateStaffDrops()와 동일한 방식으로, 낙하시간이 다 되는 순간 대상이
+  // 그때 서 있는 자리를 기준으로 확정 명중시킨다(투사체처럼 날아가다 빗맞는 일이 없다).
+  function updateElementalFallAttacks(dt){
+    elemFallAttacks.forEach(drop=>{
+      if(drop.landed) return;
+      drop.elapsed += dt;
+      if(drop.elapsed < drop.fallMs) return;
+      drop.landed = true;
+      const ref = drop.targetKind==='boss' ? boss : drop.target;
+      const refValid = drop.targetKind==='mob' ? (ref && !ref.dead && ref.dying===0 && mobs.indexOf(ref)!==-1)
+        : (ref && ref===drop.target && ref.dying===0);
+      if(!refValid) return; // 낙하가 끝나기 전에 대상이 이미 죽거나 사라졌다면 허공을 때리고 조용히 사라진다.
+      applyAttackDamage({kind:drop.targetKind, ref}, drop.weapon);
+      spawnHitParticles(ref.wx, ref.wy-(ref.r||16));
+      SFX.staffImpact();
+      spawnElementalFallLandingFx(ref.wx, ref.wy, drop.elemKey);
+      applyElementalSplash(ref, ref.wx, ref.wy, drop.weapon);
+    });
+
+    elemFallAttacks = elemFallAttacks.filter(d=> !d.landed);
+  }
+  function spawnElementalFallLandingFx(wx, wy, elKey){
+    if(!settings.weaponFx) return;
+    const ey = wy-8;
+    const def = ELEMENT_DEFS[elKey];
+    if(elKey==='fire'){
+      // 불덩이가 떨어져 터지는 대형 화염 폭발 - 겹겹의 링/빛줄기/마법진 위로 불티가 크게 솟구친다.
+      spawnImpactRing(wx, ey, 5, 58, def.color, 340, 3.4);
+      spawnImpactRing(wx, ey, 10, 78, '#ff3f1f', 400, 2.2);
+      spawnImpactRays(wx, ey, 10, 44, '#ffe066', 280);
+      spawnMagicSigil(wx, ey, 44, def.color, 380, 0);
+      for(let i=0;i<18;i++){
+        const a=Math.random()*Math.PI*2, spd=1.6+Math.random()*2.8;
+        particles.push({wx, wy:ey, vx:Math.cos(a)*spd, vy:Math.sin(a)*spd*0.6-1-Math.random()*0.8, life:0.36+Math.random()*0.28, color: Math.random()<0.5?'#ffe066':def.color, shape:'shard', size:4+Math.random()*3.4, noGrav:true});
+      }
+      triggerScreenShake(2.2, 160);
+      triggerScreenFlash(def.color, 0.16, 150);
+    } else { // water
+      // 물기둥이 떨어져 퍼지는 대형 물보라 - 세 겹의 파란/흰 링과 사방으로 크게 튀는 물방울.
+      spawnImpactRing(wx, ey, 4, 54, def.color, 340, 3.2);
+      spawnImpactRing(wx, ey, 8, 74, '#bfe8ff', 400, 2);
+      spawnMagicSigil(wx, ey, 42, def.color, 380, 0);
+      for(let i=0;i<16;i++){
+        const a=Math.random()*Math.PI*2, spd=1.2+Math.random()*2;
+        particles.push({wx, wy:ey, vx:Math.cos(a)*spd, vy:Math.sin(a)*spd*0.55-0.3, life:0.4+Math.random()*0.26, color: Math.random()<0.5?def.color:'#bfe8ff', shape:'glow', size:3.6+Math.random()*2.6, noGrav:true});
+      }
+      triggerScreenShake(1.8, 140);
+      triggerScreenFlash('#bfe8ff', 0.12, 130);
+    }
+  }
+  // --- 풀/번개: 목표가 서 있는 땅 밑에서 솟구쳐 올라오는 공격 ---
+  let elemRiseAttacks = []; // {target, targetKind, weapon, elemKey, elapsed, riseMs, landed}
+  const ELEMENTAL_RISE_MS = 380;
+  function spawnElementalRiseAttack(target, p, elKey){
+    const ref = target.kind==='boss' ? boss : target.ref;
+    if(!ref) return;
+    const def = ELEMENT_DEFS[elKey];
+    // 솟아오르기 전, 목표 발밑 땅이 먼저 크게 쩍 갈라지는 예고 균열을 보여준다(하늘 낙하의 마법진과 대칭되는 연출).
+    if(settings.weaponFx) spawnGroundCrack(ref.wx, ref.wy+6, 40, def.color, ELEMENTAL_RISE_MS+80, 0);
+    elemRiseAttacks.push({target:target.ref, targetKind:target.kind, weapon:p, elemKey:elKey, elapsed:0, riseMs:ELEMENTAL_RISE_MS, landed:false});
+    SFX.staffCast();
+  }
+  function updateElementalRiseAttacks(dt){
+    elemRiseAttacks.forEach(rise=>{
+      if(rise.landed) return;
+      rise.elapsed += dt;
+      if(rise.elapsed < rise.riseMs) return;
+      rise.landed = true;
+      const ref = rise.targetKind==='boss' ? boss : rise.target;
+      const refValid = rise.targetKind==='mob' ? (ref && !ref.dead && ref.dying===0 && mobs.indexOf(ref)!==-1)
+        : (ref && ref===rise.target && ref.dying===0);
+      if(!refValid) return;
+      applyAttackDamage({kind:rise.targetKind, ref}, rise.weapon);
+      spawnHitParticles(ref.wx, ref.wy-(ref.r||16));
+      SFX.staffImpact();
+      spawnElementalRiseBurstFx(ref.wx, ref.wy, rise.elemKey);
+      applyElementalSplash(ref, ref.wx, ref.wy, rise.weapon);
+    });
+    elemRiseAttacks = elemRiseAttacks.filter(r=> !r.landed);
+  }
+  function spawnElementalRiseBurstFx(wx, wy, elKey){
+    if(!settings.weaponFx) return;
+    const ey = wy-6;
+    const def = ELEMENT_DEFS[elKey];
+    if(elKey==='grass'){
+      // 거대한 가시덩굴이 땅을 뚫고 솟아올라 후려친다 - 큰 링/마법진과 함께 잎·가시 파편이 위로 크게 튀어오른다.
+      spawnImpactRing(wx, ey, 4, 50, def.color, 340, 3);
+      spawnImpactRing(wx, ey, 8, 34, '#8ef2a0', 260, 2);
+      spawnMagicSigil(wx, ey, 38, def.color, 340, 0);
+      for(let i=0;i<16;i++){
+        const a=Math.random()*Math.PI*2, spd=0.8+Math.random()*1.4;
+        particles.push({wx:wx+Math.cos(a)*6, wy:ey, vx:Math.cos(a)*spd*0.5, vy:-1.8-Math.random()*1.8, life:0.46+Math.random()*0.3, color:def.color, shape:'shard', size:4+Math.random()*3, noGrav:true});
+      }
+      triggerScreenShake(1.4, 120);
+    } else { // lightning
+      // 낙뢰의 반대 방향 - 땅속에서부터 거대한 번개가 솟구쳐 하늘로 뻗어나간다.
+      spawnImpactRing(wx, ey, 3, 56, def.color, 300, 3.2);
+      spawnImpactRing(wx, ey, 6, 34, '#ffffff', 220, 2);
+      spawnImpactRays(wx, ey, 12, 48, '#ffffff', 260);
+      spawnMagicSigil(wx, ey, 40, def.color, 320, 0);
+      for(let i=0;i<18;i++){
+        const spread=(Math.random()-0.5)*1.0;
+        particles.push({wx, wy:ey, vx:Math.sin(spread)*2, vy:-2.6-Math.random()*2.4, life:0.24+Math.random()*0.18, color: Math.random()<0.5?'#ffffff':def.color, shape:'shard', size:3.6+Math.random()*2.8, noGrav:true});
+      }
+      triggerScreenShake(2.4, 150);
+      triggerScreenFlash('#ffffff', 0.14, 130);
+    }
+  }
   function fireProjectile(target, p){
     const ref = target.kind==='boss' ? boss : target.ref;
     if(!ref) return;
@@ -7078,36 +8713,87 @@
       if(tier>=4) triggerScreenShake(1.6, 140);
     }
   }
+  // 점(px,py)과 선분((x1,y1)-(x2,y2)) 사이의 최단 거리. 투사체가 한 프레임에 여러 픽셀을 건너뛰어도
+  // "이전 위치→현재 위치" 구간 전체를 기준으로 명중 판정을 하기 위한 연속(스윕) 충돌 판정용 헬퍼.
+  // 이게 없으면 이동 속도가 빠른 프레임에서 몹이 두 위치 사이에 끼어 있어도 판정에서 빠져나가
+  // "옆으로 스쳐지나갔는데 안 맞는" 현상이 생긴다.
+  function pointSegDist(px,py,x1,y1,x2,y2){
+    const dx=x2-x1, dy=y2-y1;
+    const lenSq = dx*dx+dy*dy;
+    let t = lenSq>0 ? ((px-x1)*dx+(py-y1)*dy)/lenSq : 0;
+    t = Math.max(0, Math.min(1, t));
+    const cx=x1+t*dx, cy=y1+t*dy;
+    return Math.hypot(px-cx, py-cy);
+  }
   function updateProjectiles(dt){
     projectiles.forEach(pr=>{
       if(pr.dead) return;
+      const prevWx = pr.wx, prevWy = pr.wy; // 스윕(연속) 충돌 판정을 위해 이동 전 위치를 기억해둔다
       const step = pr.speed*dt*10;
       pr.wx += pr.vx*step; pr.wy += pr.vy*step; pr.traveled += step;
       // 날아가는 궤적을 따라 은은한 잔상 파티클을 흩뿌려 투사체가 더 화려해 보이게 한다
       particles.push({wx:pr.wx-pr.vx*step*0.5, wy:pr.wy-pr.vy*step*0.5-8, vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3-0.1, life:0.3, color: pr.color2});
-      if(pr.style==='orb'){
+      if(pr.style==='orb' || pr.style==='blackholebolt'){
         // 지팡이 전용: 궤적을 따라 나선으로 휘도는 작은 마나 입자를 추가로 흩뿌려, 검류의 곧은 잔상과 다른 "소용돌이치는 빛의 꼬리"를 만든다
         const a0 = Math.random()*Math.PI*2, spd = 0.4+Math.random()*0.5;
         particles.push({wx:pr.wx-pr.vx*step*0.3, wy:pr.wy-pr.vy*step*0.3-8, vx:Math.cos(a0)*spd, vy:Math.sin(a0)*spd*0.6, life:0.32+Math.random()*0.18, color: Math.random()<0.5?pr.color:pr.color2, shape:'glow', size:1.6+Math.random()*1.4, spin:(Math.random()<0.5?1:-1)*0.5, noGrav:true});
       }
-      if(pr.traveled > pr.maxDist){ pr.dead = true; return; }
+      // 원소지배의 지팡이 전용 투사체(독/얼음) - 속성마다 확연히 다른, 한층 굵고 화려한 궤적을 남긴다.
+      if(pr.style==='elem'){
+        if(pr.elemKey==='poison'){
+          // 독: 두텁고 느리게 위로 피어오르는 보랏빛 독안개 꼬리 (겹겹이 짙게)
+          for(let k=0;k<2;k++){
+            particles.push({wx:pr.wx-pr.vx*step*0.4, wy:pr.wy-pr.vy*step*0.4-6, vx:(Math.random()-0.5)*0.3, vy:-0.2-Math.random()*0.2, life:0.5+Math.random()*0.25, color:pr.color, shape:'glow', size:3.4+Math.random()*2.6, noGrav:true});
+          }
+        } else {
+          // 얼음: 얇고 빠르게 흩날리는 서릿발 파편 꼬리 (더 굵고 밝게)
+          for(let k=0;k<2;k++){
+            particles.push({wx:pr.wx-pr.vx*step*0.3, wy:pr.wy-pr.vy*step*0.3-8, vx:(Math.random()-0.5)*0.6, vy:(Math.random()-0.5)*0.4, life:0.24+Math.random()*0.16, color: Math.random()<0.5?pr.color:'#ffffff', shape:'shard', size:2.6+Math.random()*2, noGrav:true});
+          }
+        }
+      }
+      // 블랙홀 투척(특이점의 지팡이 기본 공격): 명중 판정 대신, 사거리를 다 날아가면 항상 그 자리에
+      // 소형 블랙홀을 형성한다("허공에 던져도" 블랙홀은 반드시 생성되어 손맛이 남는다).
+      if(pr.traveled > pr.maxDist){
+        pr.dead = true;
+        if(pr.style==='blackholebolt'){ spawnBlackHole(pr.wx, pr.wy, pr.bhCfg); SFX.blackholeImpact(); }
+        return;
+      }
+      // 히트박스를 넉넉하게 잡고(+베이스 패딩을 크게), 이전 위치→현재 위치 구간 전체와의 거리로 판정해
+      // 빠르게 스쳐 지나가며 "맞았어야 하는데 안 맞는" 오판정을 막는다.
+      const mobHitPad = pr.style==='blackholebolt' ? 20 : 16;
       for(let i=0;i<mobs.length;i++){
         const mob = mobs[i];
         if(mob.dying>0 || mob.dead || pr.pierced.has(mob)) continue;
-        if(Math.hypot(mob.wx-pr.wx, mob.wy-pr.wy) < mob.r+7){
+        if(pointSegDist(mob.wx, mob.wy, prevWx, prevWy, pr.wx, pr.wy) < mob.r+mobHitPad){
+          if(pr.style==='blackholebolt'){
+            spawnBlackHole(pr.wx, pr.wy, pr.bhCfg);
+            SFX.blackholeImpact();
+            pr.dead = true;
+            return;
+          }
           applyAttackDamage({kind:'mob', ref:mob}, pr.weapon);
           spawnHitParticles(mob.wx, mob.wy-mob.r);
+          if(pr.style==='elem'){ spawnElementalProjectileImpactFx(mob.wx, mob.wy-mob.r, pr.elemKey); applyElementalSplash(mob, mob.wx, mob.wy, pr.weapon); }
           if(pr.aoeOnImpact) projectileExplode(pr);
           if(pr.weapon.pierce) pr.pierced.add(mob); else pr.dead = true;
           if(pr.dead) return;
         }
       }
+      const bossHitPad = pr.style==='blackholebolt' ? 24 : 20;
       if(!pr.dead && boss && boss.dying===0 && !pr.pierced.has(boss)){
-        if(Math.hypot(boss.wx-pr.wx, boss.wy-pr.wy) < boss.r+10){
-          applyAttackDamage({kind:'boss', ref:boss}, pr.weapon);
-          spawnHitParticles(boss.wx, boss.wy-boss.r);
-          if(pr.aoeOnImpact) projectileExplode(pr);
-          if(pr.weapon.pierce) pr.pierced.add(boss); else pr.dead = true;
+        if(pointSegDist(boss.wx, boss.wy, prevWx, prevWy, pr.wx, pr.wy) < boss.r+bossHitPad){
+          if(pr.style==='blackholebolt'){
+            spawnBlackHole(pr.wx, pr.wy, pr.bhCfg);
+            SFX.blackholeImpact();
+            pr.dead = true;
+          } else {
+            applyAttackDamage({kind:'boss', ref:boss}, pr.weapon);
+            spawnHitParticles(boss.wx, boss.wy-boss.r);
+            if(pr.style==='elem'){ spawnElementalProjectileImpactFx(boss.wx, boss.wy-boss.r, pr.elemKey); applyElementalSplash(boss, boss.wx, boss.wy, pr.weapon); }
+            if(pr.aoeOnImpact) projectileExplode(pr);
+            if(pr.weapon.pierce) pr.pierced.add(boss); else pr.dead = true;
+          }
         }
       }
     });
@@ -7167,6 +8853,10 @@
     if(e.ctrlKey || e.metaKey || isTypingOrModalOpen()) return;
     if(KEYMAP[e.code]){ keys[KEYMAP[e.code]]=true; e.preventDefault(); }
     if(e.code==='Space'){ manualAttack(); e.preventDefault(); }
+    if(e.repeat) return; // Q/E/R은 계속 누르고 있어도 반복 입력되지 않고 한 번 누른 것으로만 처리한다(버튼 탭과 동일)
+    if(e.code==='KeyQ'){ trySummonBoss(); e.preventDefault(); }         // PC 단축키: 보스 소환
+    else if(e.code==='KeyE'){ talkToNpc(nearbyTalkNPC); e.preventDefault(); } // PC 단축키: NPC 상호작용(말 걸기)
+    else if(e.code==='KeyR'){ castEquippedActiveSkill(); e.preventDefault(); } // PC 단축키: 스킬 사용
   });
   // keyup은 모달이 열려 있거나 입력창에 포커스가 가 있어도 항상 눌림 상태를 해제해야 한다.
   // (그렇지 않으면 방향키를 누른 채로 설정창 등을 열었다 닫을 때 키가 "눌린 채로 고정"되어
@@ -7771,6 +9461,11 @@
       if(boss.dying>=1) boss=null;
       return;
     }
+    // 요청 반영: 시간 정지에 걸려있는 동안에는 보스도 완전히 멈춘다 — 제한시간 소모, 패턴, 이동, 공격 전부 정지.
+    // (더 이상 얼음 속성처럼 CC 면역이 아니다. hitFlash/squashT 등 순수 연출용 감쇠도 함께 멈춰 "시간이 멈춘" 느낌을 준다.)
+    if(boss.timeStop && boss.timeStop.freezeUntil > now_ms()){
+      return;
+    }
     boss.timeLeft -= dt;
     if(boss.timeLeft<=0){
       endBossAttempt('⏰ 시간 초과! 보스전 실패... 필드로 돌아가 다시 힘을 기르세요.', 'danger', true);
@@ -8093,6 +9788,26 @@
     }
     if(inHouse){ updateHouseInterior(dt); return; }
     updatePlayerPoison(dt); // 30스테이지 최종보스의 독 도트 피해는 보스 상태와 무관하게 항상 갱신된다
+    // 마나 자연 회복 + 블랙홀 스킬 갱신(끌어당기기/틱 피해) + 관련 HUD 갱신
+    // 원소지배의 지팡이(속성 폭주 스킬 보유)를 장착한 동안에는 최대 마나가 400으로 늘어나고, 해제하면 다시 기본치(100)로 돌아온다.
+    const equippedSkillForMana = equippedWeaponSkill();
+    const wantMaxMana = (equippedSkillForMana && equippedSkillForMana.maxManaOverride) || MANA_MAX;
+    if(player.maxMana !== wantMaxMana){
+      player.maxMana = wantMaxMana;
+      player.mana = Math.min(player.mana, player.maxMana);
+    }
+    if(player.maxMana>0 && player.mana<player.maxMana){
+      player.mana = Math.min(player.maxMana, player.mana + MANA_REGEN_PER_SEC*dt/1000);
+    }
+    updateHealAura(dt); // 풀 속성(원소지배의 지팡이) 치료 정령 갱신: 지속시간 동안 주기적으로 체력 회복 + 반짝이는 이펙트
+    updateBlackHoles(dt);
+    updateMultiversePortals(dt);
+    updateGuardianTotems(dt); // 절대수호의 지팡이 "수호령 소환" 갱신: 지속시간 동안 치료/피해 틱 + 도발
+    checkTimeStopGhostSpawns(); // 시간 정지가 풀리기 0.1초 전, 정지되어 있던 모든 대상에게 악령을 씌운다
+    updateVengefulGhosts(dt); // 씌워진 악령들 갱신: 대상을 따라다니며 5초마다 피해
+    updateBlackholeSkillUI();
+    updateSecondSkillUI(); // 절대수호의 지팡이 "시간 정지"(2번째 스킬) 버튼 HUD 갱신
+    updateSkillAutoCast(); // 설정 "스킬 자동 발동"(기본 OFF)이 켜져 있으면 장착 스킬을 마나가 차는 대로 자동 발동
     // 플레이어 이동 (조이스틱 우선, 없으면 키보드)
     let vx=0, vy=0, analog=false;
     if(joy.active){ vx=joy.vx; vy=joy.vy; analog=true; }
@@ -8112,6 +9827,7 @@
       player.wy += dirY*curSpeed*speedMul*dt*10;
       player.moving = true;
       autoChasing = false;
+      rollMoveTimeStopProc(curSpeed*speedMul*dt*10); // 이동 거리 누적 → 1칸마다 1% 확률로 시간 정지
     } else {
       // "몬스터 자동 추격" 설정이 켜져 있을 때만, 직접 조작하지 않으면 가장 가까운 몬스터(보스 포함)를 향해 자동으로 이동해 사냥한다
       const huntTarget = settings.monsterChase ? findNearestHuntTarget() : null;
@@ -8124,6 +9840,7 @@
           player.wy += dirY*curSpeed*dt*10;
           player.moving = true;
           autoChasing = true;
+          rollMoveTimeStopProc(curSpeed*dt*10); // 자동 추격 이동도 동일하게 판정
         } else {
           player.moving = false;
           autoChasing = false;
@@ -8204,6 +9921,24 @@
           if(mob.bleed.ticksLeft<=0) mob.bleed=null;
         }
       }
+      // 속성 공격 - 독(원소지배의 지팡이) 지속 피해 틱 처리
+      if(mob.mythPoison && mob.mythPoison.ticksLeft>0){
+        mob.mythPoison.tickTimer -= dt;
+        if(mob.mythPoison.tickTimer<=0){
+          mob.mythPoison.tickTimer += mob.mythPoison.tickMs || POISON_TICK_MS;
+          mob.mythPoison.ticksLeft -= 1;
+          damageMob(mob, mob.mythPoison.dmgPerTick, false, 'poison');
+          if(mob.mythPoison.ticksLeft<=0) mob.mythPoison=null;
+        }
+      }
+      // 속성 공격 - 물(원소지배의 지팡이)의 이동속도·공격속도 감소 디버프 만료 처리
+      const nowT = now_ms();
+      if(mob.slowUntil && mob.slowUntil<=nowT){ mob.slowUntil=0; mob.slowMoveMult=1; mob.slowAtkMult=1; }
+      // 속성 공격 - 얼음(원소지배의 지팡이)에 얼려있거나, 절대수호의 지팡이 "시간 정지"에 걸려있는 동안에는
+      // 이동/공격 판정을 완전히 건너뛴다(시간 정지는 요청에 따라 방어력 감소/악령 트리거를 위해 별도 필드로 관리).
+      if((mob.frozenUntil && mob.frozenUntil>nowT) || (mob.timeStop && mob.timeStop.freezeUntil>nowT)){
+        return;
+      }
       // 보스 분신은 보스 본체와 마찬가지로 결계(30스테이지)가 펼쳐져 있는 동안 결계 밖으로 나갈 수 없다.
       // (일반 추적/돌진 등 어떤 상태에서 위치가 바뀌든 매 프레임 여기서 한 번 더 경계 안으로 되돌린다)
       if(mob.isBossClone && boss && boss.arenaCenter){
@@ -8214,15 +9949,18 @@
       // 보스 분신이 자신의 고유 스킬(예고/돌진)을 사용하는 동안에는 일반 잡몹 추적/접촉 로직을 건너뛰어
       // updateBossClonePatterns()가 이동과 판정을 전담하게 한다
       if(mob.isBossClone && (mob.specialState==='telegraph' || mob.specialState==='dash')) return;
-      const distToPlayer = Math.hypot(player.wx-mob.wx, player.wy-mob.wy); // 실제 피해 판정은 항상 "나"와의 거리 기준으로 별도 계산한다
+      const distToPlayer = Math.hypot(player.wx-mob.wx, player.wy-mob.wy); // 도발이 걸려있지 않을 때의 기본 피해 판정 거리
       // 잡몹은 자동으로 "가장 가까운 플레이어"를 추적한다 — 나뿐 아니라 근처의 다른 접속 유저도 어그로 대상이 된다.
-      // (보스/보스분신/쫄몹은 필드 공유 대상이 아니므로 기존처럼 항상 나를 추적한다)
+      // (보스/보스분신/쫄몹은 필드 공유 대상이 아니므로 기존처럼 항상 나를 추적하며, 수호령 도발에도 영향받지 않는다)
       const chaseTarget = (mob.isBossClone || mob.isTimeCutMinion || mob.isEliteArenaMinion) ? player : findNearestChaseTarget(mob);
+      const taunted = !!chaseTarget.isTaunt; // 도발 수호령(절대수호의 지팡이)이 범위 안에서 이 잡몹을 끌어당기고 있는지
       // 필드에서는 나무/건물을 미리 감지해 우회하는 방향으로 스티어링하고, 보스전 아레나(장애물 없음)에서는 그냥 직선으로 쫓는다.
-      const tx=chaseTarget.wx, ty=chaseTarget.wy, speed=mob.spd||MOB_CHASE_SPEED;
+      const tx=chaseTarget.wx, ty=chaseTarget.wy, speed=(mob.spd||MOB_CHASE_SPEED)*(mob.slowMoveMult||1); // 물 속성 감속(slowMoveMult)이 걸려있으면 이동속도가 함께 줄어든다
+      const atkDt = dt*(mob.slowAtkMult||1); // 물 속성 감속(slowAtkMult)이 걸려있으면 공격 타이머도 그만큼 천천히 줄어들어(=공격속도 감소) 체감된다
+      const distToChaseTarget = taunted ? Math.hypot(tx-mob.wx, ty-mob.wy) : distToPlayer;
       if(!bossActive && !bossIncoming){
         const dir = steerAroundObstacles(mob.wx, mob.wy, mob.r, tx, ty, 70);
-        if(distToPlayer>3){ mob.wx += dir.x*speed*dt*10; mob.wy += dir.y*speed*dt*10; }
+        if(distToChaseTarget>3){ mob.wx += dir.x*speed*dt*10; mob.wy += dir.y*speed*dt*10; }
         const resolved = resolveTreeCollision(mob.wx, mob.wy, mob.r);
         mob.wx = resolved.x; mob.wy = resolved.y;
         const houseResolved = resolveVillageCollision(mob.wx, mob.wy, mob.r);
@@ -8232,29 +9970,51 @@
         if(d>3){ mob.wx += dx/d*speed*dt*10; mob.wy += dy/d*speed*dt*10; }
       }
       // 몹 공격 히트박스: 사거리 안에 들어오면 잠깐 대기 후 링이 차오르고(예고),
-      // 예고가 끝나는 순간 플레이어가 그 판정 반경 안에 있으면 피해가 들어간다 — 보스 패턴과 동일한 "예고 후 판정" 방식.
+      // 예고가 끝나는 순간 목표(도발 중이면 수호령, 아니면 플레이어)가 그 판정 반경 안에 있으면 피해가 들어간다.
+      // 단, 수호령은 실제로 피해를 받지 않는 "미끼"라 도발 대상일 때는 나에게 피해가 전혀 들어가지 않는다.
       if(mob.atkState===undefined){ mob.atkState='idle'; mob.atkTimer=MOB_ATK_IDLE_GAP_MS+Math.random()*300; }
       if(mob.atkState==='idle'){
-        if(distToPlayer < MOB_ATK_RANGE+mob.r){
-          mob.atkTimer -= dt;
+        if(distToChaseTarget < MOB_ATK_RANGE+mob.r){
+          mob.atkTimer -= atkDt;
           if(mob.atkTimer<=0){
             mob.atkState='telegraph'; mob.atkTimer=MOB_ATK_TELEGRAPH_MS;
-            mob.atkTX=player.wx; mob.atkTY=player.wy; // 예고가 뜬 순간의 위치에 판정이 고정 — 이후 플레이어가 벗어나면 회피된다
+            // 예고가 뜬 순간의 위치/대상에 판정이 고정된다. 요청 반영: 수호령이 최대 3개까지 있을 수 있으므로
+            // "도발 중이었는지" 뿐 아니라 어느 수호령이었는지(totemRef)까지 함께 고정해둔다.
+            mob.atkTX=tx; mob.atkTY=ty; mob.atkTargetTaunted=taunted; mob.atkTargetTotem=taunted ? chaseTarget.totemRef : null;
           }
         } else {
           mob.atkTimer = MOB_ATK_IDLE_GAP_MS;
         }
       } else if(mob.atkState==='telegraph'){
-        mob.atkTimer -= dt;
+        mob.atkTimer -= atkDt;
         if(mob.atkTimer<=0){
-          const hitR = MOB_ATK_HIT_RADIUS+player.r;
-          if(Math.hypot(player.wx-mob.atkTX, player.wy-mob.atkTY) < hitR){
-            playerTakeDamage(Math.round((mob.contactDamage||MOB_CONTACT_DAMAGE)*stageDmgMult()));
+          if(mob.atkTargetTaunted){
+            // 요청 반영: 수호령이 더 이상 무적 미끼가 아니라 실제 체력(내 최대체력의 25%)을 갖고, 그 체력이
+            // 방어력(내 방어력의 25%)만큼 경감된 잡몹의 공격을 실제로 받아 깎여나간다(0이 되면 소멸).
+            // 요청 반영: 최대 3개까지 있을 수 있는 수호령 중, 이 잡몹이 실제로 도발당했던 그 개체(atkTargetTotem)를 사용한다.
+            const totem = mob.atkTargetTotem && guardianTotems.includes(mob.atkTargetTotem) ? mob.atkTargetTotem : activeTauntTotem(mob);
+            if(totem){
+              const rawTotemDmg = Math.round((mob.contactDamage||MOB_CONTACT_DAMAGE)*stageDmgMult());
+              const totemDmg = Math.max(1, Math.round(rawTotemDmg * (1 - (totem.defPct||0)/100)));
+              totem.hp -= totemDmg;
+              damageNumbers.push({wx:totem.wx, wy:totem.wy-40, text:'-'+formatBigNum(totemDmg), vy:-0.6, alpha:1, color:'#ff9d9d'});
+              if(settings.weaponFx) spawnImpactRing(mob.atkTX, mob.atkTY, 1, 12, '#8fe0c9', 140, 1.4);
+              if(totem.hp<=0){
+                const gi = guardianTotems.indexOf(totem);
+                if(gi>=0) guardianTotems.splice(gi,1);
+                toast('수호령이 쓰러졌습니다!', 'fail', true);
+              }
+            }
+          } else {
+            const hitR = MOB_ATK_HIT_RADIUS+player.r;
+            if(Math.hypot(player.wx-mob.atkTX, player.wy-mob.atkTY) < hitR){
+              playerTakeDamage(Math.round((mob.contactDamage||MOB_CONTACT_DAMAGE)*stageDmgMult()));
+            }
           }
           mob.atkState='cooldown'; mob.atkTimer=MOB_CONTACT_COOLDOWN;
         }
       } else if(mob.atkState==='cooldown'){
-        mob.atkTimer -= dt;
+        mob.atkTimer -= atkDt;
         if(mob.atkTimer<=0){ mob.atkState='idle'; mob.atkTimer=0; }
       }
     });
@@ -8281,6 +10041,8 @@
     if(screenFx.flashT>0) screenFx.flashT = Math.max(0, screenFx.flashT-dt);
     updateProjectiles(dt);
     updateStaffDrops(dt); // 지팡이 낙하 공격 진행/착지 갱신 (누락되어 있던 호출을 추가)
+    updateElementalFallAttacks(dt); // 원소지배의 지팡이 - 불/물 낙하 공격 진행/착지 갱신
+    updateElementalRiseAttacks(dt); // 원소지배의 지팡이 - 풀/번개 솟아오르기 공격 진행/착지 갱신
   }
 
   // ============ 렌더 ============
@@ -8835,6 +10597,12 @@
     }
     ctx.restore();
 
+    drawBlackHoles();
+    drawMultiversePortals();
+    drawGuardianTotems();
+    drawTimeStopFreezeAuras();
+    drawVengefulGhosts();
+
     // 잡몹
     mobs.forEach(mob=>{
       const mx=sx(mob.wx), my=sy(mob.wy);
@@ -8948,6 +10716,25 @@
           ctx.fillStyle = 'rgba(255,255,255,0.9)';
           ctx.beginPath(); ctx.arc(Math.cos(a)*orbitR, Math.sin(a)*orbitR, 1.3, 0, Math.PI*2); ctx.fill();
         }
+      } else if(pr.style==='blackholebolt'){
+        // 특이점의 지팡이 전용: 날아가는 작은 블랙홀 그 자체 — 회전하는 사건의 지평선 링을 두른 검은 핵
+        const pulse = 3+Math.sin(now_ms()/50)*1;
+        const spin = now_ms()/180;
+        const auraR = pulse+6;
+        const aura = ctx.createRadialGradient(0,0,0,0,0,auraR);
+        aura.addColorStop(0,'rgba(124,92,255,0.45)');
+        aura.addColorStop(1,'rgba(124,92,255,0)');
+        ctx.fillStyle = aura;
+        ctx.beginPath(); ctx.arc(0,0,auraR,0,Math.PI*2); ctx.fill();
+        ctx.save();
+        ctx.rotate(spin);
+        ctx.strokeStyle = 'rgba(255,63,174,0.75)'; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.arc(0,0,pulse+2,0,Math.PI*1.5); ctx.stroke();
+        ctx.restore();
+        const grad = ctx.createRadialGradient(0,0,0.5,0,0,pulse);
+        grad.addColorStop(0,'#000000'); grad.addColorStop(0.7,'#1a0d2e'); grad.addColorStop(1,'rgba(124,92,255,0.7)');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(0,0,pulse,0,Math.PI*2); ctx.fill();
       } else {
         ctx.rotate(ang);
         if(pr.style==='arrow'){
@@ -9070,6 +10857,12 @@
         ctx.moveTo(-r,-r*0.6); ctx.lineTo(r*0.8,-r*0.9); ctx.lineTo(r*0.9,r*0.5); ctx.lineTo(-r*0.6,r*0.8);
         ctx.closePath(); ctx.fill();
         ctx.restore();
+      } else if(p.shape==='emoji'){
+        // 멀티버스 포탈 전용: 포탈에서 튀어나오는 물건(쓰레기/기차)을 이모지로 간단히 그린다
+        const px=sx(p.wx), py=sy(p.wy);
+        ctx.font = (p.size||22)+'px sans-serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(p.char||'', px, py);
       } else {
         ctx.fillStyle=p.color; ctx.fillRect(sx(p.wx),sy(p.wy),3,3);
       }
@@ -9802,6 +11595,41 @@
   summonBossBtnEl.addEventListener('pointerdown', e=>{ e.preventDefault(); trySummonBoss(); });
   const giveUpBossBtnEl=$('giveUpBossBtn');
   giveUpBossBtnEl.addEventListener('pointerdown', e=>{ e.preventDefault(); giveUpBoss(); });
+  const manaHudChipEl=$('manaHudChip'), manaHudEl=$('manaHud'), manaMaxHudEl=$('manaMaxHud');
+  const blackholeSkillBtnEl=$('blackholeSkillBtn'), blackholeSkillCostTextEl=$('blackholeSkillCostText'), blackholeSkillIconEl=$('blackholeSkillIcon');
+  blackholeSkillBtnEl.addEventListener('pointerdown', e=>{ e.preventDefault(); castEquippedActiveSkill(); });
+  const secondSkillBtnEl=$('secondSkillBtn'), secondSkillCostTextEl=$('secondSkillCostText'), secondSkillIconEl=$('secondSkillIcon');
+  secondSkillBtnEl.addEventListener('pointerdown', e=>{ e.preventDefault(); castEquippedSecondSkill(); });
+  const SKILL_ICON_BY_ID = { blackhole:'🕳', elementalBurst:'🌈', guardianSummon:'🛡' }; // 장착 무기의 스킬 종류에 따라 스킬 버튼 아이콘을 바꿔준다
+  const SKILL2_ICON_BY_ID = { timeStop:'⏳' }; // 스킬이 2개인 무기의 "두 번째" 스킬 버튼 아이콘
+  // 블랙홀/멀티버스/속성폭주/수호령 소환(첫 번째 스킬) 관련 HUD를 매 프레임 갱신: 해당 무기 장착 시에만 노출하고,
+  // 마나 부족/재사용 대기 중에는 버튼을 어둡게 표시해 지금 쓸 수 없다는 걸 바로 알 수 있게 한다.
+  function updateBlackholeSkillUI(){
+    const skill = equippedWeaponSkill();
+    const has = !!(skill && (skill.id==='blackhole' || skill.id==='elementalBurst' || skill.id==='guardianSummon'));
+    manaHudChipEl.classList.toggle('show', has);
+    blackholeSkillBtnEl.classList.toggle('show', has);
+    if(!has) return;
+    blackholeSkillIconEl.textContent = SKILL_ICON_BY_ID[skill.id] || '🕳';
+    manaHudEl.textContent = Math.floor(player.mana);
+    manaMaxHudEl.textContent = player.maxMana;
+    blackholeSkillCostTextEl.textContent = skill.manaCost;
+    const onCooldown = blackholeSkillCooldownUntil > now_ms();
+    const canCast = !onCooldown && player.mana >= skill.manaCost;
+    blackholeSkillBtnEl.classList.toggle('disabled', !canCast);
+  }
+  // 절대수호의 지팡이 "시간 정지"(스킬②) 버튼 HUD 갱신 — 스킬이 2개인 무기를 장착했을 때만 노출된다.
+  function updateSecondSkillUI(){
+    const skill2 = equippedWeaponSkill2();
+    const has = !!(skill2 && skill2.id==='timeStop');
+    secondSkillBtnEl.classList.toggle('show', has);
+    if(!has) return;
+    secondSkillIconEl.textContent = SKILL2_ICON_BY_ID[skill2.id] || '⏳';
+    secondSkillCostTextEl.textContent = skill2.manaCost;
+    const onCooldown = timeStopSkillCooldownUntil > now_ms();
+    const canCast = !onCooldown && player.mana >= skill2.manaCost;
+    secondSkillBtnEl.classList.toggle('disabled', !canCast);
+  }
   const toastLayer=$('toastLayer');
 
   const growAtkValEl=$('growAtkVal'), growAtkCostEl=$('growAtkCost'), growAtkBtnEl=$('growAtkBtn');
@@ -9838,6 +11666,30 @@
     if(val>=10000){ tier+=1; divisor=Math.pow(10,8+tier*4); val=Math.round((n/divisor)*100)/100; }
     const str = val.toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
     return str+bigNumTierLabel(tier);
+  }
+  // bigNumTierLabel(문자 접미사 -> tier 숫자)의 역변환. tier 수는 실사용 범위에서 매우 작으므로(수십 이내)
+  // 0부터 순서대로 라벨을 만들어보며 일치하는 tier를 찾는 방식으로 충분히 빠르다.
+  function bigNumTierValue(label){
+    for(let tier=0; tier<10000; tier++){
+      if(bigNumTierLabel(tier)===label) return tier;
+    }
+    return 0;
+  }
+  // 관리자 입력칸 전용: formatBigNum()이 만든 표기("1500000", "1.2a" 등)를 다시 실제 숫자로 되돌린다.
+  // 콤마/공백은 무시하고, 숫자 뒤에 알파벳 접미사가 붙어있으면 HUD와 동일한 단위 표기로 해석한다.
+  // 접미사가 없으면(=1억 미만 표기) 입력값을 그대로 정수로 받아들인다.
+  function parseBigNum(str){
+    if(str==null) return 0;
+    const cleaned = String(str).trim().replace(/,/g,'');
+    if(cleaned==='') return 0;
+    const m = cleaned.match(/^(-?[0-9]*\.?[0-9]+)\s*([a-zA-Z]*)$/);
+    if(!m) return Math.max(0, Math.floor(Number(cleaned)||0));
+    const val = parseFloat(m[1]);
+    const suffix = m[2];
+    if(!suffix) return Math.max(0, Math.floor(val));
+    const tier = bigNumTierValue(suffix);
+    const divisor = Math.pow(10, 8+tier*4);
+    return Math.max(0, Math.floor(val*divisor));
   }
 
   function toast(msg, cls, force){
@@ -9876,12 +11728,14 @@
     summonBossBtnEl.classList.toggle('show', canSummon);
     giveUpBossBtnEl.classList.toggle('show', bossActive);
     if(typeof bossAutoSummonToggleEl!=='undefined' && bossAutoSummonToggleEl) bossAutoSummonToggleEl.checked = !!settings.bossAutoSummon;
+    if(typeof bossAutoSummonSettingsToggleEl!=='undefined' && bossAutoSummonSettingsToggleEl) bossAutoSummonSettingsToggleEl.checked = !!settings.bossAutoSummon;
     if(typeof bossAutoSummonBoxEl!=='undefined' && bossAutoSummonBoxEl) bossAutoSummonBoxEl.classList.toggle('show', canSummon); // 보스 소환 버튼이 떠 있을 때만 자동소환 토글도 함께 보여준다
     // 보스 자동 소환: 옵션이 켜져 있고, 직전 보스전 패배로 인한 잠금 상태가 아니면 잡몹 처치 완료 즉시 자동으로 보스를 소환한다.
     if(canSummon && settings.bossAutoSummon && !bossAutoSummonBlocked) trySummonBoss(true);
 
     // 성장 탭
     goldGrowViewEl.textContent = formatBigNum(state.gold);
+    renderGoldExchange();
     hpGrowViewEl.textContent = formatBigNum(player.maxHp);
     growAtkValEl.textContent = formatBigNum(state.atk);
     growAtkCostEl.textContent = formatBigNum(growCostAtk());
@@ -10128,8 +11982,12 @@
 
   // ============ 뽑기(가챠) 화면 ============
   let gachaCurCat = 'weapon';
-  // 관리자가 설정한 픽업/확정 뽑기 설정(Firebase 'gachaConfig' 실시간 구독, 모든 유저 공통)
-  let gachaConfig = { pickup:null, guaranteed:null };
+  // 뽑기 화면이 지금 '일반' 모드인지, 새로 추가된 '픽업뽑기' 전용 탭 모드인지. 'pickup'일 때는
+  // gachaCurCat이 픽업뽑기 탭 안의 무기/보물/장비 미니 스위처에서 고른 카테고리를 그대로 가리킨다.
+  let gachaViewMode = 'normal';
+  // 관리자가 설정한 픽업/확정 뽑기 설정(Firebase 'gachaConfig' 실시간 구독, 모든 유저 공통).
+  // 무기/보물/장비가 각각 완전히 독립된 설정을 가지므로, 카테고리별로 동시에 서로 다른 픽업·확정 뽑기를 켤 수 있다.
+  let gachaConfig = { pickup:{weapon:null, treasure:null, equipment:null}, guaranteed:{weapon:null, treasure:null, equipment:null} };
   const gachaCost1El=$('gachaCost1'), gachaCost10El=$('gachaCost10');
   const gachaPull1BtnEl=$('gachaPull1Btn'), gachaPull10BtnEl=$('gachaPull10Btn');
   const gachaInvListEl=$('gachaInvList');
@@ -10139,7 +11997,8 @@
   const gachaAnimStageEl=$('gachaAnimStage'), gachaAnimLabelEl=$('gachaAnimLabel'), gachaAnimBestEl=$('gachaAnimBest');
   const gachaBannerEl=$('gachaBanner'), gachaBannerIconEl=$('gachaBannerIcon'), gachaBannerGradeEl=$('gachaBannerGrade'), gachaBannerNameEl=$('gachaBannerName');
   const gachaOddsModalEl=$('gachaOddsModal'), gachaOddsTitleEl=$('gachaOddsTitle'), gachaOddsFeaturedEl=$('gachaOddsFeatured'), gachaOddsListEl=$('gachaOddsList'), gachaOddsCloseBtnEl=$('gachaOddsCloseBtn');
-  const gachaInvModalEl=$('gachaInvModal'), gachaInvOpenBtnEl=$('gachaInvOpenBtn'), gachaInvCloseBtnEl=$('gachaInvCloseBtn');
+  const gachaHistoryBtnEl=$('gachaHistoryBtn'), gachaHistoryModalEl=$('gachaHistoryModal'), gachaHistoryCloseBtnEl=$('gachaHistoryCloseBtn'), gachaHistoryListEl=$('gachaHistoryList');
+  const gachaInvModalEl=$('gachaInvModal'), gachaInvCloseBtnEl=$('gachaInvCloseBtn');
   const gachaInvToolbarTitleEl=$('gachaInvToolbarTitle'), gachaInvSellModeBtnEl=$('gachaInvSellModeBtn');
   const gachaInvGradeFilterEl=$('gachaInvGradeFilter'), gachaInvSellFooterEl=$('gachaInvSellFooter');
   const gachaInvSelCountEl=$('gachaInvSelCount'), gachaInvSelGemsEl=$('gachaInvSelGems'), gachaInvSellConfirmBtnEl=$('gachaInvSellConfirmBtn');
@@ -10826,8 +12685,48 @@
   gachaOddsCloseBtnEl.addEventListener('click', ()=> gachaOddsModalEl.classList.remove('show'));
   gachaOddsModalEl.addEventListener('click', e=>{ if(e.target===gachaOddsModalEl) gachaOddsModalEl.classList.remove('show'); });
 
+  // ---- 뽑기 내역: 최근 뽑기 결과를 최신순으로 최대 GACHA_HISTORY_MAX개까지 모달에서 확인 ----
+  // 상대적인 시간 표기("방금 전"/"n분 전"/"n시간 전"/"n일 전")로 보여주다가, 그보다 오래되면 날짜/시간으로 표기한다.
+  function gachaHistoryTimeText(ts){
+    const diffSec = Math.max(0, Math.floor((Date.now()-ts)/1000));
+    if(diffSec < 60) return '방금 전';
+    if(diffSec < 3600) return Math.floor(diffSec/60)+'분 전';
+    if(diffSec < 86400) return Math.floor(diffSec/3600)+'시간 전';
+    if(diffSec < 86400*7) return Math.floor(diffSec/86400)+'일 전';
+    const d = new Date(ts);
+    return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  }
+  const GACHA_HISTORY_MODE_LABEL = {normal:'일반', pickup:'픽업'};
+  function renderGachaHistoryList(){
+    const list = Array.isArray(state.gachaHistory) ? state.gachaHistory : [];
+    if(list.length===0){
+      gachaHistoryListEl.innerHTML = '<div class="gacha-history-empty">아직 뽑기 내역이 없습니다. 뽑기를 진행해보세요!</div>';
+      return;
+    }
+    gachaHistoryListEl.innerHTML = list.map(rec=>{
+      const grade = GRADE_BY_KEY[rec.grade] || {color:'#8f88a8'};
+      const catLabel = GACHA_CATEGORY_LABEL[rec.category] || rec.category;
+      const modeLabel = GACHA_HISTORY_MODE_LABEL[rec.mode] || rec.mode;
+      return `<div class="gacha-history-item">
+        <div class="gacha-history-badge" style="background:${grade.color}">${rec.grade||'?'}</div>
+        <div class="gacha-history-info">
+          <div class="gacha-history-name">${rec.name}</div>
+          <div class="gacha-history-sub">${catLabel} · ${modeLabel} 뽑기</div>
+        </div>
+        <div class="gacha-history-time">${gachaHistoryTimeText(rec.ts)}</div>
+      </div>`;
+    }).join('');
+  }
+  function openGachaHistoryModal(){
+    renderGachaHistoryList();
+    gachaHistoryModalEl.classList.add('show');
+  }
+  gachaHistoryBtnEl.addEventListener('click', openGachaHistoryModal);
+  gachaHistoryCloseBtnEl.addEventListener('click', ()=> gachaHistoryModalEl.classList.remove('show'));
+  gachaHistoryModalEl.addEventListener('click', e=>{ if(e.target===gachaHistoryModalEl) gachaHistoryModalEl.classList.remove('show'); });
+
   // ---- 보유 아이템: 항상 보이던 목록 대신, 버튼을 눌러 모달로 확인 ----
-  gachaInvOpenBtnEl.addEventListener('click', ()=>{ exitGachaInvSellMode(); renderGachaView(); gachaInvModalEl.classList.add('show'); });
+  // "내 아이템 보기" 버튼은 뽑기 탭에서 삭제되었다(gachaInvModal 자체는 남겨두되 여는 진입점이 없다).
   gachaInvCloseBtnEl.addEventListener('click', ()=>{ exitGachaInvSellMode(); gachaInvModalEl.classList.remove('show'); });
   gachaInvModalEl.addEventListener('click', e=>{ if(e.target===gachaInvModalEl){ exitGachaInvSellMode(); gachaInvModalEl.classList.remove('show'); } });
 
@@ -10911,8 +12810,28 @@
     btn.addEventListener('click', ()=>{
       document.querySelectorAll('#gachaSubtabs .gachaSubBtn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
-      gachaCurCat = btn.dataset.cat;
+      const cat = btn.dataset.cat;
+      if(cat==='pickup'){
+        // '픽업뽑기' 탭은 무기/보물/장비처럼 자체 아이템 풀을 갖는 카테고리가 아니라, 그 3개 카테고리의
+        // 픽업 뽑기만 모아 보여주는 전용 화면이다. gachaCurCat은 그대로 두되(미니 스위처로 고름),
+        // 지금 실제로 진행 중인 픽업이 있는 카테고리가 있으면 그것을 먼저 보여준다.
+        gachaViewMode = 'pickup';
+        const liveCat = ['weapon','treasure','equipment'].find(c=> isPickupActuallyLive(c));
+        gachaCurCat = liveCat || gachaCurCat || 'weapon';
+      } else {
+        gachaViewMode = 'normal';
+        gachaCurCat = cat;
+      }
       exitGachaInvSellMode(); // 카테고리를 바꾸면 이전 카테고리 기준으로 선택했던 항목은 무의미하므로 초기화
+      renderGachaView();
+    });
+  });
+  // 픽업뽑기 탭 안에서 무기/보물/장비 중 무엇을 볼지 고르는 미니 스위처. gachaCurCat만 바꾸고
+  // 뽑기 로직(doPickupPull)과 확정뽑기 진행도(renderGuaranteedProgress)는 그대로 재사용한다.
+  document.querySelectorAll('#gachaPickupSubswitch .gachaPickupSubBtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      gachaCurCat = btn.dataset.subcat;
+      exitGachaInvSellMode();
       renderGachaView();
     });
   });
@@ -10923,38 +12842,148 @@
     return Object.keys(stats).map(k=> `${ALL_STAT_DEFS[k].label} +${stats[k]}${ALL_STAT_DEFS[k].unit}`).join(' · ');
   }
 
-  const gachaGuarBtnEl=$('gachaGuarBtn'), gachaGuarCostEl=$('gachaGuarCost');
+  const gachaGuarProgressNoteEl=$('gachaGuarProgressNote');
   const gachaPickupNoticeEl=$('gachaPickupNotice');
-  gachaGuarBtnEl.addEventListener('click', ()=> doGuaranteedPull(gachaCurCat));
-  // 확정 뽑기 버튼: 관리자가 설정한 카테고리와 현재 보고 있는 탭이 같을 때만 노출한다.
-  function renderGuaranteedButton(){
-    const gr = gachaConfig.guaranteed;
-    const active = !!(gr && gr.active && gr.category===gachaCurCat);
-    gachaGuarBtnEl.classList.toggle('hide', !active);
-    if(active){
-      gachaGuarCostEl.textContent = gr.cost;
-      gachaGuarBtnEl.disabled = state.gems < gr.cost;
-    }
+  const gachaPickupCardEl=$('gachaPickupCard');
+  const gachaPickupSubswitchEl=$('gachaPickupSubswitch');
+  const gachaNormalPullBtnsEl=$('gachaNormalPullBtns');
+  const gachaPickupEmptyNoteEl=$('gachaPickupEmptyNote');
+  const gachaPickupBannerEl=$('gachaPickupBanner'), gachaPickupBannerIconEl=$('gachaPickupBannerIcon');
+  const gachaPickupBannerGradeEl=$('gachaPickupBannerGrade'), gachaPickupBannerNameEl=$('gachaPickupBannerName');
+  const gachaPickupBannerHintEl=$('gachaPickupBannerHint');
+  const gachaPickup1BtnEl=$('gachaPickup1Btn'), gachaPickup10BtnEl=$('gachaPickup10Btn');
+  const gachaPickupCost1El=$('gachaPickupCost1'), gachaPickupCost10El=$('gachaPickupCost10');
+  const gachaPickupEndNoteEl=$('gachaPickupEndNote');
+  gachaPickup1BtnEl.addEventListener('click', ()=> doPickupPull(gachaCurCat, 1));
+  gachaPickup10BtnEl.addEventListener('click', ()=> doPickupPull(gachaCurCat, 10));
+  gachaPickupCost1El.textContent = GACHA_COST_1;
+  gachaPickupCost10El.textContent = GACHA_COST_10;
+  // 확정뽑기 진행 안내: 별도 버튼이 아니라, 이 카테고리에서 일반+픽업 뽑기를 합친 피티 카운터(advanceGachaPity)가
+  // 관리자가 정한 횟수에 도달하면 자동으로 지급된다는 점을 안내문으로만 보여준다.
+  function renderGuaranteedProgress(){
+    const gr = gachaConfig.guaranteed[gachaCurCat];
+    const active = isGachaConfigLive(gr);
+    if(!active){ gachaGuarProgressNoteEl.classList.add('hide'); return; }
+    const pity = getGachaPity(gachaCurCat);
+    if(pity.cfgKey !== gr.updatedAt){ pity.count = 0; pity.cfgKey = gr.updatedAt; }
+    const need = Math.max(1, Math.floor(Number(gr.pityCount)||1));
+    const targetName = gr.mode==='item' ? ((findItemById(gachaCurCat, gr.itemId)||{}).name || '(삭제된 아이템)') : `${gr.grade}등급`;
+    const period = gachaPeriodNoteText(gr);
+    gachaGuarProgressNoteEl.classList.remove('hide');
+    gachaGuarProgressNoteEl.textContent = `🎁 확정: ${targetName} · 뽑기 ${pity.count}/${need}회 진행 중` + (period ? ` · ${period}` : '');
   }
-  // 픽업 진행 중 안내: 현재 탭 카테고리에서 유효한(직업 스코프를 통과한) 픽업 아이템만 보여준다.
-  function renderPickupNotice(){
-    const pk = gachaConfig.pickup;
-    if(pk && pk.active && pk.category===gachaCurCat && Array.isArray(pk.itemIds) && pk.itemIds.length){
+  // 픽업 전용 배너: 현재 카테고리에서 유효한 픽업 아이템 중 대표(가장 높은 등급) 아이템을 걸어둔다.
+  // "등급별 확률 지정" 방식은 특정 단일 아이템이 아니므로, 확률이 지정된 등급 중 가장 높은 등급의 대표 아이템을 보여준다.
+  function renderPickupBanner(pk){
+    let featured = null, gradeKey = null;
+    if(pk.mode==='grade'){
+      const activeGrades = GACHA_GRADES.filter(g=> (Number(pk.gradeRates && pk.gradeRates[g.key])||0) > 0);
+      if(activeGrades.length){
+        gradeKey = activeGrades[0].key; // GACHA_GRADES는 높은 등급 순으로 정렬돼 있어 첫 항목이 가장 높은 등급이다.
+        const list = poolOf(gachaCurCat)[gradeKey];
+        featured = (list && list.length) ? list[0] : null;
+      }
+    } else if(Array.isArray(pk.itemIds) && pk.itemIds.length){
       const curIds = new Set(allItemsFlat(gachaCurCat).map(it=>it.id));
       const validItems = pk.itemIds.filter(id=> curIds.has(id)).map(id=> findItemById(gachaCurCat, id));
       if(validItems.length){
-        gachaPickupNoticeEl.style.display = 'block';
-        gachaPickupNoticeEl.innerHTML = `🎯 픽업 진행 중 (총 ${pk.ratePercent}%): ` +
-          validItems.map(it=> `<b style="color:${GRADE_BY_KEY[it.grade].color}">${it.name}</b>`).join(', ');
-        return;
+        featured = validItems.slice().sort((a,b)=> GACHA_GRADES.findIndex(g=>g.key===a.grade) - GACHA_GRADES.findIndex(g=>g.key===b.grade))[0];
+        gradeKey = featured.grade;
+      }
+    }
+    if(!featured){ gachaPickupBannerEl.classList.add('hide'); return; }
+    const grade = GRADE_BY_KEY[gradeKey];
+    gachaPickupBannerEl.classList.remove('hide');
+    gachaPickupBannerEl.style.setProperty('--gband', grade.color);
+    gachaPickupBannerIconEl.innerHTML = `<div class="item-icon">${itemIconSVG(featured)}</div>`;
+    gachaPickupBannerGradeEl.style.background = grade.color;
+    gachaPickupBannerNameEl.textContent = featured.name;
+    gachaPickupBannerHintEl.textContent = pk.mode==='grade' ? '등급별 확률 UP · 일반 뽑기와 별도로 진행됩니다' : '픽업 대상 · 일반 뽑기와 별도로 진행됩니다';
+  }
+  // 픽업 뽑기 전용 카드/버튼/배너 + 진행 안내: 현재 탭 카테고리에서 유효한(직업 스코프를 통과한) 픽업 아이템이 있고,
+  // 기간(설정했다면)도 지금 유효할 때만 노출한다. 일반 뽑기 버튼(gachaPull1Btn/10Btn)과는 완전히 분리되어 있다.
+  function renderPickupNotice(){
+    // 픽업 배너/카드/안내문은 이제 '픽업뽑기' 전용 탭에서만 보여준다. 일반(무기/보물/장비) 탭에서는
+    // 그 카테고리에 픽업이 진행 중이더라도 여기서 노출하지 않고, 픽업뽑기 탭의 미니 스위처를 통해서만 보여준다.
+    if(gachaViewMode !== 'pickup'){
+      gachaPickupNoticeEl.style.display = 'none';
+      gachaPickupCardEl.classList.add('hide');
+      gachaPickupBannerEl.classList.add('hide');
+      return;
+    }
+    const pk = gachaConfig.pickup[gachaCurCat];
+    if(isGachaConfigLive(pk)){
+      if(pk.mode==='grade'){
+        const activeGrades = GACHA_GRADES.filter(g=> (Number(pk.gradeRates && pk.gradeRates[g.key])||0) > 0);
+        if(activeGrades.length){
+          gachaPickupNoticeEl.style.display = 'block';
+          gachaPickupNoticeEl.innerHTML = `🎯 픽업 진행 중 (등급별 확률): ` +
+            activeGrades.map(g=> `<b style="color:${g.color}">${g.key} ${pk.gradeRates[g.key]}%</b>`).join(', ');
+          gachaPickupCardEl.classList.remove('hide');
+          gachaPickup1BtnEl.disabled = state.gems < GACHA_COST_1;
+          gachaPickup10BtnEl.disabled = state.gems < GACHA_COST_10;
+          gachaPickupEndNoteEl.textContent = gachaPeriodNoteText(pk);
+          renderPickupBanner(pk);
+          return;
+        }
+      } else if(Array.isArray(pk.itemIds) && pk.itemIds.length){
+        const curIds = new Set(allItemsFlat(gachaCurCat).map(it=>it.id));
+        const validItems = pk.itemIds.filter(id=> curIds.has(id)).map(id=> findItemById(gachaCurCat, id));
+        if(validItems.length){
+          gachaPickupNoticeEl.style.display = 'block';
+          gachaPickupNoticeEl.innerHTML = `🎯 픽업 진행 중 (총 ${pk.ratePercent}%): ` +
+            validItems.map(it=> `<b style="color:${GRADE_BY_KEY[it.grade].color}">${it.name}</b>`).join(', ');
+          gachaPickupCardEl.classList.remove('hide');
+          gachaPickup1BtnEl.disabled = state.gems < GACHA_COST_1;
+          gachaPickup10BtnEl.disabled = state.gems < GACHA_COST_10;
+          gachaPickupEndNoteEl.textContent = gachaPeriodNoteText(pk);
+          renderPickupBanner(pk);
+          return;
+        }
       }
     }
     gachaPickupNoticeEl.style.display = 'none';
+    gachaPickupCardEl.classList.add('hide');
+    gachaPickupBannerEl.classList.add('hide');
+  }
+  // 뽑기 화면이 '일반' 모드인지 '픽업뽑기' 탭 모드인지에 따라 보여줄 요소를 전환한다.
+  // 픽업뽑기 탭에서는 시그니처 배너·일반 뽑기 버튼을 숨기고, 카테고리 미니 스위처와 픽업 전용 배너/카드만 보여준다.
+  // (확정뽑기 진행 안내문과 "내 아이템 보기" 버튼은 두 모드 모두에서 계속 보인다 — 확정뽑기가 픽업 뽑기에도
+  //  똑같이 적용된다는 것을 픽업뽑기 탭에서도 그대로 확인할 수 있어야 하기 때문이다.)
+  // 픽업뽑기 탭 위치: 무기/보물/장비 중 하나라도 지금 실제로 진행 중인 픽업이 있으면 맨 앞으로,
+  // 하나도 없으면 원래처럼 맨 뒤로 보낸다. 같은 버튼 노드를 그대로 옮기는 것이므로 클릭 이벤트나
+  // active 표시는 그대로 유지된다.
+  function reorderGachaPickupTab(){
+    const subtabsEl = $('gachaSubtabs');
+    const pickupBtn = $('gachaPickupTabBtn');
+    if(!subtabsEl || !pickupBtn) return;
+    const anyLive = ['weapon','treasure','equipment'].some(c=> isPickupActuallyLive(c));
+    if(anyLive){
+      if(subtabsEl.firstElementChild !== pickupBtn) subtabsEl.prepend(pickupBtn);
+    } else {
+      if(subtabsEl.lastElementChild !== pickupBtn) subtabsEl.appendChild(pickupBtn);
+    }
+  }
+  function renderGachaModeUI(){
+    const isPickup = gachaViewMode === 'pickup';
+    gachaPickupSubswitchEl.classList.toggle('hide', !isPickup);
+    gachaBannerEl.classList.toggle('hide', isPickup);
+    gachaNormalPullBtnsEl.classList.toggle('hide', isPickup);
+    gachaPickupEmptyNoteEl.classList.toggle('hide', !(isPickup && !isPickupActuallyLive(gachaCurCat)));
+    if(isPickup){
+      document.querySelectorAll('#gachaPickupSubswitch .gachaPickupSubBtn').forEach(b=>{
+        b.classList.toggle('active', b.dataset.subcat===gachaCurCat);
+        const dot = b.querySelector('.gacha-pickup-subdot');
+        if(dot) dot.classList.toggle('on', isPickupActuallyLive(b.dataset.subcat));
+      });
+    }
   }
   function renderGachaView(){
+    reorderGachaPickupTab();
     renderGachaBanner();
-    renderGuaranteedButton();
+    renderGuaranteedProgress();
     renderPickupNotice();
+    renderGachaModeUI();
     gachaPull1BtnEl.disabled = state.gems < GACHA_COST_1;
     gachaPull10BtnEl.disabled = state.gems < GACHA_COST_10;
 
@@ -11056,10 +13085,12 @@
 
   // ===== NPC 말 걸기 버튼 (실내/야외 공용) =====
   const npcTalkBtnEl=$('npcTalkBtn');
+  const npcTalkBtnLabelEl=$('npcTalkBtnLabel');
   npcTalkBtnEl.addEventListener('click', ()=> talkToNpc(nearbyTalkNPC));
 
   // ===== 훈련소: 성장(스탯 강화) 모달 =====
   const trainingCampModalEl=$('trainingCampModal'), trainingCampCloseBtnEl=$('trainingCampCloseBtn');
+  const goldExchangeListEl=$('goldExchangeList'), goldExchangeNoteEl=$('goldExchangeNote');
   function openTrainingCamp(){
     toast('훈련 교관 갈드: "차렷! 오늘도 구슬땀 좀 흘려보자!"', 'success', true);
     updateHudText();
@@ -11322,10 +13353,36 @@
   const miniMapToggleEl=$('miniMapToggle');
   const bossAutoSummonToggleEl=$('bossAutoSummonToggle');
   const bossAutoSummonBoxEl=$('bossAutoSummonBox');
+  const bossAutoSummonSettingsToggleEl=$('bossAutoSummonSettingsToggle');
+  const skillAutoCastToggleEl=$('skillAutoCastToggle');
   const aspectRatioToggleEl=$('aspectRatioToggle');
   const couponInputEl=$('couponInput'), couponBtnEl=$('couponBtn');
   const adminLoginRowEl=$('adminLoginRow'), adminPanelEl=$('adminPanel'), adminPwInputEl=$('adminPwInput'), adminPwBtnEl=$('adminPwBtn');
-  const adminGoldInputEl=$('adminGoldInput'), adminGemsInputEl=$('adminGemsInput');
+  // 관리자 패널 진단용: 현재 로그인한 UID와, 그 UID가 Firebase 'admins/{uid}'에 boolean true로 정확히 등록되어
+  // 있는지를 그대로 보여준다. globalMail/gachaConfig 쓰기 권한(permission_denied) 문제 진단에 사용.
+  const adminUidCheckBtnEl=$('adminUidCheckBtn'), adminUidCheckNoteEl=$('adminUidCheckNote');
+  if(adminUidCheckBtnEl){
+    adminUidCheckBtnEl.addEventListener('click', ()=>{
+      if(!currentUser){ if(adminUidCheckNoteEl) adminUidCheckNoteEl.textContent = '로그인 상태가 아닙니다.'; return; }
+      const uid = currentUser.uid;
+      if(adminUidCheckNoteEl) adminUidCheckNoteEl.textContent = `UID: ${uid} · 확인 중...`;
+      db.ref('admins/'+uid).get().then(snap=>{
+        const v = snap.val();
+        const isBoolTrue = (v === true);
+        const typeTxt = v===null ? '값 없음(등록 안 됨)' : `${typeof v} (${JSON.stringify(v)})`;
+        if(adminUidCheckNoteEl){
+          adminUidCheckNoteEl.innerHTML = `UID: <b>${uid}</b><br>admins/${uid} 값: ${typeTxt}<br>` +
+            (isBoolTrue
+              ? '✅ 관리자 권한이 정상적으로 등록되어 있습니다.'
+              : '❌ 정상이 아닙니다. Firebase 콘솔에서 이 UID를 정확히 복사해 <b>admins/'+uid+'</b> 경로에 <b>boolean 타입 true</b>로 다시 등록하세요(문자열 "true"는 통과하지 않습니다).');
+        }
+      }).catch(err=>{
+        if(adminUidCheckNoteEl) adminUidCheckNoteEl.innerHTML = `UID: <b>${uid}</b><br>❌ admins 조회 자체가 거부되었습니다: ${err.message}<br>Firebase 규칙에 "admins" 블록이 실제로 게시되어 있는지 확인하세요.`;
+        console.error('admins 확인 실패:', err);
+      });
+    });
+  }
+  const adminGoldInputEl=$('adminGoldInput'), adminGemsInputEl=$('adminGemsInput'), adminManaInputEl=$('adminManaInput');
   const adminAtkInputEl=$('adminAtkInput'), adminHpInputEl=$('adminHpInput'), adminDefInputEl=$('adminDefInput');
   const adminSpdInputEl=$('adminSpdInput');
   const adminSkipMobToggleEl=$('adminSkipMobToggle');
@@ -11421,6 +13478,8 @@
     fixedJoystickToggleEl.checked = settings.fixedJoystick;
     applyControlMode();
     noAutoEnterHouseToggleEl.checked = settings.noAutoEnterHouse;
+    if(bossAutoSummonSettingsToggleEl) bossAutoSummonSettingsToggleEl.checked = !!settings.bossAutoSummon;
+    if(skillAutoCastToggleEl) skillAutoCastToggleEl.checked = !!settings.skillAutoCast;
     weaponFxToggleEl.checked = settings.weaponFx;
     screenFlashToggleEl.checked = settings.screenFlash;
     skillSoundToggleEl.checked = settings.skillSound;
@@ -11553,13 +13612,21 @@
     gachaConfigRef = db.ref('gachaConfig');
     gachaConfigRef.on('value', snap=>{
       const val = snap.val() || {};
-      gachaConfig.pickup = val.pickup || null;
-      gachaConfig.guaranteed = val.guaranteed || null;
-      updateAdminPickupStatusNote(gachaConfig.pickup);
-      updateAdminGuarStatusNote(gachaConfig.guaranteed);
+      const pickupVal = val.pickup || {};
+      const guarVal = val.guaranteed || {};
+      ['weapon','treasure','equipment'].forEach(cat=>{
+        gachaConfig.pickup[cat] = pickupVal[cat] || null;
+        gachaConfig.guaranteed[cat] = guarVal[cat] || null;
+      });
       if(gameStarted) renderGachaView();
     }, err=> console.error('뽑기 설정 조회 실패:', err));
   }
+  // 픽업/확정 뽑기는 시작/종료 "시각"이 되면 자동으로 켜지거나 꺼져야 하는데, Firebase 값 자체는
+  // 그 시각에 바뀌지 않으므로(관리자가 다시 저장하기 전까지 그대로임) 1초마다 다시 그려서
+  // 기간 만료(또는 시작) 여부와 남은 시간 표시를 계속 최신 상태로 유지한다.
+  setInterval(()=>{
+    if(gameStarted) renderGachaView();
+  }, 1000);
   function openMailbox(){ mailboxModalEl.classList.add('show'); renderMailbox(); }
   function closeMailbox(){ mailboxModalEl.classList.remove('show'); }
   if(mailboxMenuBtnEl) mailboxMenuBtnEl.addEventListener('click', openMailbox);
@@ -11570,157 +13637,6 @@
     if(!btn || btn.disabled) return;
     claimMail(btn.dataset.id);
   });
-
-  // ===== 관리자: 전체 우편 발송 =====
-  const adminMailTitleInputEl=$('adminMailTitleInput'), adminMailMsgInputEl=$('adminMailMsgInput');
-  const adminMailGoldInputEl=$('adminMailGoldInput'), adminMailGemsInputEl=$('adminMailGemsInput');
-  const adminMailCatSelectEl=$('adminMailCatSelect'), adminMailItemSelectEl=$('adminMailItemSelect');
-  const adminMailQtyInputEl=$('adminMailQtyInput'), adminMailSendBtnEl=$('adminMailSendBtn');
-  function refreshAdminMailItemOptions(){
-    if(!adminMailCatSelectEl || !adminMailItemSelectEl) return;
-    const cat = adminMailCatSelectEl.value;
-    if(!cat){ adminMailItemSelectEl.innerHTML=''; adminMailItemSelectEl.disabled = true; return; }
-    adminMailItemSelectEl.disabled = false;
-    const items = allItemsFlat(cat);
-    adminMailItemSelectEl.innerHTML = items.map(it=> `<option value="${it.id}">[${it.grade}] ${it.name}</option>`).join('');
-  }
-  if(adminMailCatSelectEl) adminMailCatSelectEl.addEventListener('change', refreshAdminMailItemOptions);
-  if(adminMailSendBtnEl){
-    adminMailSendBtnEl.addEventListener('click', ()=>{
-      const title = adminMailTitleInputEl.value.trim();
-      if(!title){ toast('우편 제목을 입력하세요.', 'fail', true); return; }
-      const gold = Math.max(0, Math.floor(Number(adminMailGoldInputEl.value)||0));
-      const gems = Math.max(0, Math.floor(Number(adminMailGemsInputEl.value)||0));
-      const cat = adminMailCatSelectEl.value;
-      const itemId = cat ? adminMailItemSelectEl.value : '';
-      const qty = Math.max(1, Math.floor(Number(adminMailQtyInputEl.value)||1));
-      if(!gold && !gems && !itemId){ toast('보상(골드/다이아/아이템)을 하나 이상 설정하세요.', 'fail', true); return; }
-      const mail = {
-        title, message: adminMailMsgInputEl.value.trim(),
-        rewardGold: gold, rewardGems: gems,
-        itemCategory: cat||null, itemId: itemId||null, itemQty: qty,
-        ts: firebase.database.ServerValue.TIMESTAMP,
-      };
-      db.ref('globalMail').push(mail).then(()=>{
-        toast('우편을 전체 발송했습니다!', 'success', true);
-        adminMailTitleInputEl.value=''; adminMailMsgInputEl.value='';
-        adminMailGoldInputEl.value=0; adminMailGemsInputEl.value=0;
-        adminMailCatSelectEl.value=''; refreshAdminMailItemOptions(); adminMailQtyInputEl.value=1;
-      }).catch(err=>{
-        console.error('우편 발송 실패:', err);
-        toast('우편 발송에 실패했습니다.', 'fail', true);
-      });
-    });
-  }
-
-  // ===== 관리자: 픽업 뽑기 관리 =====
-  const adminPickupCatSelectEl=$('adminPickupCatSelect'), adminPickupJobSelectEl=$('adminPickupJobSelect');
-  const adminPickupItemSelectEl=$('adminPickupItemSelect'), adminPickupRateInputEl=$('adminPickupRateInput');
-  const adminPickupApplyBtnEl=$('adminPickupApplyBtn'), adminPickupOffBtnEl=$('adminPickupOffBtn');
-  const adminPickupStatusNoteEl=$('adminPickupStatusNote');
-  function poolItemsFor(cat, job){
-    return cat==='weapon'
-      ? GACHA_GRADES.reduce((acc,g)=> acc.concat(JOB_WEAPON_POOLS[job][g.key]), [])
-      : GACHA_GRADES.reduce((acc,g)=> acc.concat(GACHA_POOLS[cat][g.key]), []);
-  }
-  function refreshAdminPickupItemOptions(){
-    if(!adminPickupCatSelectEl || !adminPickupItemSelectEl) return;
-    const cat = adminPickupCatSelectEl.value;
-    adminPickupJobSelectEl.style.display = cat==='weapon' ? '' : 'none';
-    if(!cat){ adminPickupItemSelectEl.innerHTML=''; adminPickupItemSelectEl.disabled=true; return; }
-    adminPickupItemSelectEl.disabled = false;
-    const items = poolItemsFor(cat, adminPickupJobSelectEl.value);
-    adminPickupItemSelectEl.innerHTML = items.map(it=> `<option value="${it.id}">[${it.grade}] ${it.name}</option>`).join('');
-  }
-  if(adminPickupCatSelectEl) adminPickupCatSelectEl.addEventListener('change', refreshAdminPickupItemOptions);
-  if(adminPickupJobSelectEl) adminPickupJobSelectEl.addEventListener('change', refreshAdminPickupItemOptions);
-  function updateAdminPickupStatusNote(cfg){
-    if(!adminPickupStatusNoteEl) return;
-    adminPickupStatusNoteEl.textContent = (cfg && cfg.active)
-      ? `현재 픽업: ${GACHA_CATEGORY_LABEL[cfg.category]} · 아이템 ${cfg.itemIds.length}종 · 확률 ${cfg.ratePercent}%`
-      : '현재 픽업: 없음';
-  }
-  if(adminPickupApplyBtnEl){
-    adminPickupApplyBtnEl.addEventListener('click', ()=>{
-      const cat = adminPickupCatSelectEl.value;
-      if(!cat){ toast('카테고리를 선택하세요.', 'fail', true); return; }
-      const selected = Array.from(adminPickupItemSelectEl.selectedOptions).map(o=>o.value);
-      if(selected.length===0){ toast('픽업 아이템을 1개 이상 선택하세요.', 'fail', true); return; }
-      const rate = Math.max(0, Math.min(100, Number(adminPickupRateInputEl.value)||0));
-      const cfg = { active:true, category:cat, itemIds:selected, ratePercent:rate, updatedAt: Date.now() };
-      db.ref('gachaConfig/pickup').set(cfg).then(()=>{
-        toast('픽업 뽑기가 적용되었습니다.', 'success', true);
-      }).catch(err=>{ console.error('픽업 적용 실패:', err); toast('픽업 적용에 실패했습니다.', 'fail', true); });
-    });
-  }
-  if(adminPickupOffBtnEl){
-    adminPickupOffBtnEl.addEventListener('click', ()=>{
-      db.ref('gachaConfig/pickup').set({active:false, updatedAt:Date.now()}).then(()=>{
-        toast('픽업 뽑기를 종료했습니다.', 'success', true);
-      }).catch(err=> console.error('픽업 종료 실패:', err));
-    });
-  }
-
-  // ===== 관리자: 확정 뽑기 관리 =====
-  const adminGuarCatSelectEl=$('adminGuarCatSelect'), adminGuarJobSelectEl=$('adminGuarJobSelect');
-  const adminGuarModeSelectEl=$('adminGuarModeSelect');
-  const adminGuarGradeRowEl=$('adminGuarGradeRow'), adminGuarGradeSelectEl=$('adminGuarGradeSelect');
-  const adminGuarItemRowEl=$('adminGuarItemRow'), adminGuarItemSelectEl=$('adminGuarItemSelect');
-  const adminGuarCostInputEl=$('adminGuarCostInput');
-  const adminGuarApplyBtnEl=$('adminGuarApplyBtn'), adminGuarOffBtnEl=$('adminGuarOffBtn');
-  const adminGuarStatusNoteEl=$('adminGuarStatusNote');
-  if(adminGuarGradeSelectEl) adminGuarGradeSelectEl.innerHTML = GACHA_GRADES.map(g=> `<option value="${g.key}">${g.key}</option>`).join('');
-  function refreshAdminGuarItemOptions(){
-    if(!adminGuarCatSelectEl || !adminGuarItemSelectEl) return;
-    const cat = adminGuarCatSelectEl.value;
-    adminGuarJobSelectEl.style.display = cat==='weapon' ? '' : 'none';
-    if(!cat){ adminGuarItemSelectEl.innerHTML=''; adminGuarItemSelectEl.disabled=true; return; }
-    adminGuarItemSelectEl.disabled = false;
-    const items = poolItemsFor(cat, adminGuarJobSelectEl.value);
-    adminGuarItemSelectEl.innerHTML = items.map(it=> `<option value="${it.id}">[${it.grade}] ${it.name}</option>`).join('');
-  }
-  function refreshAdminGuarModeRows(){
-    if(!adminGuarModeSelectEl) return;
-    const isItem = adminGuarModeSelectEl.value==='item';
-    adminGuarItemRowEl.style.display = isItem ? '' : 'none';
-    adminGuarGradeRowEl.style.display = isItem ? 'none' : '';
-  }
-  if(adminGuarCatSelectEl) adminGuarCatSelectEl.addEventListener('change', refreshAdminGuarItemOptions);
-  if(adminGuarJobSelectEl) adminGuarJobSelectEl.addEventListener('change', refreshAdminGuarItemOptions);
-  if(adminGuarModeSelectEl) adminGuarModeSelectEl.addEventListener('change', refreshAdminGuarModeRows);
-  refreshAdminGuarModeRows();
-  function updateAdminGuarStatusNote(cfg){
-    if(!adminGuarStatusNoteEl) return;
-    if(!cfg || !cfg.active){ adminGuarStatusNoteEl.textContent = '현재 확정뽑기: 없음'; return; }
-    const target = cfg.mode==='item' ? ((findItemById(cfg.category, cfg.itemId)||{}).name || '(삭제된 아이템)') : `${cfg.grade}등급`;
-    adminGuarStatusNoteEl.textContent = `현재 확정뽑기: ${GACHA_CATEGORY_LABEL[cfg.category]} · ${target} · ${cfg.cost}💠`;
-  }
-  if(adminGuarApplyBtnEl){
-    adminGuarApplyBtnEl.addEventListener('click', ()=>{
-      const cat = adminGuarCatSelectEl.value;
-      if(!cat){ toast('카테고리를 선택하세요.', 'fail', true); return; }
-      const cost = Math.max(1, Math.floor(Number(adminGuarCostInputEl.value)||0));
-      const mode = adminGuarModeSelectEl.value;
-      const cfg = { active:true, category:cat, mode, cost, updatedAt: Date.now() };
-      if(mode==='item'){
-        const itemId = adminGuarItemSelectEl.value;
-        if(!itemId){ toast('확정 아이템을 선택하세요.', 'fail', true); return; }
-        cfg.itemId = itemId;
-      } else {
-        cfg.grade = adminGuarGradeSelectEl.value;
-      }
-      db.ref('gachaConfig/guaranteed').set(cfg).then(()=>{
-        toast('확정 뽑기가 적용되었습니다.', 'success', true);
-      }).catch(err=>{ console.error('확정뽑기 적용 실패:', err); toast('확정뽑기 적용에 실패했습니다.', 'fail', true); });
-    });
-  }
-  if(adminGuarOffBtnEl){
-    adminGuarOffBtnEl.addEventListener('click', ()=>{
-      db.ref('gachaConfig/guaranteed').set({active:false, updatedAt:Date.now()}).then(()=>{
-        toast('확정 뽑기를 종료했습니다.', 'success', true);
-      }).catch(err=> console.error('확정뽑기 종료 실패:', err));
-    });
-  }
 
   // ============ 스테이지 선택 모달 ============
   const stageSelectBtnEl=$('stageSelectBtn'), stageSelectModalEl=$('stageSelectModal'), stageSelectCloseBtnEl=$('stageSelectCloseBtn');
@@ -12233,6 +14149,7 @@
   screenFlashToggleEl.addEventListener('change', e=>{ settings.screenFlash = e.target.checked; });
   skillSoundToggleEl.addEventListener('change', e=>{ settings.skillSound = e.target.checked; });
   hitboxToggleEl.addEventListener('change', e=>{ settings.hitboxDebug = e.target.checked; });
+  if(skillAutoCastToggleEl) skillAutoCastToggleEl.addEventListener('change', e=>{ settings.skillAutoCast = e.target.checked; });
   aspectRatioToggleEl.addEventListener('change', e=>{ settings.showAspectRatio = e.target.checked; updateAspectRatioDebug(); });
   skipJobSelectToggleEl.addEventListener('change', e=>{ settings.skipJobSelect = e.target.checked; });
   // "게임시작 화면 건너뛰기" 설정은 타이틀 화면 자체를 건너뛰는 것이라 즉시 반영해도 의미가 없다(이미 지나온 화면이므로).
@@ -12246,10 +14163,19 @@
     updateMiniMapVisibility();
   });
   // 보스 자동 소환: 켜면 잡몹 처치를 모두 완료하는 즉시 보스가 자동으로 소환되고, 끄면 보스 소환 버튼을 직접 눌러야만 소환된다.
+  // 필드 HUD의 토글과 설정 화면의 토글, 두 곳 모두에서 켜고 끌 수 있으며 항상 같은 값(settings.bossAutoSummon)으로 연동된다.
   bossAutoSummonToggleEl.addEventListener('change', e=>{
     settings.bossAutoSummon = e.target.checked;
+    if(bossAutoSummonSettingsToggleEl) bossAutoSummonSettingsToggleEl.checked = e.target.checked;
     updateHudText();
   });
+  if(bossAutoSummonSettingsToggleEl){
+    bossAutoSummonSettingsToggleEl.addEventListener('change', e=>{
+      settings.bossAutoSummon = e.target.checked;
+      bossAutoSummonToggleEl.checked = e.target.checked;
+      updateHudText();
+    });
+  }
 
   // ============ 배경음(BGM) / 효과음 볼륨 ============
   function bgmSrc(n){ return `mp3/bgm${n}.mp3`; }
@@ -12520,6 +14446,45 @@
       sfxTone({freq:220, freqEnd:70, type:'sine', dur:0.16, startGain:0.2});
       sfxNoise({dur:0.1, startGain:0.16, filterFreq:1400});
     },
+    // ===== 특이점의 지팡이 전용 블랙홀 효과음 =====
+    // 스킬(특이점 소환) 시전 - 저음이 빨려 들어가듯 급격히 하강했다가, 이어서 특이점이 형성되며 솟아오르는 2단 구성
+    blackholeCast(){
+      sfxTone({freq:900, freqEnd:60, type:'sawtooth', dur:0.5, startGain:0.22});
+      sfxTone({freq:70, freqEnd:340, type:'sine', dur:0.55, startGain:0.2, delay:0.08});
+      sfxNoise({dur:0.4, startGain:0.18, filterFreq:500, filterType:'lowpass', delay:0.05});
+    },
+    // 스킬 블랙홀이 유지되는 동안 주기적으로 재생되는 낮은 웅웅거림(계속 빨아들이고 있다는 느낌)
+    blackholeHum(){
+      sfxTone({freq:55, freqEnd:80, type:'sine', dur:0.3, startGain:0.08});
+      sfxNoise({dur:0.25, startGain:0.05, filterFreq:300});
+    },
+    // 스킬 블랙홀이 소멸하는 순간의 짧은 붕괴음(솟아올랐다가 순식간에 사라짐) - 현재는 blackholeExplode로 대체되어 미사용이지만 향후 재사용을 위해 남겨둔다
+    blackholeCollapse(){
+      sfxTone({freq:120, freqEnd:1000, type:'sine', dur:0.22, startGain:0.16});
+      sfxNoise({dur:0.18, startGain:0.12, filterFreq:3000, filterType:'highpass', delay:0.02});
+    },
+    // 블랙홀이 소멸하며 주변을 터트리는 순간의 폭발음 - 스킬(대형)은 묵직한 저음 충격파 + 유리 파편음까지 곁들여지고,
+    // 기본 공격(소형)은 축소된 버전으로 재생된다
+    blackholeExplode(isAttack){
+      const power = isAttack ? 0.6 : 1;
+      sfxTone({freq:70*power, freqEnd:20, type:'sawtooth', dur:0.4*power+0.15, startGain:0.28});
+      sfxNoise({dur:0.28*power+0.1, startGain:0.24, filterFreq:900, filterType:'lowpass'});
+      sfxNoise({dur:0.18, startGain:0.14, filterFreq:4200, filterType:'highpass', delay:0.02});
+      if(!isAttack){
+        sfxTone({freq:1600, freqEnd:2400, type:'sine', dur:0.28, startGain:0.1, delay:0.05});
+        sfxTone({freq:55, freqEnd:15, type:'sine', dur:0.5, startGain:0.2, delay:0.03});
+      }
+    },
+    // 기본 공격: 소형 블랙홀을 던지는 순간의 경쾌한 투척음
+    blackholeThrow(){
+      sfxTone({freq:300, freqEnd:900, type:'triangle', dur:0.12, startGain:0.14});
+      sfxNoise({dur:0.08, startGain:0.1, filterFreq:3500, filterType:'highpass'});
+    },
+    // 기본 공격: 던져진 블랙홀이 착탄해 형성되는 순간의 둔중한 충격음
+    blackholeImpact(){
+      sfxTone({freq:500, freqEnd:60, type:'sawtooth', dur:0.22, startGain:0.18});
+      sfxNoise({dur:0.16, startGain:0.14, filterFreq:800});
+    },
     // 성장 레벨업류
     levelUp(){ sfxTone({freq:400, freqEnd:880, type:'triangle', dur:0.26, startGain:0.2}); },
     // 쿠폰 사용 성공
@@ -12620,10 +14585,11 @@
 
   // 관리자 설정
   function fillAdminInputs(){
-    adminGoldInputEl.value = state.gold;
-    adminGemsInputEl.value = state.gems;
-    adminAtkInputEl.value = state.lvAtk;
-    adminHpInputEl.value = state.lvHp;
+    adminGoldInputEl.value = formatBigNum(state.gold);
+    adminGemsInputEl.value = formatBigNum(state.gems);
+    adminManaInputEl.value = formatBigNum(Math.floor(player.mana));
+    adminAtkInputEl.value = formatBigNum(state.lvAtk);
+    adminHpInputEl.value = formatBigNum(state.lvHp);
     adminDefInputEl.value = state.lvDef;
     adminSpdInputEl.value = state.lvSpd;
     adminSkipMobToggleEl.checked = adminSkipMobRequirement;
@@ -12633,6 +14599,10 @@
     adminCustomRatioToggleEl.checked = settings.customRatioEnabled;
     adminCustomRatioWInputEl.value = settings.customRatioW;
     adminCustomRatioHInputEl.value = settings.customRatioH;
+    // 공격력 Lv 등은 레벨(작은 정수)이라 그대로 두고, 그 레벨로 실제 계산되는 수치(공격력 등)만
+    // 골드·다이아와 동일한 단위 표기로 참고용으로 함께 보여준다.
+    const statsNoteEl = $('adminCurrentStatsNote');
+    if(statsNoteEl) statsNoteEl.textContent = `※ 현재 공격력: ${formatBigNum(state.atk)} / 현재 마나: ${formatBigNum(Math.floor(player.mana))} / ${player.maxMana}`;
   }
   adminSkipMobToggleEl.addEventListener('change', e=>{
     adminSkipMobRequirement = e.target.checked;
@@ -12721,27 +14691,33 @@
   function readAdminInt(el){ return Math.max(0, Math.floor(Number(el.value)||0)); }
   const ADMIN_SET_HANDLERS = {
     gold: ()=>{
-      const v = readAdminInt(adminGoldInputEl);
+      const v = parseBigNum(adminGoldInputEl.value);
       state.gold = v;
-      toast(`관리자: 골드가 ${v}(으)로 설정되었습니다.`, 'gold', true);
+      toast(`관리자: 골드가 ${formatBigNum(v)}(으)로 설정되었습니다.`, 'gold', true);
     },
     gems: ()=>{
-      const v = readAdminInt(adminGemsInputEl);
+      const v = parseBigNum(adminGemsInputEl.value);
       state.gems = v;
       renderGachaView();
-      toast(`관리자: 다이아(소환석)가 ${v}(으)로 설정되었습니다.`, 'gold', true);
+      toast(`관리자: 다이아(소환석)가 ${formatBigNum(v)}(으)로 설정되었습니다.`, 'gold', true);
+    },
+    mana: ()=>{
+      const v = parseBigNum(adminManaInputEl.value);
+      player.mana = v;
+      if(v > player.maxMana) player.maxMana = v; // 최대치를 넘겨 입력하면 최대치도 함께 늘려 그대로 반영한다
+      toast(`관리자: 마나가 ${formatBigNum(v)}(으)로 설정되었습니다.`, 'success', true);
     },
     atk: ()=>{
-      const v = readAdminInt(adminAtkInputEl);
+      const v = parseBigNum(adminAtkInputEl.value);
       state.lvAtk = v;
-      state.atk = 3 + v*GROWTH_ATK_PER_LV;
-      toast(`관리자: 공격력 성장 레벨이 ${v}(으)로 설정되었습니다.`, 'success', true);
+      state.atk = safeNum(3 + v*GROWTH_ATK_PER_LV + (state.permAtkBonus||0));
+      toast(`관리자: 공격력 성장 레벨이 ${formatBigNum(v)}(으)로 설정되었습니다.`, 'success', true);
     },
     hp: ()=>{
-      const v = readAdminInt(adminHpInputEl);
+      const v = parseBigNum(adminHpInputEl.value);
       state.lvHp = v;
       applyHpGrowth();
-      toast(`관리자: 체력 성장 레벨이 ${v}(으)로 설정되었습니다.`, 'success', true);
+      toast(`관리자: 체력 성장 레벨이 ${formatBigNum(v)}(으)로 설정되었습니다.`, 'success', true);
     },
     def: ()=>{
       const v = Math.min(GROWTH_DEF_MAX_LV, readAdminInt(adminDefInputEl));
@@ -12761,6 +14737,7 @@
     btn.addEventListener('click', ()=>{
       const handler = ADMIN_SET_HANDLERS[btn.dataset.set];
       if(handler) handler();
+      fillAdminInputs();
       updateHudText();
     });
   });
@@ -13123,21 +15100,37 @@
     const perMobGold = 9 + stage*2.6; // damageMob()의 잡몹 처치 골드 공식과 동일 기준
     return perMobGold * OFFLINE_KILLS_PER_MIN;
   }
+  // 경험치·보석(다이아)도 골드와 동일하게 damageMob()의 잡몹 처치 보상 공식을 그대로 따라
+  // "온라인이었다면 벌었을 양"을 계산한 뒤, 골드와 같은 비율(75%)만 오프라인 보상으로 지급한다.
+  function onlineExpPerMinute(stage){
+    const perMobExp = 4 + stage*1.2; // gainExp()로 들어가는 damageMob()의 잡몹 처치 경험치 공식과 동일 기준
+    return perMobExp * OFFLINE_KILLS_PER_MIN;
+  }
+  function onlineGemsPerMinute(stage){
+    // 이미 한 번 클리어한 스테이지(재파밍)면 드랍 확률이 3%로 낮아지는 것까지 damageMob()과 동일하게 반영
+    const gemDropChance = (stage <= state.maxClearedStage) ? 0.03 : 0.05;
+    return gemDropChance * OFFLINE_KILLS_PER_MIN;
+  }
 
   function computeOfflineReward(elapsedMs, stage){
     const minutes = Math.min(OFFLINE_MAX_MINUTES, Math.floor(elapsedMs/60000));
-    if(minutes<=0) return { minutes:0, gold:0 };
+    if(minutes<=0) return { minutes:0, gold:0, exp:0, gems:0 };
     const gold = Math.floor(onlineGoldPerMinute(stage) * OFFLINE_INCOME_RATIO * minutes);
-    return { minutes, gold };
+    const exp = Math.floor(onlineExpPerMinute(stage) * OFFLINE_INCOME_RATIO * minutes);
+    const gems = Math.floor(onlineGemsPerMinute(stage) * OFFLINE_INCOME_RATIO * minutes);
+    return { minutes, gold, exp, gems };
   }
 
   const offlineRewardModalEl = $('offlineRewardModal');
-  function showOfflineRewardModal(minutes, gold){
+  function showOfflineRewardModal(minutes, gold, exp, gems){
     const h = Math.floor(minutes/60), m = minutes%60;
     const timeText = h>0 ? `${h}시간 ${m}분` : `${m}분`;
+    const gemsLine = gems>0 ? `<div style="font-size:15px; font-weight:800; color:var(--arcane); margin-top:4px;">💠 +${formatBigNum(gems)}</div>` : '';
     $('offlineRewardBody').innerHTML =
       `<div style="font-size:13px; color:var(--text-dim); margin-bottom:10px;">오프라인 동안 ${timeText}이 지났어요.</div>`+
       `<div style="font-size:22px; font-weight:800; color:var(--gold);">💰 +${formatBigNum(gold)}</div>`+
+      `<div style="font-size:15px; font-weight:800; color:var(--success); margin-top:4px;">✨ +${formatBigNum(exp)}</div>`+
+      gemsLine+
       `<div style="font-size:11.5px; color:var(--text-dim); margin-top:6px;">(현재 스테이지 기준 수입의 75%)</div>`;
     offlineRewardModalEl.classList.add('show');
   }
@@ -13150,12 +15143,14 @@
     pendingOfflineSince = null;
     if(!since) return;
     const elapsed = Date.now() - since;
-    const { minutes, gold } = computeOfflineReward(elapsed, state.stage);
-    if(minutes<=0 || gold<=0) return;
+    const { minutes, gold, exp, gems } = computeOfflineReward(elapsed, state.stage);
+    if(minutes<=0 || (gold<=0 && exp<=0 && gems<=0)) return;
     state.gold += gold;
+    if(gems>0) state.gems += gems;
+    if(exp>0) gainExp(exp); // 레벨업 조건을 만족하면 gainExp 내부에서 레벨업 처리까지 함께 이뤄진다
     updateHudText();
     saveGame();
-    showOfflineRewardModal(minutes, gold);
+    showOfflineRewardModal(minutes, gold, exp, gems);
   }
 
   function collectSaveData(){
@@ -13246,6 +15241,7 @@
     // 직업별 레벨/스탯 저장소가 없던 예전 저장 데이터(직업 구분 없이 레벨을 공유하던 버전) 대비:
     // jobStats가 없으면 새로 만들고, 현재 직업의 항목이 비어있으면 지금 최상위 state에 있는(예전 방식으로 저장된) 값을
     // 그 직업의 진행치로 그대로 이어받아 손실 없이 마이그레이션한다.
+    if(!Array.isArray(state.gachaHistory)) state.gachaHistory = []; // 예전 저장 데이터(뽑기 내역 필드가 없던 버전) 대비
     state.jobStats = state.jobStats || {};
     if(state.job && !state.jobStats[state.job]){
       const migrated = {}; JOB_STAT_KEYS.forEach(k=> migrated[k] = state[k]);
@@ -13299,7 +15295,7 @@
     if(hadNoName) saveGame(); // 랜덤 배정된 이름을 즉시 저장해둔다(다음 접속 시에도 유지되도록)
     // 불러온 레벨 값으로 파생 스탯(공격력/방어력/최대체력)을 다시 계산해 정합성을 맞춘다
     recalcGear(); // 장착 중인 뽑기 아이템의 능력치를 먼저 계산해야 아래 스탯들이 정확해진다
-    state.atk = 3 + state.lvAtk*GROWTH_ATK_PER_LV;
+    state.atk = safeNum(3 + state.lvAtk*GROWTH_ATK_PER_LV + (state.permAtkBonus||0));
     state.def = effectiveDefPct();
     applyHpGrowth();
     applySfxVolume();
@@ -13383,6 +15379,31 @@
     saveGame();
     closeSettings();
     auth.signOut();
+  });
+
+  // 직업 초기화: 현재 선택된 직업의 진행치(state.jobStats[state.job])만 기본값으로 되돌리고,
+  // 다른 직업의 jobStats와 계정 공용 데이터(claimedMail·gachaPity·gachaHistory·설정 등)는 그대로 유지한다.
+  $('jobResetBtn').addEventListener('click', ()=>{
+    if(!currentUser){ toast('로그인 후 이용할 수 있습니다.', 'fail', true); return; }
+    if(!state.job){ toast('먼저 직업을 선택하세요.', 'fail', true); return; }
+    const jk = state.job;
+    const jobLabel = (JOB_DEFS[jk]||{}).label || jk;
+    const ok = confirm(`정말로 [${jobLabel}] 직업만 초기화하시겠습니까?\n이 직업의 레벨·골드·소환석·아이템·장비·스테이지 진행도만 삭제되고, 다른 직업의 진행도는 그대로 유지됩니다.\n이 작업은 되돌릴 수 없습니다.`);
+    if(!ok) return;
+    state.jobStats[jk] = defaultJobStats();
+    // 이 직업 전용 무기(id가 weapon_{직업}_ 로 시작)에 대한 재련(스탯 리롤/잠금) 기록도 함께 초기화
+    const prefix = 'weapon_'+jk+'_';
+    Object.keys(state.itemOverrides||{}).forEach(id=>{ if(id.indexOf(prefix)===0) delete state.itemOverrides[id]; });
+    loadJobStats(jk);
+    recalcGear();
+    state.def = effectiveDefPct();
+    applyHpGrowth();
+    startStage();
+    renderGachaView();
+    renderEquipView();
+    updateHudText();
+    saveGame();
+    toast(`[${jobLabel}] 직업을 초기화했습니다.`, 'success', true);
   });
 
   // 전체 초기화: 관리자 여부와 무관하게 누구나 사용 가능한, 계정 진행도 전체를 신규 상태로 되돌리는 기능.
